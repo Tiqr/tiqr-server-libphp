@@ -26,7 +26,7 @@
  * @author Johan Rydell, PortWise (original Java)
  * @author Ivo Jansch, Egeniq (PHP port)
  */
-class OCRA {
+class OCRA_v1 {
 
     private function __construct() {
         

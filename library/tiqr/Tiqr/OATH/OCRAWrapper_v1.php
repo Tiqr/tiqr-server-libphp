@@ -22,15 +22,79 @@
 /**
  * @internal includes
  */
-require_once("OCRA.php");
+require_once("OCRA_v1.php");
 require_once("Tiqr/Random.php");
 
 /**
  * A wrapper for the OCRA algorithm implementing just the features we support.
+ * Legacy bridge mapping current OCRA.php interface to the v1 legacy OCRA
+ * implementation, for older clients.
  * @author ivo
  */
-class Tiqr_OCRAWrapper
+class Tiqr_OCRAWrapper_v1 
 {
+    protected $_ocraSuite = NULL;
+    
+    /**
+     * The length of generated session keys
+     */
+    const SESSIONKEY_SIZE = 16;
+    
+
+    public function __construct($ocraSuite) 
+    {
+        $this->_ocraSuite = $ocraSuite;
+    }
+    
+    /**
+     * Generate a challenge string based on an ocraSuite
+     * @return String An OCRA challenge that matches the specification of
+     *         the ocraSuite.
+     */
+    public function generateChallenge() 
+    {
+        return $this->_getChallenge($this->_ocraSuite);
+    }
+    
+
+    /**
+     * Generate a session key based on an ocraSuite
+     * @return String Hexadecimal session key
+     */
+    public function generateSessionKey() 
+    {
+        return Tiqr_Random::randomHexString(self::SESSIONKEY_SIZE);
+    }
+    
+    /**
+     * Calculate an OCRA repsonse to a given OCRA challenge, according to
+     * the algorithm specified by an OCRA Suite.
+     * @param String $secret a hex representation of the user's secret
+     * @param String $challenge a hex or (alfa)numeric challenge question
+     * @param String $sessionKey a hex sessionKey identifying the current session
+     * @return String An OCRA response, the length of which is determined by the
+     *             OCRA suite.
+     */
+    public function calculateResponse($secret, $challenge, $sessionKey) 
+    {
+        return $this->_calculateResponse($this->_ocraSuite, $secret, $challenge, $sessionKey);
+    }
+    
+    /**
+     * Calculate and verify an OCRA response.
+     * @param String $response Expected OCRA response
+     * @param String $secret a hex representation of the user's secret
+     * @param String $challenge a hex or (alfa)numeric challenge question
+     * @param String $sessionKey the sessionKey identifying the current session
+     * @return Boolean True if response matches, false otherwise
+     */
+    public function verifyResponse($response, $secret, $challenge, $sessionKey)
+    {
+         $expected = $this->calculateResponse($secret, $challenge, $sessionKey);
+
+         return ($expected == $response);
+    }
+
     /**
      * derive the challenge configuration from an ocraSuite String
      * @param String $ocraSuite
@@ -101,7 +165,7 @@ class Tiqr_OCRAWrapper
      * @return String An OCRA challenge that matches the specification of 
      *         the ocraSuite.
      */
-    public function getChallenge($ocraSuite) 
+    protected function _getChallenge($ocraSuite) 
     {
         $strong = false;
         
@@ -124,7 +188,7 @@ class Tiqr_OCRAWrapper
      * @return int An OCRA response, the length of which is determined by the 
      *             OCRA suite.
      */
-    public function calculateResponse($ocraSuite, $secret, $challenge, $sessionKey)
+    protected function _calculateResponse($ocraSuite, $secret, $challenge, $sessionKey)
     {       
         if (strpos(strtolower($ocraSuite), "qn")!==false) {
             
@@ -133,7 +197,7 @@ class Tiqr_OCRAWrapper
             
         }
         // for some reason we're seeing the secret in lowercase.
-        return OCRA::generateOCRA($ocraSuite, strtoupper($secret), "", $challenge, "", $sessionKey, "");
+        return OCRA_v1::generateOCRA($ocraSuite, strtoupper($secret), "", $challenge, "", $sessionKey, "");
 
     }
 }
