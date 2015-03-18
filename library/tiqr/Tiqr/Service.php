@@ -301,13 +301,6 @@ class Tiqr_Service
     }
 
     /**
-     */
-    public function generateEnrollString($metadataUrl)
-    {
-        return $this->_getEnrollString($metadataUrl);
-    }
-
-    /**
      * Start an authentication session. This generates a challenge for this 
      * session and stores it in memory. The returned sessionKey should be used
      * throughout the authentication process.
@@ -431,6 +424,15 @@ class Tiqr_Service
         $enrollmentString = $this->_getEnrollString($metadataUrl);
         
         QRcode::png($enrollmentString, false, 4, 5);
+    }
+
+    /**
+     * Generate an enrol string
+     * This string can be used to feed to a QR code generator
+     */
+    public function generateEnrollString($metadataUrl)
+    {
+        return $this->_getEnrollString($metadataUrl);
     }
     
     /**
@@ -685,6 +687,8 @@ class Tiqr_Service
     }
 
     /**
+     * Generate an enrollment string
+     * @param String $metadataUrl The URL you provide to the phone to retrieve metadata.
      */
     protected function _getEnrollString($metadataUrl)
     {
