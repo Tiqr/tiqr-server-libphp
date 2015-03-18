@@ -301,6 +301,13 @@ class Tiqr_Service
     }
 
     /**
+     */
+    public function generateEnrollString($metadataUrl)
+    {
+        return $this->_getEnrollString($metadataUrl);
+    }
+
+    /**
      * Start an authentication session. This generates a challenge for this 
      * session and stores it in memory. The returned sessionKey should be used
      * throughout the authentication process.
@@ -421,7 +428,7 @@ class Tiqr_Service
      */
     public function generateEnrollmentQR($metadataUrl) 
     { 
-        $enrollmentString = $this->_protocolEnroll."://".$metadataUrl;
+        $enrollmentString = $this->_getEnrollString($metadataUrl);
         
         QRcode::png($enrollmentString, false, 4, 5);
     }
@@ -676,7 +683,14 @@ class Tiqr_Service
         // Last bit is the spIdentifier
         return $this->_protocolAuth."://".(!is_null($userId)?urlencode($userId).'@':'').$this->getIdentifier()."/".$sessionKey."/".$challenge."/".urlencode($spIdentifier)."/".$this->_protocolVersion;
     }
-    
+
+    /**
+     */
+    protected function _getEnrollString($metadataUrl)
+    {
+        return $this->_protocolEnroll."://".$metadataUrl;
+    }
+
     /**
      * Generate a unique random key to be used to store temporary session
      * data.
