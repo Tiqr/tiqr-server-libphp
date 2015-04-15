@@ -263,6 +263,7 @@ class Tiqr_Service
     public function sendAuthNotification($sessionKey, $notificationType, $notificationAddress)
     {
         try {
+            if( 'C2DM' === $notificationType) $notificationType = 'GCM'; // C2DM defunct per 20150401
             $class = "Tiqr_Message_{$notificationType}";
             if (!class_exists($class)) {
                 return false;
