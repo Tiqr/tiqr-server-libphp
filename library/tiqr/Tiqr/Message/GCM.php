@@ -29,17 +29,17 @@ require_once 'Zend/Mobile/Push/Message/Gcm.php';
  * Android Cloud To Device Messaging message.
  * @author peter
  */
-class Tiqr_Message_C2DM extends Tiqr_Message_Abstract
+class Tiqr_Message_GCM extends Tiqr_Message_Abstract
 {
     private static $_services = array();
     
     /**
-     * Factory method for returning a C2DM service instance for the given 
+     * Factory method for returning a GCM service instance for the given 
      * configuration options.
      *
      * @param array $options configuration options
      *
-     * @return Zend_Service_Google_C2dm service instance
+     * @return Zend_Service_Google_Gcm service instance
      *
      * @throws Tiqr_Message_Exception_AuthFailure
      */
@@ -75,7 +75,7 @@ class Tiqr_Message_C2DM extends Tiqr_Message_Abstract
 
         $message = new Zend_Mobile_Push_Message_Gcm();
         $message->addToken($this->getAddress());
-        $message->setId($this->getId()); // TODO: needed?
+        $message->setId($this->getId()); // TODO: GCM equivalent needed?
         $message->setData($data);
 
         try {
@@ -85,7 +85,7 @@ class Tiqr_Message_C2DM extends Tiqr_Message_Abstract
         } catch (Zend_Mobile_Push_Exception_ServerUnavailable $e) {
             throw new Tiqr_Message_Exception_SendFailure("Server unavailable", true, $e);
         } catch (Zend_Mobile_Push_Exception_InvalidAuthToken $e) {
-            throw new Tiqr_Message_Exception_InvalidDevice("Invalid token", $e);
+            throw new Tiqr_Message_Exception_InvalidDevice("Invalid token", $e);	// TODO: change exception type
         } catch (Zend_Mobile_Push_Exception_InvalidPayload $e) {
             throw new Tiqr_Message_Exception_InvalidDevice("Payload too large", $e);
         } catch (Zend_Mobile_Push_Exception $e) {
