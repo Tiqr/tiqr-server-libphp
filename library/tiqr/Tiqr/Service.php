@@ -253,7 +253,7 @@ class Tiqr_Service
     /**
      * Send a push notification to a user containing an authentication challenge
      * @param String $sessionKey          The session key identifying this authentication session
-     * @param String $notificationType    Notification type, e.g. APNS, C2DM, (SMS?)
+     * @param String $notificationType    Notification type, e.g. APNS, C2DM, GCM, (SMS?)
      * @param String $notificationAddress Notification address, e.g. device token, phone number etc.
      *
      * @return boolean True if the notification was sent succesfully, false if not.
@@ -263,7 +263,6 @@ class Tiqr_Service
     public function sendAuthNotification($sessionKey, $notificationType, $notificationAddress)
     {
         try {
-            if( 'C2DM' === $notificationType) $notificationType = 'GCM'; // C2DM defunct per 20150401
             $class = "Tiqr_Message_{$notificationType}";
             if (!class_exists($class)) {
                 return false;
@@ -637,7 +636,7 @@ class Tiqr_Service
      */
     public function translateNotificationAddress($notificationType, $notificationAddress)
     {
-        if ($notificationType == 'APNS' || $notificationType == 'C2DM') {
+        if ($notificationType == 'APNS' || $notificationType == 'C2DM' || $notificationType == 'GCM') {
             return $this->_deviceStorage->getDeviceToken($notificationAddress);
         } else {
             return $notificationAddress;
