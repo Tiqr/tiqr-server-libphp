@@ -58,7 +58,8 @@ class Tiqr_API_Client
         if (2 == substr($result->code, 0, 1)) {
             return $result;
         } elseif (is_object($result->body)) {
-            throw new Exception($result->body->message, $result->code);
+            throw new Exception($result->body->error, $result->code);
+
         } else {
             throw new Exception('', $result->code);
         }
