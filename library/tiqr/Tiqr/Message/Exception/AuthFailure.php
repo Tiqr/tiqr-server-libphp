@@ -19,7 +19,7 @@
 
 
 /** @internal includes */
-require_once 'Message/Exception.php';
+require_once('Tiqr/Message/Exception.php');
 
 /**
  * Exception in case of an authentication failure for the messaging service.

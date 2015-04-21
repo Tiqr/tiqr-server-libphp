@@ -78,7 +78,7 @@ class Tiqr_Message_APNS extends Tiqr_Message_Abstract
         $message->setSound('default');
         $message->setExpire(30);
         foreach ($this->getCustomProperties() as $name => $value) {
-            $message->addCustomProperty($name, $value);
+            $message->addCustomData($name, $value);
         }
 
         try {

@@ -253,7 +253,7 @@ class Tiqr_Service
     /**
      * Send a push notification to a user containing an authentication challenge
      * @param String $sessionKey          The session key identifying this authentication session
-     * @param String $notificationType    Notification type, e.g. APNS, C2DM, (SMS?)
+     * @param String $notificationType    Notification type, e.g. APNS, C2DM, GCM, (SMS?)
      * @param String $notificationAddress Notification address, e.g. device token, phone number etc.
      *
      * @return boolean True if the notification was sent succesfully, false if not.
@@ -269,7 +269,7 @@ class Tiqr_Service
             }
 
             $message = new $class($this->_options);
-            $message->setId($sessionKey);
+            $message->setId(time());
             $message->setText("Please authenticate for " . $this->_name);
             $message->setAddress($notificationAddress);
             $message->setCustomProperty('challenge', $this->_getChallengeUrl($sessionKey));
@@ -421,9 +421,18 @@ class Tiqr_Service
      */
     public function generateEnrollmentQR($metadataUrl) 
     { 
-        $enrollmentString = $this->_protocolEnroll."://".$metadataUrl;
+        $enrollmentString = $this->_getEnrollString($metadataUrl);
         
         QRcode::png($enrollmentString, false, 4, 5);
+    }
+
+    /**
+     * Generate an enrol string
+     * This string can be used to feed to a QR code generator
+     */
+    public function generateEnrollString($metadataUrl)
+    {
+        return $this->_getEnrollString($metadataUrl);
     }
     
     /**
@@ -627,7 +636,7 @@ class Tiqr_Service
      */
     public function translateNotificationAddress($notificationType, $notificationAddress)
     {
-        if ($notificationType == 'APNS' || $notificationType == 'C2DM') {
+        if ($notificationType == 'APNS' || $notificationType == 'C2DM' || $notificationType == 'GCM') {
             return $this->_deviceStorage->getDeviceToken($notificationAddress);
         } else {
             return $notificationAddress;
@@ -676,7 +685,16 @@ class Tiqr_Service
         // Last bit is the spIdentifier
         return $this->_protocolAuth."://".(!is_null($userId)?urlencode($userId).'@':'').$this->getIdentifier()."/".$sessionKey."/".$challenge."/".urlencode($spIdentifier)."/".$this->_protocolVersion;
     }
-    
+
+    /**
+     * Generate an enrollment string
+     * @param String $metadataUrl The URL you provide to the phone to retrieve metadata.
+     */
+    protected function _getEnrollString($metadataUrl)
+    {
+        return $this->_protocolEnroll."://".$metadataUrl;
+    }
+
     /**
      * Generate a unique random key to be used to store temporary session
      * data.
