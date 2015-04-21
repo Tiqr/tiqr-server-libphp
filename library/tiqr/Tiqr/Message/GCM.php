@@ -8,20 +8,19 @@
  *
  * More information: http://www.tiqr.org
  *
- * @author Peter Verhage <peter@egeniq.com>
+ * @author Joost van Dijk <joost.vandijk@surfnet.nl>
  * 
  * @package tiqr
  *
  * @license New BSD License - See LICENSE file for details.
  *
- * @copyright (C) 2010-2011 SURFnet BV
+ * @copyright (C) 2010-2015 SURFnet BV
  */
 
 
 /** @internal base includes */
 require_once('Tiqr/Message/Abstract.php');
 
-//require_once('Zend/Gdata/ClientLogin.php');
 require_once 'Zend/Mobile/Push/Gcm.php';
 require_once 'Zend/Mobile/Push/Message/Gcm.php';
 
@@ -64,7 +63,6 @@ class Tiqr_Message_GCM extends Tiqr_Message_Abstract
      *
      * @throws Tiqr_Message_Exception_AuthFailure
      * @throws Tiqr_Message_Exception_SendFailure
-     * @throws Tiqr_Message_Exception_InvalidDevice     
      */
     public function send()
     {
@@ -85,22 +83,17 @@ class Tiqr_Message_GCM extends Tiqr_Message_Abstract
         } catch (Zend_Mobile_Push_Exception_ServerUnavailable $e) {
             throw new Tiqr_Message_Exception_SendFailure("Server unavailable", true, $e);
         } catch (Zend_Mobile_Push_Exception_InvalidAuthToken $e) {
-            throw new Tiqr_Message_Exception_InvalidDevice("Invalid token", $e);	// TODO: change exception type
+            throw new Tiqr_Message_Exception_AuthFailure("Invalid token", $e);
         } catch (Zend_Mobile_Push_Exception_InvalidPayload $e) {
-            throw new Tiqr_Message_Exception_InvalidDevice("Payload too large", $e);
+            throw new Tiqr_Message_Exception_SendFailure("Payload too large", $e);
         } catch (Zend_Mobile_Push_Exception $e) {
             throw new Tiqr_Message_Exception_SendFailure("General send error", false, $e);
         }
 
-        // handle all errors and registration_id's
+        // handle errors, ignoring registration_id's
         foreach ($response->getResults() as $k => $v) {
-            if (isset($v['registration_id'])) {
-                error_log("$k has a new registration id of: " . $v['registration_id']);
-            }
             if (isset($v['error'])) {
-                error_log("$k had an error of: " . $v['error']);
-            }
-            if (isset($v['message_id'])) { // success
+                throw new Tiqr_Message_Exception_SendFailure("error in GCM response: " . $v['error'], true);
             }
         }
 
