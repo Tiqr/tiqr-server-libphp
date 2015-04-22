@@ -1,0 +1,8 @@
+{
+    "name": "SURFnet/tiqr-server-libphp",
+    "description": "php library for tiqr authentication.",
+    "type": "library",
+    "require": {
+        "zendframework/zendframework1": "1.12.*"
+    }
+}
