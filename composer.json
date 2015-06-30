@@ -2,24 +2,10 @@
     "name": "tiqr/tiqr-server-libphp",
     "description": "php library for tiqr authentication.",
     "type": "library",
-
     "license": "BSD-3-Clause",
-    "repositories": [
-	{
-            "package": {
-                "name": "phpqrcode/phpqrcode",
-                "dist": {
-                    "type": "zip",
-                    "url": "http://downloads.sourceforge.net/project/phpqrcode/releases/phpqrcode-2010100721_1.1.4.zip"
-                },
-                "version": "1.1.4"
-            },
-            "type": "package"
-        }
-    ],
     "require": {
         "zendframework/zendframework1": "~1.12",
-	"phpqrcode/phpqrcode": "1.1.4",
+        "kairos/phpqrcode": "dev-master",
         "ext-gd": "*"
     }
 }
