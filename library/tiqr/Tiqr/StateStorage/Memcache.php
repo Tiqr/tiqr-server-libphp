@@ -115,8 +115,11 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
     public function getValue($key)
     {
         $key = $this->_getKeyPrefix().$key;
-        
-        return $this->_memcache->get($key);
+
+        $result = $this->_memcache->get($key);
+        if( $result === false )
+            return null;
+        return $result;
     }
         
 }
