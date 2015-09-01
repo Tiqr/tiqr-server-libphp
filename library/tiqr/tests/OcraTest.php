@@ -18,9 +18,9 @@
  */
 
 
-require_once 'PHPUnit/Framework.php';
+//require_once 'PHPUnit/Framework.php';
  
-require_once '../Tiqr/OATH/OCRA.php';
+require_once __DIR__ . '/../Tiqr/OATH/OCRA.php';
 
 class ArrayTest extends PHPUnit_Framework_TestCase
 {
