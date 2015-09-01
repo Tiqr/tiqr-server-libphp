@@ -1,0 +1,11 @@
+filter:
+    excluded_paths:
+	- 'library/tiqr/tests/*'
+
+checks:
+    php:
+        code_rating: true
+        duplication: true
+
+coding_style:
+    php: {  }
