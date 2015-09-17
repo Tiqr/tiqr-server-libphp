@@ -245,11 +245,22 @@ class Tiqr_Service
     public function generateAuthQR($sessionKey)
     {
         // TODO
-        $challengeUrl = $this->_getChallengeUrl($sessionKey);  
-        
-        QRcode::png($challengeUrl, false, 4, 5);
+        $challengeUrl = $this->_getChallengeUrl($sessionKey);
+
+        $this->generateQR($challengeUrl);
     }
-    
+
+    /**
+     * Generate a QR image and send it directly to
+     * the browser.
+     *
+     * @param String $s The string to be encoded in the QR image
+     */
+    public function generateQR($s)
+    {
+        QRcode::png($s, false, 4, 5);
+    }
+
     /**
      * Send a push notification to a user containing an authentication challenge
      * @param String $sessionKey          The session key identifying this authentication session
