@@ -153,7 +153,7 @@ abstract class Tiqr_UserStorage_GenericStore extends Tiqr_UserStorage_Abstract
         if ($data = $this->_loadUser($userId)) {
             $timestamp = $this->getTemporaryBlockTimestamp($userId);
             // if not blocked or block is expired, return false
-            if (!isset($data["blocked"]) || $data["blocked"]==false || (false !== $timestamp && false != $duration && (strtotime($timestamp) + duration * 60) < time())) {
+            if (!isset($data["blocked"]) || $data["blocked"]==false || (false !== $timestamp && false != $duration && (strtotime($timestamp) + $duration * 60) < time())) {
                 return false;
             }
         }
