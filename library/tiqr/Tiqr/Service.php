@@ -59,6 +59,13 @@ class Tiqr_Service
     protected $_ocraService;
 
     /**
+     * The notification exception
+     *
+     * @var Exception
+     */
+    protected $_notificationError = NULL;
+
+    /**
      * Enrollment status codes
      */
     const ENROLLMENT_STATUS_IDLE = 1;        // Nothing happens
@@ -288,8 +295,35 @@ class Tiqr_Service
 
             return true;
         } catch (Exception $ex) {
+            $this->setNotificationError($ex);
             return false;
         }
+    }
+
+    /**
+     * Set the notification exception
+     *
+     * @param Exception $ex
+     */
+    protected function setNotificationError(Exception $ex)
+    {
+        $this->_notificationError = $ex;
+    }
+
+    /**
+     * Get the notification error that occurred
+     *
+     * @return array
+     */
+    public function getNotificationError()
+    {
+        return array(
+            'code' => $this->_notificationError->getCode(),
+            'file' => $this->_notificationError->getFile(),
+            'line' => $this->_notificationError->getLine(),
+            'message' => $this->_notificationError->getMessage(),
+            'trace' => $this->_notificationError->getTraceAsString()
+        );
     }
 
     /** 
