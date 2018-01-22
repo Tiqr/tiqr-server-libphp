@@ -256,6 +256,13 @@ class Tiqr_Service
 
         $this->generateQR($challengeUrl);
     }
+    
+    public function getResourceAccessURL($resourceId, $spIdentifier)
+    {
+        //pseudo session
+        $sessionKey = $this->startAuthenticationSession("", "resource-".$resourceId, $spIdentifier);
+        return $this->_getChallengeURL($sessionKey);
+    } 
 
     /**
      * Generate a QR image and send it directly to
