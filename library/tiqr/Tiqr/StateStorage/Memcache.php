@@ -41,10 +41,10 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
      */
     protected $_memcache = NULL;
 
-   /**
-    * The flavor of memcache PHP extension we are using.
-    * @var string
-    */
+    /**
+     * The flavor of memcache PHP extension we are using.
+     * @var string
+     */
     private static $extension = '';
 
     /**
