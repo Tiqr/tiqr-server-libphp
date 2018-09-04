@@ -40,11 +40,13 @@ class Tiqr_Random
     {
        if(function_exists('openssl_random_pseudo_bytes')) {
             $rnd = openssl_random_pseudo_bytes($length, $strong);
-            if($strong === TRUE) {
+            if($strong === TRUE && $rnd !== FALSE) {
                 return $rnd;
             }
         }
-        
+
+        // When openssl_random_pseudo_bytes failed, fall back on a mt_rand based string.
+
         $rnd='';
         
         for ($i=0;$i<$length;$i++) {
