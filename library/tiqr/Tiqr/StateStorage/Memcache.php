@@ -40,7 +40,13 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
      * @var Memcache
      */
     protected $_memcache = NULL;
-    
+
+    /**
+     * The flavor of memcache PHP extension we are using.
+     * @var string
+     */
+    private static $extension = '';
+
     /**
      * The default configuration
      */
@@ -67,8 +73,11 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
     public function init() 
     {
         parent::init();
+
+        $class = class_exists('\Memcache') ? '\Memcache' : (class_exists('\Memcached') ? '\Memcached' : false);
+        self::$extension = strtolower($class);
         
-        $this->_memcache = new Memcache();
+        $this->_memcache = new $class();
 
         if (!isset($this->_options["servers"])) {
             $this->_memcache->addServer(self::DEFAULT_HOST, self::DEFAULT_PORT);
@@ -93,8 +102,12 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
     public function setValue($key, $value, $expire=0)
     {  
         $key = $this->_getKeyPrefix().$key;
-        
-        $this->_memcache->set($key, $value, 0, $expire);
+
+        if (self::$extension === '\memcached') {
+            $this->_memcache->set($key, $value, $expire);
+        } else {
+            $this->_memcache->set($key, $value, 0, $expire);
+        }
     }
     
     /**
