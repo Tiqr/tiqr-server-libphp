@@ -39,10 +39,10 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         $apiKey = $options['firebase.apikey'];
 
         $translatedAddress = $this->getAddress();
-        $name = $this->getText();
+        $alertText = $this->getText();
         $url = $this->getCustomProperty('challenge');
 
-        $this->_sendFirebase($translatedAddress, "Please authenticate for " . $name, $url, $apiKey);
+        $this->_sendFirebase($translatedAddress, $alertText, $url, $apiKey);
     }
 
     /**
