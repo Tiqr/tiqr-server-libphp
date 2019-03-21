@@ -38,7 +38,7 @@ class Tiqr_Message_GCM extends Tiqr_Message_Abstract
      *
      * @param array $options configuration options
      *
-     * @return Zend_Service_Google_Gcm service instance
+     * @return Zend_Mobile_Push_Gcm service instance
      *
      * @throws Tiqr_Message_Exception_AuthFailure
      */
@@ -78,7 +78,7 @@ class Tiqr_Message_GCM extends Tiqr_Message_Abstract
 
         try {
             $response = $service->send($message);
-        } catch (Zend_Htpp_Client_Exception $e) {
+        } catch (Zend_Http_Client_Exception $e) {
             throw new Tiqr_Message_Exception_SendFailure("HTTP client error", true, $e);
         } catch (Zend_Mobile_Push_Exception_ServerUnavailable $e) {
             throw new Tiqr_Message_Exception_SendFailure("Server unavailable", true, $e);
@@ -91,10 +91,18 @@ class Tiqr_Message_GCM extends Tiqr_Message_Abstract
         }
 
         // handle errors, ignoring registration_id's
+        $error = null;
         foreach ($response->getResults() as $k => $v) {
-            if (isset($v['error'])) {
-                throw new Tiqr_Message_Exception_SendFailure("error in GCM response: " . $v['error'], true);
+            if (isset($v['error']) && $v['error'] === "MismatchSenderId") {
+                throw new Tiqr_Message_Exception_MismatchSenderId("MismatchSenderId", true);
             }
+            if (isset($v['error']) && is_null($error)) {
+                $error = $v['error'];
+            }
+        }
+
+        if ($error != null) {
+            throw new Tiqr_Message_Exception_SendFailure("Error in GCM response: " . $error, true);
         }
 
     }
