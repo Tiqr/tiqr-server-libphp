@@ -6,6 +6,8 @@
     "require": {
         "zendframework/zendframework1": "~1.12",
         "kairos/phpqrcode": "~1.0",
-        "ext-gd": "*"
+        "ext-gd": "*",
+        "ext-curl": "*",
+        "ext-json": "*"
     }
 }

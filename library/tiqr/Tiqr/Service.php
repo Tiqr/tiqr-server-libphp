@@ -281,6 +281,8 @@ class Tiqr_Service
     public function sendAuthNotification($sessionKey, $notificationType, $notificationAddress)
     {
         try {
+            $this->_notificationError = null;
+
             $class = "Tiqr_Message_{$notificationType}";
             if (!class_exists($class)) {
                 return false;
@@ -681,7 +683,7 @@ class Tiqr_Service
      */
     public function translateNotificationAddress($notificationType, $notificationAddress)
     {
-        if ($notificationType == 'APNS' || $notificationType == 'C2DM' || $notificationType == 'GCM') {
+        if ($notificationType == 'APNS' || $notificationType == 'C2DM' || $notificationType == 'GCM' || $notificationType == 'FCM') {
             return $this->_deviceStorage->getDeviceToken($notificationAddress);
         } else {
             return $notificationAddress;

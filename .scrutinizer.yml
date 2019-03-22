@@ -1,6 +1,6 @@
 filter:
     excluded_paths:
-	- 'library/tiqr/tests/*'
+        - 'library/tiqr/tests/*'
 
 checks:
     php:
