@@ -84,6 +84,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         $result = curl_exec($ch);
         $errors = curl_error($ch);
         $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $remoteip = curl_getinfo($ch,CURLINFO_PRIMARY_IP);
         curl_close($ch);
 
         if ($result === false) {
@@ -102,7 +103,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         }
 
         if ($statusCode !== 200) {
-            throw new Tiqr_Message_Exception_SendFailure("Invalid status code : '".$statusCode."'. Response: ".$result, true);
+            throw new Tiqr_Message_Exception_SendFailure("Invalid status code : '".$statusCode."'. Server : ".$remoteip.". Response : ".$result, true);
         }
 
         // handle errors, ignoring registration_id's
