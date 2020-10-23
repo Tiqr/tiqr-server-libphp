@@ -67,6 +67,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         $fields = array(
             'registration_ids' => array($deviceToken),
             'data' => $msg,
+            'time_to_live' => 300,
         );
 
         $headers = array(
