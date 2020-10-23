@@ -93,7 +93,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         }
 
         if ($statusCode !== 200) {
-            throw new Tiqr_Message_Exception_SendFailure("Invalid status code : ".$statusCode, true);
+            throw new Tiqr_Message_Exception_SendFailure("Invalid status code : '".$statusCode."'. Response: ".$result, true);
         }
 
         // handle errors, ignoring registration_id's
