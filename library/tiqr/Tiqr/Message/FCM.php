@@ -96,14 +96,14 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         }
 
         // Wait and retry once in case of a 502 Bad Gateway error
-        if (($statusCode == 502) && !($retry)) {
+        if ($statusCode === 502 && !($retry)) {
           sleep(2);
           $this->_sendFirebase($deviceToken, $alert, $challenge, $apiKey, true);
           return;
         }
 
         if ($statusCode !== 200) {
-            throw new Tiqr_Message_Exception_SendFailure("Invalid status code : '".$statusCode."'. Server : ".$remoteip.". Response : ".$result, true);
+            throw new Tiqr_Message_Exception_SendFailure(sprintf('Invalid status code : %s. Server : %s. Response : "%s".', $statusCode, $remoteip, $result), true);
         }
 
         // handle errors, ignoring registration_id's
