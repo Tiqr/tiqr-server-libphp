@@ -16,14 +16,11 @@
  *
  * @copyright (C) 2010-2011 SURFnet BV
  */
-
-
-//require_once 'PHPUnit/Framework.php';
-require_once 'PHPUnit/Autoload.php';
+use PHPunit\Framework\TestCase;
 
 require_once __DIR__ . '/../Tiqr/OATH/OCRA.php';
 
-class ArrayTest extends PHPUnit_Framework_TestCase
+class ArrayTest extends TestCase
 {
 
     public function decimalToHex($decimalChallenge)
