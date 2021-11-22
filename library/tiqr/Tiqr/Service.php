@@ -434,6 +434,23 @@ class Tiqr_Service
     }
 
     /**
+     * Remove enrollment data based on the enrollment key (which is
+     * encoded in the QR code). This removes both the session data used
+     * in the polling mechanism and the long term state in the state
+     * storage (FS/Pdo/Memcache)
+     */
+    public function clearEnrollmentState(string $key)
+    {
+        $value = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT.$key);
+        if (is_array($value) && array_key_exists('sessionId', $value)) {
+            // Reset the enrollment session (used for polling the status of the enrollment)
+            $this->resetEnrollmentSession($value['sessionId']);
+        }
+        // Remove the enrollment data for a specific enrollment key
+        $this->_stateStorage->unsetValue(self::PREFIX_ENROLLMENT.$key);
+    }
+
+    /**
      * Retrieve the enrollment status of an enrollment session.
      * 
      * @param String $sessionId the application's session identifier 
@@ -728,7 +745,7 @@ class Tiqr_Service
      * @param String $challenge The authentication challenge
      * @param String $userId The userid to embed in the challenge url (only
      *                       if a user was pre-authenticated)
-     *                       
+     *
      */
     protected function _getChallengeUrl($sessionKey)
     {                
