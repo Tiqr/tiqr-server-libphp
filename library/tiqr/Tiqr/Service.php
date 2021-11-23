@@ -75,6 +75,10 @@ class Tiqr_Service
     const ENROLLMENT_STATUS_FINALIZED = 5;   // The application has stored the secret
     const ENROLLMENT_STATUS_VALIDATED = 6;   // A first succesful authentication was performed
 
+    const PREFIX_ENROLLMENT_SECRET = 'enrollsecret';
+    const PREFIX_ENROLLMENT = 'enroll';
+    const PREFIX_CHALLENGE = 'challenge';
+
     /**
      * Default timeout values
      */
@@ -368,7 +372,7 @@ class Tiqr_Service
             $spIdentifier = $this->_identifier;
         }
 
-        $sessionKey = $this->_uniqueSessionKey("challenge");
+        $sessionKey = $this->_uniqueSessionKey(self::PREFIX_CHALLENGE);
     
         $challenge = $this->_ocraService->generateChallenge();
         
@@ -378,7 +382,7 @@ class Tiqr_Service
             $data["userId"] = $userId;
         }
         
-        $this->_stateStorage->setValue("challenge".$sessionKey, $data, self::CHALLENGE_EXPIRE);
+        $this->_stateStorage->setValue(self::PREFIX_CHALLENGE . $sessionKey, $data, self::CHALLENGE_EXPIRE);
        
         return $sessionKey;
     }
@@ -403,10 +407,13 @@ class Tiqr_Service
         if ($sessionId=="") {
             $sessionId = session_id();
         }
-    
-        $enrollmentKey = $this->_uniqueSessionKey("enroll");
-        $this->_stateStorage->setValue("enroll".$enrollmentKey, array("userId"=>$userId, "displayName"=>$displayName, "sessionId"=>$sessionId), self::ENROLLMENT_EXPIRE);   
-
+        $enrollmentKey = $this->_uniqueSessionKey(self::PREFIX_ENROLLMENT);
+        $data = [
+            "userId" => $userId,
+            "displayName" => $displayName,
+            "sessionId" => $sessionId
+        ];
+        $this->_stateStorage->setValue(self::PREFIX_ENROLLMENT . $enrollmentKey, $data, self::ENROLLMENT_EXPIRE);
         $this->_setEnrollmentStatus($sessionId, self::ENROLLMENT_STATUS_INITIALIZED);
 
         return $enrollmentKey;
@@ -424,6 +431,23 @@ class Tiqr_Service
         }
 
         $this->_setEnrollmentStatus($sessionId, self::ENROLLMENT_STATUS_IDLE);
+    }
+
+    /**
+     * Remove enrollment data based on the enrollment key (which is
+     * encoded in the QR code). This removes both the session data used
+     * in the polling mechanism and the long term state in the state
+     * storage (FS/Pdo/Memcache)
+     */
+    public function clearEnrollmentState(string $key)
+    {
+        $value = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT.$key);
+        if (is_array($value) && array_key_exists('sessionId', $value)) {
+            // Reset the enrollment session (used for polling the status of the enrollment)
+            $this->resetEnrollmentSession($value['sessionId']);
+        }
+        // Remove the enrollment data for a specific enrollment key
+        $this->_stateStorage->unsetValue(self::PREFIX_ENROLLMENT.$key);
     }
 
     /**
@@ -508,7 +532,7 @@ class Tiqr_Service
      */
     public function getEnrollmentMetadata($enrollmentKey, $authenticationUrl, $enrollmentUrl)
     {
-        $data = $this->_stateStorage->getValue("enroll".$enrollmentKey);
+        $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
         if (!is_array($data)) {
             return false;
         }
@@ -526,7 +550,7 @@ class Tiqr_Service
                                array("identifier" =>$data["userId"],
                                      "displayName"=>$data["displayName"]));
 
-        $this->_stateStorage->unsetValue("enroll".$enrollmentKey);
+        $this->_stateStorage->unsetValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
 
         $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_RETRIEVED);
         return $metadata;
@@ -547,9 +571,17 @@ class Tiqr_Service
      */
     public function getEnrollmentSecret($enrollmentKey)
     {
-         $data = $this->_stateStorage->getValue("enroll".$enrollmentKey);
-         $secret = $this->_uniqueSessionKey("enrollmentsecret");
-         $this->_stateStorage->setValue("enrollsecret".$secret, array("userId"=>$data["userId"], "sessionId"=>$data["sessionId"]), self::ENROLLMENT_EXPIRE); 
+         $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
+         $secret = $this->_uniqueSessionKey(self::PREFIX_ENROLLMENT_SECRET);
+         $enrollmentData = [
+             "userId" => $data["userId"],
+             "sessionId" => $data["sessionId"]
+         ];
+         $this->_stateStorage->setValue(
+             self::PREFIX_ENROLLMENT_SECRET . $secret,
+             $enrollmentData,
+             self::ENROLLMENT_EXPIRE
+         );
          return $secret;
     } 
 
@@ -565,7 +597,7 @@ class Tiqr_Service
      */
     public function validateEnrollmentSecret($enrollmentSecret)
     {
-         $data = $this->_stateStorage->getValue("enrollsecret".$enrollmentSecret);
+         $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT_SECRET.$enrollmentSecret);
          if (is_array($data)) { 
              // Secret is valid, application may accept the user secret. 
              $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_PROCESSED);
@@ -588,11 +620,11 @@ class Tiqr_Service
      */
     public function finalizeEnrollment($enrollmentSecret) 
     {
-         $data = $this->_stateStorage->getValue("enrollsecret".$enrollmentSecret);
+         $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT_SECRET.$enrollmentSecret);
          if (is_array($data)) {
              // Enrollment is finalized, destroy our session data.
              $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_FINALIZED);
-             $this->_stateStorage->unsetValue("enrollsecret".$enrollmentSecret);
+             $this->_stateStorage->unsetValue(self::PREFIX_ENROLLMENT_SECRET.$enrollmentSecret);
          }
          return true;
     }
@@ -620,7 +652,7 @@ class Tiqr_Service
      */
     public function authenticate($userId, $userSecret, $sessionKey, $response)
     {
-        $state = $this->_stateStorage->getValue("challenge".$sessionKey);
+        $state = $this->_stateStorage->getValue(self::PREFIX_CHALLENGE . $sessionKey);
         if (is_null($state)) {
             return self::AUTH_RESULT_INVALID_CHALLENGE;
         }
@@ -648,7 +680,7 @@ class Tiqr_Service
             $this->_stateStorage->setValue("authenticated_".$sessionId, $userId, self::LOGIN_EXPIRE);
             
             // Clean up the challenge.
-            $this->_stateStorage->unsetValue("challenge".$sessionKey);
+            $this->_stateStorage->unsetValue(self::PREFIX_CHALLENGE . $sessionKey);
             
             return self::AUTH_RESULT_AUTHENTICATED;
         }
@@ -713,11 +745,11 @@ class Tiqr_Service
      * @param String $challenge The authentication challenge
      * @param String $userId The userid to embed in the challenge url (only
      *                       if a user was pre-authenticated)
-     *                       
+     *
      */
     protected function _getChallengeUrl($sessionKey)
     {                
-        $state = $this->_stateStorage->getValue("challenge".$sessionKey);
+        $state = $this->_stateStorage->getValue(self::PREFIX_CHALLENGE . $sessionKey);
         if (is_null($state)) {
             return false;
         }

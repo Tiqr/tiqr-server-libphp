@@ -1,15 +1,15 @@
 <?php
 /**
  * This file is part of the tiqr project.
- * 
- * The tiqr project aims to provide an open implementation for 
- * authentication using mobile devices. It was initiated by 
+ *
+ * The tiqr project aims to provide an open implementation for
+ * authentication using mobile devices. It was initiated by
  * SURFnet and developed by Egeniq.
  *
  * More information: http://www.tiqr.org
  *
  * @author Joost van Dijk <joost.vandijk@surfnet.nl>
- * 
+ *
  * @package tiqr
  *
  * @license New BSD License - See LICENSE file for details.
@@ -52,11 +52,12 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
      * @param $alert string alert message
      * @param $challenge string tiqr challenge url
      * @param $apiKey string api key for firebase
+     * @param $retry boolean is this a 2nd attempt
      * @param Tiqr_Message_Exception $gcmException
      *
      * @throws Tiqr_Message_Exception_SendFailure
      */
-    private function _sendFirebase($deviceToken, $alert, $challenge, $apiKey)
+    private function _sendFirebase($deviceToken, $alert, $challenge, $apiKey, $retry=false)
     {
         $msg = array(
             'challenge' => $challenge,
@@ -66,6 +67,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         $fields = array(
             'registration_ids' => array($deviceToken),
             'data' => $msg,
+            'time_to_live' => 300,
         );
 
         $headers = array(
@@ -82,6 +84,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         $result = curl_exec($ch);
         $errors = curl_error($ch);
         $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $remoteip = curl_getinfo($ch,CURLINFO_PRIMARY_IP);
         curl_close($ch);
 
         if ($result === false) {
@@ -92,8 +95,15 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
             throw new Tiqr_Message_Exception_SendFailure("Http error occurred: ". $errors, true);
         }
 
+        // Wait and retry once in case of a 502 Bad Gateway error
+        if ($statusCode === 502 && !($retry)) {
+          sleep(2);
+          $this->_sendFirebase($deviceToken, $alert, $challenge, $apiKey, true);
+          return;
+        }
+
         if ($statusCode !== 200) {
-            throw new Tiqr_Message_Exception_SendFailure("Invalid status code", true);
+            throw new Tiqr_Message_Exception_SendFailure(sprintf('Invalid status code : %s. Server : %s. Response : "%s".', $statusCode, $remoteip, $result), true);
         }
 
         // handle errors, ignoring registration_id's
