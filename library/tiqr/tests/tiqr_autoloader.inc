@@ -4,7 +4,7 @@
 $tiqr_dir = __DIR__ . '/..';
 $vendor_dir = __DIR__ . '/../../../vendor';
 
-require_once $tiqr_dir. '/Tiqr/Autoloader.php';
+require_once $tiqr_dir. '/Tiqr/AutoLoader.php';
 
 $autoloader = \Tiqr_AutoLoader::getInstance([
     'tiqr.path' => $tiqr_dir,
