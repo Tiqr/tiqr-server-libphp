@@ -33,6 +33,7 @@ class Tiqr_ServiceTest extends TestCase
 
     // Test creating a new tiqr service
     public function testDefaultConstructor() {
+        $_SERVER['SERVER_NAME'] = 'dummy.example.org';
         $service = new Tiqr_Service();
         $this->assertInstanceOf(Tiqr_Service::class, $service);
     }
