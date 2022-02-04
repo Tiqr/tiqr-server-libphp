@@ -16,3 +16,10 @@ build:
             tests:
                 override:
                     - php-scrutinizer-run
+        coverage:
+            tests:
+                override:
+                    - command: XDEBUG_MODE=coverage; ./vendor/bin/phpunit
+                      coverage:
+                          file: coverage.xml
+                          format: clover
