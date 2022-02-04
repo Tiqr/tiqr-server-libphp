@@ -9,3 +9,10 @@ checks:
 
 coding_style:
     php: {  }
+    
+build:
+    nodes:
+        analysis:
+            tests:
+                override:
+                    - php-scrutinizer-run
