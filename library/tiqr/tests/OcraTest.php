@@ -16,7 +16,7 @@
  *
  * @copyright (C) 2010-2011 SURFnet BV
  */
-use PHPunit\Framework\TestCase;
+use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../Tiqr/OATH/OCRA.php';
 
