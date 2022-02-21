@@ -123,4 +123,56 @@ class Tiqr_ServiceTest extends TestCase
         $this->assertTrue($res);
     }
 
+    function testAuthentication() {
+        // Create unique session ID
+        $session_id = 'test_session_id_'.time();
+
+        // Create tiqr service
+        $service = new Tiqr_Service($this->getOptions());
+        $this->assertInstanceOf(Tiqr_Service::class, $service);
+
+        $userid = 'test-auth-user'; // The user to authenticate
+
+        $this->assertEquals(NULL, $service->getAuthenticatedUser($session_id));
+
+        // Here we provide the userID, it will be put in the AuthURL. I.e. the stepup scenario
+        // For the login scenario, where the server does not know the userid yet userid is left blank
+        $session_key = $service->startAuthenticationSession($userid, $session_id );
+        $this->assertIsString($session_key);
+        $this->assertNotEmpty($session_key);
+        $this->assertEquals(NULL, $service->getAuthenticatedUser($session_id));
+
+        // Generate auth URL for in QR code
+        // The generated URL has the format:
+        // testauth://test-auth-user@test.identifier.example.org/$session_key/$challenge/test.identifier.example.org/2
+        // 0        1 2                                          3            4          5                           6
+        $authUrl=$service->generateAuthURL($session_key, 'test-auth-user', $session_id);
+        $this->assertIsString($authUrl);
+        $this->assertNotEmpty($authUrl);
+
+        // Get info from the auth URL
+        $exploded = explode('/', $authUrl);
+        $session_key_from_auth_url = $exploded[3]; // hex encoded session
+        $challenge_from_auth_url = $exploded[4];   // 10 digit hex challenge
+        $protocol_version = $exploded[6];
+        $this->assertEquals($session_key, $session_key_from_auth_url);
+        $this->assertEquals(2, $protocol_version);
+
+        // The shared secret between tiqr client and tiqr server
+        $userSecret = '3132333435363738393031323334353637383930313233343536373839303132';
+
+        // Calculate a response like a tiqr client would do using the information from the auth URL
+        $ocra = new Tiqr_OCRAWrapper('OCRA-1:HOTP-SHA1-6:QH10-S' );
+        $response = $ocra->calculateResponse( $userSecret, $challenge_from_auth_url, $session_key_from_auth_url);
+
+        // Test invalid response. 1234567 is always an invalid response, responses are 6 digits.
+        $this->assertEquals(Tiqr_Service::AUTH_RESULT_INVALID_RESPONSE, $service->authenticate( 'test-auth-user', $userSecret, $session_key, '1234567' ) );
+
+        // Test invalid user id
+        $this->assertEquals(Tiqr_Service::AUTH_RESULT_INVALID_USERID, $service->authenticate( 'invalid-user', $userSecret, $session_key, $response ) );
+
+        // Test correct response
+        $this->assertEquals(Tiqr_Service::AUTH_RESULT_AUTHENTICATED, $service->authenticate( 'test-auth-user', $userSecret, $session_key, $response ) );
+    }
+
 }
