@@ -7,6 +7,8 @@ supported (yet).
 # Requirements
 
 * PHP 7.2
+   * php-gd extention
+   * php-curl extention
 * composer
 
 # Install
