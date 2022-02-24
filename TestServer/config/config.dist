@@ -1,0 +1,5 @@
+{
+  "host_url" : "http://localhost:8000",
+  "tiqrauth_protocol" : "tiqrtestauth",
+  "tiqrenroll_protocol" : "tiqrtestenroll"
+}
