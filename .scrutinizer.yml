@@ -1,6 +1,7 @@
 filter:
     excluded_paths:
         - 'library/tiqr/tests/*'
+        - 'TestServer/*'
 
 checks:
     php:
