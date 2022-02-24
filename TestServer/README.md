@@ -15,7 +15,7 @@ supported (yet).
 1. Use `composer install` from the root of this repository to install the dependencies
 
 # Configuration
-Copy `TestServer/config.dist` to `TestServer/config` and set the appropriate values:
+Copy `TestServer/config/config.dist` to `TestServer/config/config` and set the appropriate values:
 * `host_url ` — The URL given here is the URL that the Tiqr client (i.e. iPhone or Android phone) will
 use to contact the server.
 * `tiqrauth_protocol` — This is the Custom URL scheme that is used by the app for authentications.
