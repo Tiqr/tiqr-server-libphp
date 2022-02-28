@@ -3,6 +3,10 @@ language: php
 php:
   - 7.2
 
+before_install:
+  - sudo apt-get -y install libxml2-dev
+  - echo "extension = pdo_sqlite.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+
 install:
   - travis_retry composer install --no-interaction
 

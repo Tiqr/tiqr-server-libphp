@@ -12,6 +12,6 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^8.5",
-        "ext-sqlite": "*"
+        "ext-pdo_sqlite": "*"
     }
 }
