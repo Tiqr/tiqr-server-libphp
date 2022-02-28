@@ -122,7 +122,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
             $blocked = ($sth->fetchColumn() == 1);
             $timestamp = $this->getTemporaryBlockTimestamp($userId);
             // if not blocked or block is expired, return false
-            if (!$blocked || (false !== $timestamp && false != $duration && (strtotime($timestamp) + duration * 60) < time())) {
+            if (!$blocked || (false !== $timestamp && false != $duration && (strtotime($timestamp) + $duration * 60) < time())) {
                 return false;
             }
             return true;
