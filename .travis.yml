@@ -5,7 +5,6 @@ php:
 
 before_install:
   - sudo apt-get -y install libxml2-dev
-  - pecl install pdo_sqlite
   - echo "extension = pdo_sqlite.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 install:
