@@ -13,31 +13,17 @@ class Tiqr_UserStorageTest extends TestCase
         return $t;
     }
 
-    function testUserStorage_File() {
-        $tmpDir = $this->makeTempDir();
-        $options=array(
-            'path' => $tmpDir
-        );
-        $secretoptions=array(
-            'type' => 'file',
-            'path' => $tmpDir
-        );
-        $userStorage = \Tiqr_UserStorage::getStorage(
-            'file',
-            $options,
-            $secretoptions
-        );
-        $this->assertInstanceOf(Tiqr_UserStorage_File::class, $userStorage);
-
+    // Used by Pdo and File
+    function userStorageTests(Tiqr_UserStorage_Abstract $userStorage) {
         $this->assertFalse( $userStorage->userExists( 'user1' ) );
 
         // Create a user in the storage
-        $this->assertTrue( $userStorage->createUser('user1', 'User1 display name') );
+        $this->assertTrue( false ==! $userStorage->createUser('user1', 'User1 display name') );
         // Read back displayname
         $this->assertEquals( 'User1 display name', $userStorage->getDisplayName('user1') );
 
         // Check state of new user
-        $this->assertTrue( $userStorage->userExists( 'user1' ) );
+        $this->assertTrue( false ==! $userStorage->userExists( 'user1' ) );
         $this->assertEquals( 0, $userStorage->getLoginAttempts( 'user1' ) );
         $this->assertEquals( 0, $userStorage->getTemporaryBlockAttempts( 'user1' ) );
         $this->assertFalse( $userStorage->isBlocked( 'user1', false ) );
@@ -79,5 +65,135 @@ class Tiqr_UserStorageTest extends TestCase
         // duration is in minutes
         $this->assertFalse( $userStorage->isBlocked('user1', 4) );  // 5 min ago, so block expired
         $this->assertTrue( $userStorage->isBlocked('user1', 10) );  // Block did not expire yet
+    }
+
+    function testUserStorage_File() {
+        $tmpDir = $this->makeTempDir();
+        $options=array(
+            'path' => $tmpDir
+        );
+        $secretoptions=array(
+            'type' => 'file',
+            'path' => $tmpDir
+        );
+        $userStorage = \Tiqr_UserStorage::getStorage(
+            'file',
+            $options,
+            $secretoptions
+        );
+        $this->assertInstanceOf(Tiqr_UserStorage_File::class, $userStorage);
+
+        // Run user storage tests
+        $this->userStorageTests($userStorage);
+    }
+
+    // Test PDO user and secret storage in one table
+    function testUserStorage_Pdo_combined() {
+        $tmpDir = $this->makeTempDir();
+        $dsn = 'sqlite:' . $tmpDir . '/user.sq3';
+        // Create test database
+        $pdo = new PDO(
+            $dsn,
+            null,
+            null,
+            array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,)
+        );
+        $this->assertTrue(
+            0 === $pdo->exec( <<<SQL
+                                            CREATE TABLE user (
+                                                id INTEGER PRIMARY KEY,
+                                                userid VARCHAR (30) NOT NULL UNIQUE,
+                                                displayname VARCHAR (30) NOT NULL,
+                                                secret VARCHAR (128),
+                                                loginattempts INTEGER,
+                                                tmpblocktimestamp INTEGER,
+                                                tmpblockattempts INTEGER,
+                                                blocked INTEGER,
+                                                notificationtype VARCHAR(10),
+                                                notificationaddress VARCHAR(64)
+                                            );
+SQL
+        ) );
+
+        $options=array(
+            'table' => 'user',  // Optional
+            'dsn' => $dsn,
+            'username' => null,
+            'password' => null,
+        );
+        $secretoptions=array(
+            'type' => 'pdo',
+            'table' => 'user',  // Optional
+            'dsn' => $dsn,
+            'username' => null,
+            'password' => null,
+        );
+        $userStorage = \Tiqr_UserStorage::getStorage(
+            'pdo',
+            $options,
+            $secretoptions
+        );
+        $this->assertInstanceOf(Tiqr_UserStorage_Pdo::class, $userStorage);
+
+        // Run user storage tests
+        $this->userStorageTests($userStorage);
+    }
+
+    // Test PDO user and secret storage in one table
+    function testUserStorage_Pdo_split() {
+        $tmpDir = $this->makeTempDir();
+        $dsn = 'sqlite:' . $tmpDir . '/user.sq3';
+        // Create test database
+        $pdo = new PDO(
+            $dsn,
+            null,
+            null,
+            array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,)
+        );
+        $this->assertTrue(
+            0 === $pdo->exec( <<<SQL
+                                            CREATE TABLE user (
+                                                id INTEGER PRIMARY KEY,
+                                                userid VARCHAR (30) NOT NULL UNIQUE,
+                                                displayname VARCHAR (30) NOT NULL,
+                                                loginattempts INTEGER,
+                                                tmpblocktimestamp INTEGER,
+                                                tmpblockattempts INTEGER,
+                                                blocked INTEGER,
+                                                notificationtype VARCHAR(10),
+                                                notificationaddress VARCHAR(64)
+                                            );
+SQL
+            ) );
+        $this->assertTrue(
+            0 === $pdo->exec( <<<SQL
+                                            CREATE TABLE secret (
+                                                userid VARCHAR (30) NOT NULL UNIQUE,
+                                                secret VARCHAR (128)
+                                            );
+SQL
+            ) );
+        $options=array(
+            'table' => 'user',  // Optional
+            'dsn' => $dsn,
+            'username' => null,
+            'password' => null,
+        );
+        $secretoptions=array(
+            'type' => 'pdo',
+            'table' => 'secret',  // Optional
+            'dsn' => $dsn,
+            'username' => null,
+            'password' => null,
+        );
+        $userStorage = \Tiqr_UserStorage::getStorage(
+            'pdo',
+            $options,
+            $secretoptions
+        );
+        $this->assertInstanceOf(Tiqr_UserStorage_Pdo::class, $userStorage);
+
+        // Run user storage tests
+        $this->userStorageTests($userStorage);
     }
 }
