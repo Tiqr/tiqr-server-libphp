@@ -37,7 +37,7 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
     }
     
     private function cleanExpired() {
-        $sth = $this->handle->prepare("DELETE FROM ".$this->tablename." WHERE `expire` < ?");
+        $sth = $this->handle->prepare("DELETE FROM ".$this->tablename." WHERE `expire` < ? AND NOT `expire` = 0");
         $sth->execute(array(time()));
     }
     
@@ -52,7 +52,11 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         } else {
             $sth = $this->handle->prepare("INSERT INTO ".$this->tablename." (`value`,`expire`,`key`) VALUES (?,?,?)");
         }
-        $sth->execute(array(serialize($value),time()+$expire,$key));
+        // $expire == 0 means never expire
+        if ($expire != 0) {
+            $expire+=time();    // Store unix timestamp after which the expires
+        }
+        $res = $sth->execute(array(serialize($value),$expire,$key));
     }
         
     /**
@@ -75,10 +79,15 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
             $this->cleanExpired();
         }
         if ($this->keyExists($key)) {
-            $sth = $this->handle->prepare("SELECT `value` FROM ".$this->tablename." WHERE `key` = ?");
-            $sth->execute(array($key));
-            $result = unserialize($sth->fetchColumn());
-            return  $result;
+            $sth = $this->handle->prepare("SELECT `value` FROM ".$this->tablename." WHERE `key` = ? AND (`expire` >= ? OR `expire` = 0)");
+            if (false === $sth) {
+                return NULL;
+            }
+            if (false === $sth->execute(array($key, time())) ) {
+                return NULL;
+            }
+            $result = $sth->fetchColumn();
+            return  unserialize($result);
         }
         return NULL;
     }
