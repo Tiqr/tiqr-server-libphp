@@ -17,20 +17,29 @@ class TestServerController
     private $tiqrService;
     private $userStorage;
     private $host_url;
+    private $apns_certificate_filename;
+    private $apns_environment;
 
     /**
      * @param $host_url This is the URL by which the tiqr client can reach this server, including http(s):// and port.
      * E.g. 'http://my-laptop.local:8000'
+     *
      * @param $authProtocol This is the app specific url for authentications of the tiqr client, without '://'
      * e.g. 'tiqrauth'. This must match what is configured in the tiqr client
      * @param $enrollProtocol This is the app specific url for enrolling user accounts in the tiqr client, without '://'
      * e.g. 'tiqrenroll'. This must match what is configured in the tiqr client
+     *
+     * @param string $token_exchange_url The URL of the tiqr token exchange server
+     * @param string $token_exchange_appid The appid to use with the tiqr token exchange server
+     *
+     * @param string $apns_certificate_filename The filename of the file with PEM APNS signing certificate and private key
+     * @param string $apns_environment The APNS environment to use. 'production' or 'sandbox'
      */
-    function __construct(string $host_url, string $authProtocol, string $enrollProtocol)
+    function __construct(string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment)
     {
         $this->host_url = $host_url;
         $this->initTiqrLibrary();
-        $this->tiqrService = $this->createTiqrService($host_url, $authProtocol, $enrollProtocol);
+        $this->tiqrService = $this->createTiqrService($host_url, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment);
         $this->userStorage = $this->createUserStorage();
     }
 
@@ -71,7 +80,7 @@ class TestServerController
     /**
      * @return Tiqr_Service
      */
-    private function createTiqrService($host, $authProtocol, $enrollProtocol)
+    private function createTiqrService($host, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_cert_filename, $apns_environment)
     {
         // Derive the identifier from the host
         $identifier = parse_url($host, PHP_URL_HOST);
@@ -88,9 +97,8 @@ class TestServerController
                 'infoUrl' => "$host/infoUrl",
 
                 // 'phpqrcode.path'
-                // 'apns.path'
-                // 'apns.certificate'
-                'apns.environment' => 'sandbox',
+                'apns.certificate' => $apns_cert_filename,
+                'apns.environment' => $apns_environment,
 
                 'c2dm.username' => 'test_c2dm_username',
                 'c2dm.password' => 'test_c2dm_password',
@@ -103,8 +111,11 @@ class TestServerController
 
                 // Token exchange configuration
                 'devicestorage' => array(
-                    'type' => 'dummy',
+                    'type' => 'tokenexchange',
+                    'url' => $token_exchange_url,
+                    'appid' => $token_exchange_appid,
                 ),
+
             ]
         );
 
@@ -170,6 +181,12 @@ class TestServerController
             case "/start-authenticate": // Show authenticate page to user
                 $this->start_authenticate($app, $view);
                 break;
+
+            // Send push notification
+            case "/send-push-notification":
+                $this->send_push_notification($app, $view);
+                break;
+
             case "/authentication": // tiqr client posts back response
                 $this->authentication($app);
                 break;
@@ -406,11 +423,12 @@ class TestServerController
         $user_id = $app->getGET()['user_id'] ?? '';
         if (strlen($user_id) > 0) {
             $app::log_info("Authenticating user '$user_id'");
+
+            if (!$this->userStorage->userExists($user_id)) {
+                $app::log_warning("'$user_id' is not known on the server");
+            }
         }
 
-        if (!$this->userStorage->userExists($user_id)) {
-            $app::log_warning("'$user_id' is not known on the server");
-        }
 
         // Start authentication session
         $session_key = $this->tiqrService->startAuthenticationSession($user_id, $session_id);
@@ -439,8 +457,52 @@ class TestServerController
             $app::log_info("response=$response");
         }
 
-        $view->StartAuthenticate(htmlentities($authentication_URL), $image_url, $user_id, $response);
+        $view->StartAuthenticate(htmlentities($authentication_URL), $image_url, $user_id, $response, $session_key);
     }
+
+
+    private function send_push_notification(App $app, TestServerView $view) {
+        $user_id = $app->getGET()['user_id'] ?? '';
+        if (strlen($user_id) == 0) {
+            $app::error_exit(404, "Missing user_id in POST");
+        }
+        $app->log_info("user_id = $user_id");
+
+        $session_key = $app->getGET()['session_key'] ?? '';
+        if (strlen($session_key) == 0) {
+            $app::error_exit(404, "Missing session_key in POST");
+        }
+        $app->log_info("session_key = $session_key");
+
+        // Get Notification address and type from userid
+        $notificationType=$this->userStorage->getNotificationType($user_id);
+        $app->log_info("notificationType = $notificationType");
+        $notificationAddress=$this->userStorage->getNotificationAddress($user_id);
+
+        // Use tiqr tokenexchange to translate the notification address to the device's push notification address
+        $deviceNotificationAddress = $this->tiqrService->translateNotificationAddress($notificationType, $notificationAddress);
+        $app->log_info("deviceNotificationAddress (from token exchange) = $deviceNotificationAddress");
+
+        $app->log_info("Sending push notification");
+        $res = $this->tiqrService->sendAuthNotification($session_key, $notificationType, $deviceNotificationAddress);
+        $notificationError=array();
+        if (!$res) {
+            $app::log_error("sendAuthNotification() failed");
+            $notificationError=$this->tiqrService->getNotificationError();
+            if ($notificationError) {
+                $app::log_info("code = ${notificationError['code']}");
+                $app::log_info("file = ${notificationError['file']}");
+                $app::log_info("line = ${notificationError['line']}");
+                $app::log_info("message = ${notificationError['message']}");
+                $app::log_info("trace = ${notificationError['trace']}");
+            }
+        } else {
+            $app->log_info("Push notification sent");
+        }
+
+        $view->PushResult($notificationError);
+    }
+
 
     private function authentication(App $app)
     {
@@ -504,6 +566,18 @@ class TestServerController
         }
         // This is the notification address that the Tiqr Client got from the token exchange (e.g. tx.tiqr.org)
         $app::log_info("notificationAddress: $notificationAddress");
+
+        // Note: a production tiqr server will now update the notification type and notification address in the
+        // user storage, we do not. We only log when they are different
+
+        $notificationType_from_userStorage = $this->userStorage->getNotificationType($userId);
+        $notificationAddress_from_userStorage = $this->userStorage->getNotificationAddress($userId);
+        if ($notificationAddress != $notificationAddress_from_userStorage) {
+            $app::log_warning("Client sent different notification address. client=$notificationAddress, server=$notificationAddress_from_userStorage");
+        }
+        if ($notificationType != $notificationType_from_userStorage) {
+            $app::log_warning("Client sent different notification type. client=$notificationType, server=$notificationType_from_userStorage");
+        }
 
         // Get User-Agent HTTP header
         $user_agent = urldecode($_SERVER['HTTP_USER_AGENT'] ?? '');

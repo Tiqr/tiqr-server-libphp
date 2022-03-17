@@ -92,7 +92,7 @@ HTML;
 HTML;
     }
 
-    public function StartAuthenticate(string $authentication_URL, string $image_url, string $user_id, string $response)
+    public function StartAuthenticate(string $authentication_URL, string $image_url, string $user_id, string $response, string $session_key)
     {
         $refreshurl = '/start-authenticate';
         if (strlen($user_id) > 0) {
@@ -110,6 +110,7 @@ HTML;
         if (strlen($response)>0) {
             echo <<<HTML
 <p>The response (for offline validation) is: <code>$response</code></p>
+<p><a href="/send-push-notification?user_id=$user_id&session_key=$session_key">send push notification to the user</a></p>
 HTML;
 
         }
@@ -119,4 +120,30 @@ HTML;
 HTML;
         $this->end();
     }
+
+
+    function PushResult(array $notificationError) {
+        $this->begin();
+        if (count($notificationError) == 0) {
+            echo "<p>Push notification sent successfully</p>";
+        }
+        else {
+            echo <<<HTML
+<p>Error sending push notification</p>
+<code>
+Code: ${notificationError['code']}<br />
+File: ${notificationError['file']}<br />
+Line: ${notificationError['line']}<br />
+Message: ${notificationError['message']}<br />
+Trace: ${notificationError['trace']}<br />
+<br />
+</code>
+HTML;
+        }
+        $this->end();
+    }
+
+
 }
+
+

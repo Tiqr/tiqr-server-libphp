@@ -21,13 +21,37 @@ abstract class App
 
     abstract public static function log_error($message);
 
-    // Get HTTP SERVER, GET, POST and BODY parameter arrays
+
+    /** Translate $path to an absolute path
+     * @param string $path path to existing file or directory. Can be an absolute path, or a path relative to $reference_path
+     * @param string $referance_path if $path is a relative path, it is resolved relative to $reference_path
+     * @return string | false the absolute path. false when $path (relative to $reference_path) does not exist
+     */
+    public static function realpath(string $path, string $reference_path='.')
+    {
+        $current_path = getcwd();
+        if (false === $current_path) {
+            return false;
+        }
+        if (! chdir($reference_path) ) {
+            return false;
+        }
+        $absolute_path = \realpath($path);  // Returns false if $path is not found
+        chdir($current_path);
+
+        return $absolute_path;
+    }
+
+    // Get array with SERVER parameters
     abstract public function getSERVER(): array;
 
+    // Get array with GET parameters
     abstract public function getGET(): array;
 
+    // Get array with POST parameters
     abstract public function getPOST(): array;
 
+    // Get HTTP request body
     abstract public function getBODY(): string;
 }
 

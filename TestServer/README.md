@@ -24,6 +24,11 @@ use to contact the server.
 * `tiqrenroll_protocol` — This is the Custom URL scheme that is used by the app for enrolling new user accounts.
   Do not add the '://' part. E.g. the tiqr.org client uses 'tiqrenroll'. This must match the configuration of
   the tiqr client that is used
+* `token_exchange_url` – Optional. The URL of the token exchange server to use. Required for sending push notifications.
+* `token_exchange_appid` – Optional. The ID of the application at the token exchange server. Required for sending push notifications. 
+* `apns_certificate_filename` – Optional. The filename (relative to the config directory) of the file with the Apple push notification 
+  client certificate and private key in PEM format. Required for sending push notifications to iOS devices.
+* `apns_environment` – Optional. The apple push notification environment to use: "production" or "sandbox".
 
 ## Using from physical devices
 ### iPhone to OSX
