@@ -8,7 +8,8 @@
         "kairos/phpqrcode": "~1.0",
         "ext-gd": "*",
         "ext-curl": "*",
-        "ext-json": "*"
+        "ext-json": "*",
+        "php": ">=7.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^8.5",
