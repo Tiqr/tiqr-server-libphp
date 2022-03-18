@@ -92,14 +92,14 @@ class Tiqr_OCRAWrapperTest extends TestCase
             $v1_length[strlen($response1)]++;
             $response2 = $ocra2->calculateResponse($secret, $challenge, $session_key);
             $v2_length[strlen($response2)]++;
-            if ( str_pad($response1, 6, "0", STR_PAD_LEFT) != str_pad($response2, 10, "0", STR_PAD_LEFT) ) {
+            if ( (int)$response1 != (int)$response2 ) {
                 $v1_v2_mismatch++;
                 echo "v1: $response1 != v2: $response2\n";
                 echo "SECRET=$secret  Q=$challenge  S=$session_key\n";
             }
         }
-        // Average is 4 per 100000, fail when it is more than 3 times as high
-        $max_mismatch = (((float)$nr_tests) / 100000.0) * 4 * 3;
+        // With truncate bug fixed, there must be no more mismatches
+        $max_mismatch = 0;
         echo "Max allowed mismatches=$max_mismatch\n";
         $this->assertTrue($v1_v2_mismatch <= $max_mismatch, "Found $v1_v2_mismatch per $nr_tests. That is more than $max_mismatch");
 

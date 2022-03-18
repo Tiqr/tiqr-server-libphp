@@ -250,7 +250,12 @@ class OCRA {
     }
 
     /**
-     * Truncate a result to a certain length
+     * Implementation of the Truncate function from RFC4226
+     * Truncate a hex encoded (hash) result to a string of digital digits of $length
+     *
+     * @param string $hash hex encoded (hash) value to truncate. Minimum length is 20 bytes (i.e. a string of 40 hex digits)
+     * @param int $length number of decimal digits to truncate to
+     * @return string of $length digits
      */    
     static function _oath_truncate($hash, $length = 6)
     {
@@ -268,8 +273,11 @@ class OCRA {
             (($hmac_result[$offset+1] & 0xff) << 16 ) |
             (($hmac_result[$offset+2] & 0xff) << 8 ) |
             ($hmac_result[$offset+3] & 0xff)
-        );	
-        
+        );
+
+        // Prefix truncated string with 0's to ensure it always has the required length
+        $v=str_pad($v, $length, "0", STR_PAD_LEFT);
+
         $v = substr($v, strlen($v) - $length);
         return $v;
     }
