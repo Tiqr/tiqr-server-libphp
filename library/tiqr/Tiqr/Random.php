@@ -41,7 +41,7 @@ class Tiqr_Random
         // Get $length cryptographically secure pseudo-random bytes
         $rnd=\random_bytes($length);
 
-        if (strlen($rnd) != $length) {
+        if (strlen($rnd) !== $length) {
             throw new Exception("random_bytes did not return the requested number of bytes");
         }
 

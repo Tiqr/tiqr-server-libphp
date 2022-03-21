@@ -63,7 +63,6 @@ class Tiqr_OCRAWrapper_v1
      */
     public function generateSessionKey() 
     {
-        // TODO: Handle exception
         return bin2hex( Tiqr_Random::randomBytes(self::SESSIONKEY_SIZE) );
     }
     
