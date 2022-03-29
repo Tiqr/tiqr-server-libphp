@@ -59,6 +59,29 @@ SQL
         $this->stateTests($ss);
     }
 
+    /**
+     * @dataProvider provideInvalidPdoConfigurationOptions
+     */
+    public function test_pdo_requires_certain_configration_options($invalidOptions)
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches('/^Please configure the ".*" configuration option for the PDO state storage$/');
+        Tiqr_StateStorage::getStorage("pdo", $invalidOptions);
+    }
+
+    public function provideInvalidPdoConfigurationOptions()
+    {
+        return [
+            'missing table' => [['dsn' => 'foobar', 'username' => 'user', 'password' => 'secret']],
+            'missing dsn' => [['table'=> 'table', 'username' => 'user', 'password' => 'secret']],
+            'missing username' => [['dsn' => 'foobar', 'table'=> 'table', 'password' => 'secret']],
+            'missing password' => [['dsn' => 'foobar', 'table'=> 'table', 'username' => 'user']],
+            'missing multiple' => [['username' => 'user']],
+            'missing everything' => [[]],
+            'missing everything, but has invalid options' => [['user' => 'user', 'pw' => 'secret']],
+        ];
+    }
+
     private function stateTests(Tiqr_StateStorage_Abstract $ss) {
         $ss->unsetValue("nonexistent_key");
 
@@ -101,14 +124,11 @@ SQL
         $ss->setValue('two-second-expiry-key', 'key_value-2', $short_expiry_time);  // Expiry in seconds
         $this->assertEquals('key_value-2', $ss->getValue('two-second-expiry-key'));  // Must still exist
 
-        $count = 0;
         while (time() < $endtime) {
             $ss->getValue('two-second-expiry-key'); // Likely to trigger GC, depending on loop count
-            $count++;
         }
 
         $this->assertEquals(NULL, $ss->getValue('two-second-expiry-key'));  // Must not exist
-
 
         // Check that keys with longer expiry still exist
         $this->assertEquals('long-expiry-value', $ss->getValue('long-expiry-key'));  // Must still exist
