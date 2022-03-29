@@ -25,17 +25,39 @@
 
 
 class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
-{    
-    private $handle = null;
+{
+    /**
+     * @var PDO
+     */
+    protected $handle;
+
+    /**
+     * @var string
+     */
     private $tablename;
-        
+
+    /**
+     * @var int
+     */
+    private $cleanupProbability;
+
+    public function __construct(PDO $pdoInstance, string $tablename, int $cleanupProbability)
+    {
+        if ($cleanupProbability < 1 || $cleanupProbability > 1000) {
+            throw new RuntimeException('The probability for removing the expired state should be expressed in a value between 1 and 1000.');
+        }
+        $this->cleanupProbability = $cleanupProbability;
+        $this->tablename = $tablename;
+        $this->handle = $pdoInstance;
+    }
+
     private function keyExists($key)
     {
         $sth = $this->handle->prepare("SELECT `key` FROM ".$this->tablename." WHERE `key` = ?");
         $sth->execute(array($key));
         return $sth->fetchColumn();
     }
-    
+
     private function cleanExpired() {
         $sth = $this->handle->prepare("DELETE FROM ".$this->tablename." WHERE `expire` < ? AND NOT `expire` = 0");
         $sth->execute(array(time()));
@@ -47,6 +69,9 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
      */
     public function setValue($key, $value, $expire=0)
     {
+        if (rand(0, 1000) < $this->cleanupProbability) {
+            $this->cleanExpired();
+        }
         if ($this->keyExists($key)) {
             $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET `value` = ?, `expire` = ? WHERE `key` = ?");
         } else {
@@ -56,7 +81,7 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         if ($expire != 0) {
             $expire+=time();    // Store unix timestamp after which the expires
         }
-        $res = $sth->execute(array(serialize($value),$expire,$key));
+        $sth->execute(array(serialize($value),$expire,$key));
     }
         
     /**
@@ -75,9 +100,6 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
      */
     public function getValue($key)
     {
-        if (rand(0, 1000) < 10) {
-            $this->cleanExpired();
-        }
         if ($this->keyExists($key)) {
             $sth = $this->handle->prepare("SELECT `value` FROM ".$this->tablename." WHERE `key` = ? AND (`expire` >= ? OR `expire` = 0)");
             if (false === $sth) {
@@ -91,11 +113,4 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         }
         return NULL;
     }
-    
-    public function __construct($config=array())
-    {
-        $this->tablename = $config['table'];
-        $this->handle = new PDO($config['dsn'],$config['username'],$config['password']);
-    }
-    
 }
