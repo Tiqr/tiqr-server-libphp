@@ -29,6 +29,7 @@ use to contact the server.
 * `apns_certificate_filename` – Optional. The filename (relative to the config directory) of the file with the Apple push notification 
   client certificate and private key in PEM format. Required for sending push notifications to iOS devices.
 * `apns_environment` – Optional. The apple push notification environment to use: "production" or "sandbox".
+* `firebase_apikey – Optional. The Google firebase API key. Required for sending push notifications to Android devices.
 
 ## Using from physical devices
 ### iPhone to OSX

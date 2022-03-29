@@ -34,12 +34,13 @@ class TestServerController
      *
      * @param string $apns_certificate_filename The filename of the file with PEM APNS signing certificate and private key
      * @param string $apns_environment The APNS environment to use. 'production' or 'sandbox'
+     * @param string $firebase_apikey The Google firebase API key. Required for sending FCM push notifications
      */
-    function __construct(string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment)
+    function __construct(string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_apikey)
     {
         $this->host_url = $host_url;
         $this->initTiqrLibrary();
-        $this->tiqrService = $this->createTiqrService($host_url, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment);
+        $this->tiqrService = $this->createTiqrService($host_url, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_apikey);
         $this->userStorage = $this->createUserStorage();
     }
 
@@ -80,7 +81,7 @@ class TestServerController
     /**
      * @return Tiqr_Service
      */
-    private function createTiqrService($host, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_cert_filename, $apns_environment)
+    private function createTiqrService($host, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_cert_filename, $apns_environment, $firebase_apikey)
     {
         // Derive the identifier from the host
         $identifier = parse_url($host, PHP_URL_HOST);
@@ -97,9 +98,15 @@ class TestServerController
                 'infoUrl' => "$host/infoUrl",
 
                 // 'phpqrcode.path'
+
+                // APNS
                 'apns.certificate' => $apns_cert_filename,
                 'apns.environment' => $apns_environment,
 
+                // FCM
+                'firebase.apikey' => $firebase_apikey,
+
+                // Note: C2DM is no longer supported by google (https://developers.google.com/android/c2dm)
                 'c2dm.username' => 'test_c2dm_username',
                 'c2dm.password' => 'test_c2dm_password',
                 'c2dm.application' => 'org.example.authenticator.test',
@@ -477,13 +484,25 @@ class TestServerController
         // Get Notification address and type from userid
         $notificationType=$this->userStorage->getNotificationType($user_id);
         $app->log_info("notificationType = $notificationType");
+
+        // Note that the current Tiqr app returns notification type 'APNS' or 'GCM'.
+        // The Google Cloud Messaging (GCM) API - implemented in the Tiqr_Message_GCM class - is deprecated and has
+        // been replaced by Firebase Cloud Messaging (FCM). See: https://developers.google.com/cloud-messaging
+        // So even though the tiqr app returns GCM, we must use the FCM API implemented by Tiqr_Message_FCM
+        if ($notificationType == 'GCM') {
+            $notificationType = 'FCM';
+        }
+
+        if ($notificationType != 'APNS' && $notificationType != 'FCM') {
+            $app->log_warning("Unsupported notification type: $notificationType");
+        }
         $notificationAddress=$this->userStorage->getNotificationAddress($user_id);
 
         // Use tiqr tokenexchange to translate the notification address to the device's push notification address
         $deviceNotificationAddress = $this->tiqrService->translateNotificationAddress($notificationType, $notificationAddress);
         $app->log_info("deviceNotificationAddress (from token exchange) = $deviceNotificationAddress");
 
-        $app->log_info("Sending push notification");
+        $app->log_info("Sending push notification using $notificationType to $deviceNotificationAddress");
         $res = $this->tiqrService->sendAuthNotification($session_key, $notificationType, $deviceNotificationAddress);
         $notificationError=array();
         if (!$res) {
