@@ -63,7 +63,7 @@ class Tiqr_OCRAWrapper_v1
      */
     public function generateSessionKey() 
     {
-        return Tiqr_Random::randomHexString(self::SESSIONKEY_SIZE);
+        return bin2hex( Tiqr_Random::randomBytes(self::SESSIONKEY_SIZE) );
     }
     
     /**

@@ -65,6 +65,7 @@ class Tiqr_ServiceTest extends TestCase
         $enrollment_key = $service->startEnrollmentSession('test_user_id', 'Test User Name', $session_id);
         $this->assertIsString($enrollment_key);
         $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $enrollment_key);
+        $this->assertEquals(64, strlen($enrollment_key));
 
         $status = $service->getEnrollmentStatus($session_id);
         $this->assertSame($status, Tiqr_Service::ENROLLMENT_STATUS_INITIALIZED);
@@ -92,6 +93,9 @@ class Tiqr_ServiceTest extends TestCase
         // 3a - We need to generate an enrollment URL, this must contain the enrollment secret
         // So we need to generate this enrollment secret first
         $enrollment_secret = $service->getEnrollmentSecret($enrollment_key);
+        $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $enrollment_secret);
+        $this->assertEquals(64, strlen($enrollment_secret));
+
 
         $status = $service->getEnrollmentStatus($session_id);
         $this->assertSame($status, Tiqr_Service::ENROLLMENT_STATUS_INITIALIZED);    // Status remains unchanged
@@ -139,7 +143,8 @@ class Tiqr_ServiceTest extends TestCase
         // For the login scenario, where the server does not know the userid yet userid is left blank
         $session_key = $service->startAuthenticationSession($userid, $session_id );
         $this->assertIsString($session_key);
-        $this->assertNotEmpty($session_key);
+        $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $session_key);
+        $this->assertEquals(64, strlen($session_key));
         $this->assertEquals(NULL, $service->getAuthenticatedUser($session_id));
 
         // Generate auth URL for in QR code
