@@ -71,9 +71,9 @@ class Tiqr_StateStorage
 
                 $pdoInstance = new PDO($options['dsn'],$options['username'],$options['password']);
                 // Set a hard-coded default for the probability the expired state is removed
-                // 10 translates to: expired entries are removed 10 in every 1000 write actions
-                $cleanupProbability = 10;
-                if (array_key_exists('cleanup_probability', $options) && is_int($options['cleanup_probability'])) {
+                // 0.1 translates to a 10% chance the garbage collection is executed
+                $cleanupProbability = 0.1;
+                if (array_key_exists('cleanup_probability', $options) && is_numeric($options['cleanup_probability'])) {
                     $cleanupProbability = $options['cleanup_probability'];
                 }
 

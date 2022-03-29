@@ -41,10 +41,15 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
      */
     private $cleanupProbability;
 
-    public function __construct(PDO $pdoInstance, string $tablename, int $cleanupProbability)
+    /**
+     * @param PDO $pdoInstance The PDO instance where all state storage operations are performed on
+     * @param string $tablename The tablename that is used for storing and retrieving the state storage
+     * @param int $cleanupProbability The probability the expired state storage items are removed on a 'setValue' call. Example usage: 0 = never, 0.5 = 50% chance, 1 = always
+     */
+    public function __construct(PDO $pdoInstance, string $tablename, float $cleanupProbability)
     {
-        if ($cleanupProbability < 1 || $cleanupProbability > 1000) {
-            throw new RuntimeException('The probability for removing the expired state should be expressed in a value between 1 and 1000.');
+        if ($cleanupProbability < 0 || $cleanupProbability > 1) {
+            throw new RuntimeException('The probability for removing the expired state should be expressed in a floating point value between 0 and 1.');
         }
         $this->cleanupProbability = $cleanupProbability;
         $this->tablename = $tablename;
@@ -69,7 +74,7 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
      */
     public function setValue($key, $value, $expire=0)
     {
-        if (rand(0, 1000) < $this->cleanupProbability) {
+        if (((float) rand() /(float) getrandmax()) < $this->cleanupProbability) {
             $this->cleanExpired();
         }
         if ($this->keyExists($key)) {

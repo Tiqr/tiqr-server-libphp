@@ -40,7 +40,7 @@ class Tiqr_StateStoragePdoTest extends TestCase
 
         $pdoInstance = new PDO($dsn, null, null);
         $this->pdoInstance = m::mock($pdoInstance);
-        $this->stateStorage = new Tiqr_StateStorage_Pdo($this->pdoInstance, 'state', 1000);
+        $this->stateStorage = new Tiqr_StateStorage_Pdo($this->pdoInstance, 'state', 1);
         $this->assertInstanceOf(Tiqr_StateStorage_Pdo::class, $this->stateStorage);
     }
 
@@ -77,17 +77,15 @@ class Tiqr_StateStoragePdoTest extends TestCase
     public function test_input_validation_for_cleanup_probability($incorrectValue)
     {
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('The probability for removing the expired state should be expressed in a value between 1 and 1000.');
+        $this->expectExceptionMessage('The probability for removing the expired state should be expressed in a floating point value between 0 and 1.');
         new Tiqr_StateStorage_Pdo(m::mock(PDO::class), 'tablename', $incorrectValue);
     }
 
     public function provideIncorrectCleanupProbabilityValues()
     {
         return [
-            'value too low' => [0],
-            'value too below zero' => [-1],
-            'value too high' => [1001],
-            'value too high close to overflow point' => [9223372036854775807],
+            'value too low' => [-1],
+            'value too high' => [1.001],
         ];
     }
 }

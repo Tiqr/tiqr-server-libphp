@@ -52,6 +52,7 @@ SQL
             'dsn' => $dsn,
             'username' => null,
             'password' => null,
+            'cleanup_probability' => 0.6
         );
         $ss=Tiqr_StateStorage::getStorage("pdo", $options);
         $this->assertInstanceOf(Tiqr_StateStorage_Pdo::class, $ss);
