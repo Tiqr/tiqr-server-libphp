@@ -12,6 +12,8 @@ coding_style:
     php: {  }
     
 build:
+    environment:
+        php: 7.2
     nodes:
         analysis:
             tests:
