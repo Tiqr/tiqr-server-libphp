@@ -19,9 +19,6 @@ build:
                     - php-scrutinizer-run
         coverage:
             tests:
-                environment:
-                    php:
-                        version: 7.2
                 override:
                     - command: XDEBUG_MODE=coverage; ./vendor/bin/phpunit
                       coverage:
