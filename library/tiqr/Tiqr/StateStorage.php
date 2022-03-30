@@ -24,6 +24,8 @@
  */
 require_once("Tiqr/StateStorage/Abstract.php");
 
+use Psr\Log\LoggerInterface;
+
 /**
  * Utility class to create specific StateStorage instances.
  * StateStorage is used to store temporary information used during 
@@ -43,16 +45,16 @@ class Tiqr_StateStorage
      *                       options per type.
      * @throws Exception If an unknown type is requested.
      */
-    public static function getStorage($type="file", $options=array())
+    public static function getStorage($type="file", $options=array(), LoggerInterface $logger)
     {
         switch ($type) {
             case "file":
                 require_once("Tiqr/StateStorage/File.php");
-                $instance = new Tiqr_StateStorage_File($options);
+                $instance = new Tiqr_StateStorage_File($options, $logger);
                 break;
             case "memcache":
                 require_once("Tiqr/StateStorage/Memcache.php");
-                $instance = new Tiqr_StateStorage_Memcache($options);
+                $instance = new Tiqr_StateStorage_Memcache($options, $logger);
                 break;
             case "pdo":
                 require_once("Tiqr/StateStorage/Pdo.php");
@@ -78,7 +80,7 @@ class Tiqr_StateStorage
                 }
 
                 $tablename = $options['table'];
-                $instance = new Tiqr_StateStorage_Pdo($pdoInstance, $tablename, $cleanupProbability);
+                $instance = new Tiqr_StateStorage_Pdo($pdoInstance, $logger, $tablename, $cleanupProbability);
                 break;
             default:
                 if (!isset($type)) {
