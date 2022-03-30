@@ -17,6 +17,8 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 /**
  * Class implementing a factory to retrieve user secrets.
  *
@@ -36,12 +38,12 @@ class Tiqr_UserSecretStorage
      *
      * @return Tiqr_UserSecretStorage_Interface
      */
-    public static function getSecretStorage($type="file", $options=array())
+    public static function getSecretStorage($type="file", LoggerInterface $logger, $options=array())
     {
         switch ($type) {
             case "file":
                 require_once("Tiqr/UserSecretStorage/File.php");
-                $instance = new Tiqr_UserSecretStorage_File($options);
+                $instance = new Tiqr_UserSecretStorage_File($options, $logger);
                 break;
             case "ldap":
                 require_once("Tiqr/UserSecretStorage/Ldap.php");
@@ -49,11 +51,11 @@ class Tiqr_UserSecretStorage
                 break;
             case "pdo":
                 require_once("Tiqr/UserSecretStorage/Pdo.php");
-                $instance = new Tiqr_UserSecretStorage_Pdo($options);
+                $instance = new Tiqr_UserSecretStorage_Pdo($options, $logger);
                 break;
             case "oathserviceclient":
                 require_once("Tiqr/UserSecretStorage/OathServiceClient.php");
-                $instance = new Tiqr_UserSecretStorage_OathServiceClient($options);
+                $instance = new Tiqr_UserSecretStorage_OathServiceClient($options, $logger);
                 break;
             default: 
                 if (!isset($type)) {
@@ -61,7 +63,7 @@ class Tiqr_UserSecretStorage
                 } elseif (!class_exists($type)) {
                     throw new Exception('Class not found: ' . var_export($type, TRUE));
                 }
-                $instance = new $type($options);
+                $instance = new $type($options, $logger);
         }
 
         return $instance;

@@ -16,7 +16,9 @@
  *
  * @copyright (C) 2010-2012 SURFnet BV
  */
- 
+
+use Psr\Log\LoggerInterface;
+
 require_once 'Tiqr/UserStorage/Interface.php';
 require_once 'Tiqr/UserStorage/Encryption.php';
 require_once 'Tiqr/UserSecretStorage.php';
@@ -34,19 +36,19 @@ abstract class Tiqr_UserStorage_Abstract implements Tiqr_UserStorage_Interface
 
     protected $_userSecretStorage;
 
-    /**
-      * Constructor.
-     */
-    public function __construct($config, $secretconfig = array())
+    protected $logger;
+
+    public function __construct($config, LoggerInterface $logger, $secretconfig = array())
     {
+        $this->logger = $logger;
         $type = isset($config['encryption']['type']) ? $config['encryption']['type'] : 'dummy';
         $options = isset($config['encryption']) ? $config['encryption'] : array();
-        $this->_encryption = Tiqr_UserStorage_Encryption::getEncryption($type, $options);
+        $this->_encryption = Tiqr_UserStorage_Encryption::getEncryption($logger, $type, $options);
 
         if (count($secretconfig)) {
-            $this->_userSecretStorage = Tiqr_UserSecretStorage::getSecretStorage($secretconfig['type'], $secretconfig);
+            $this->_userSecretStorage = Tiqr_UserSecretStorage::getSecretStorage($secretconfig['type'], $logger, $secretconfig);
         } else {
-            $this->_userSecretStorage = Tiqr_UserSecretStorage::getSecretStorage($config['type'], $config);
+            $this->_userSecretStorage = Tiqr_UserSecretStorage::getSecretStorage($config['type'], $logger, $config);
         }
     }
 

@@ -17,6 +17,8 @@
  * @copyright (C) 2014 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 require_once('Tiqr/API/Client.php');
 
 /**
@@ -31,8 +33,9 @@ class Tiqr_UserSecretStorage_OathServiceClient implements Tiqr_UserSecretStorage
      *
      * @param array $config The configuration that a specific user class may use.
      */
-    public function __construct($config)
+    public function __construct($config, LoggerInterface $logger, $secretconfig = array())
     {
+        $this->logger = $logger;
         $this->_apiClient = new Tiqr_API_Client();
         $this->_apiClient->setBaseURL($config['apiURL']);
         $this->_apiClient->setConsumerKey($config['consumerKey']);
@@ -48,6 +51,7 @@ class Tiqr_UserSecretStorage_OathServiceClient implements Tiqr_UserSecretStorage
      */
     public function getUserSecret($userId)
     {
+        $this->logger->info('Calling getUserSecret on the OathServiceClient is not implemented');
         return null;
     }
 
@@ -59,6 +63,7 @@ class Tiqr_UserSecretStorage_OathServiceClient implements Tiqr_UserSecretStorage
      */
     public function setUserSecret($userId, $secret)
     {
+        $this->logger->info('Storing the user secret on the OathServiceClient (api call)');
         $this->_apiClient->call('/secrets/'.urlencode($userId), 'POST', array('secret' => $secret));
     }
 }
