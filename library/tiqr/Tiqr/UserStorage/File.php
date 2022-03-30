@@ -17,6 +17,8 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 require_once 'Tiqr/UserStorage/GenericStore.php';
 
 /**
@@ -34,9 +36,10 @@ class Tiqr_UserStorage_File extends Tiqr_UserStorage_GenericStore
      * Create an instance
      * @param $config
      */
-    public function __construct($config, $secretconfig = array())
+    public function __construct($config, LoggerInterface $logger, $secretconfig = array())
     {
-        parent::__construct($config, $secretconfig);
+        parent::__construct($config, $secretconfig, $logger);
+        $this->logger = $logger;
         $this->_path = $config["path"];
     }
 
@@ -47,7 +50,10 @@ class Tiqr_UserStorage_File extends Tiqr_UserStorage_GenericStore
      */
     protected function _saveUser($userId, $data)
     {
-        file_put_contents($this->getPath().$userId.".json", json_encode($data));
+        if (file_put_contents($this->getPath().$userId.".json", json_encode($data)) === false) {
+            $this->logger->error('Unable to save the user to user storage (file storage)');
+            return false;
+        }
         return true;
     }
   
@@ -69,6 +75,7 @@ class Tiqr_UserStorage_File extends Tiqr_UserStorage_GenericStore
             if ($failIfNotFound) {
                 throw new Exception('Error loading data for user: ' . var_export($userId, TRUE));
             } else {
+                $this->logger->error('Error loading data for user from user storage (file storage)');
                 return false;
             }
         } else {
@@ -85,6 +92,8 @@ class Tiqr_UserStorage_File extends Tiqr_UserStorage_GenericStore
         $filename = $this->getPath().$userId.".json";
         if (file_exists($filename)) {
             unlink($filename);
+        } else {
+            $this->logger->error('Unable to remove the user from user storage (file storage)');
         }
     }
 

@@ -17,6 +17,8 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 /**
  * Class implementing a factory to retrieve user data.
  *
@@ -42,12 +44,12 @@ class Tiqr_UserStorage
      *
      * @throws Exception
      */
-    public static function getStorage($type="file", $options=array(), $secretoptions=array())
+    public static function getStorage($type="file", $options=array(), $secretoptions=array(), LoggerInterface $logger)
     {
         switch ($type) {
             case "file":
                 require_once("Tiqr/UserStorage/File.php");
-                $instance = new Tiqr_UserStorage_File($options, $secretoptions);
+                $instance = new Tiqr_UserStorage_File($options, $logger, $secretoptions);
                 break;
             case "ldap":
                 require_once("Tiqr/UserStorage/Ldap.php");

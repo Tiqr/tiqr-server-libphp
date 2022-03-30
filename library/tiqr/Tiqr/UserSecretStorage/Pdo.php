@@ -21,6 +21,8 @@
  * 
  */
 
+use Psr\Log\LoggerInterface;
+
 require_once 'Tiqr/UserStorage/Pdo.php';
 
 /**
@@ -36,13 +38,16 @@ class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserStorage_Pdo implements Tiqr_Us
      *
      * @param array $config The configuration that a specific user class may use.
      */
-    public function __construct($config, $secretconfig = array())
+    public function __construct($config, LoggerInterface $logger, $secretconfig = array())
     {
+        $this->logger = $logger;
         $this->tablename = isset($config['table']) ? $config['table'] : 'tiqrusersecret';
         try {
             $this->handle = new PDO($config['dsn'],$config['username'],$config['password']);
         } catch (PDOException $e) {
-            return false;
+            $this->logger->error(
+                sprintf('Unable to establish a PDO connection. Error message from PDO: %s', $e->getMessage())
+            );
         }
     }
 
@@ -56,8 +61,10 @@ class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserStorage_Pdo implements Tiqr_Us
     public function getUserSecret($userId)
     {
         $sth = $this->handle->prepare("SELECT secret FROM ".$this->tablename." WHERE userid = ?");
-        $sth->execute(array($userId));
-        return $sth->fetchColumn();
+        if($sth->execute(array($userId))) {
+            return $sth->fetchColumn();
+        }
+        $this->logger->error('Unable to retrieve user secret from user secret storage (PDO)');
     }
 
     /**
@@ -73,6 +80,8 @@ class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserStorage_Pdo implements Tiqr_Us
         } else {
             $sth = $this->handle->prepare("INSERT INTO ".$this->tablename." (secret,userid) VALUES (?,?)");
         }
-        $sth->execute(array($secret,$userId));
+        if (!$sth->execute(array($secret,$userId))) {
+            $this->logger->error('Unable to persist user secret in user secret storage (PDO)');
+        }
     }
 }

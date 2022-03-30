@@ -17,6 +17,8 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 /**
  * The interface that defines what a user class should implement. 
  * This interface can be used to adapt the module to a custom user backend. 
@@ -37,9 +39,10 @@ interface Tiqr_UserStorage_Interface
     /**
      * Construct a user class
      * @param array $config         The configuration that a specific user class may use.
+     * @param LoggerInterface $logger
      * @param array $secretconfig   The configuration for storing the user's secret, fallback to $config if not available
      */
-    public function __construct($config, $secretconfig = array());
+    public function __construct($config, LoggerInterface $logger, $secretconfig = array());
     
     /**
      * Store a new user with a certain displayName.

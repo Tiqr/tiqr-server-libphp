@@ -17,6 +17,8 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 require_once 'Tiqr/UserStorage/File.php';
 
 /**
@@ -28,16 +30,6 @@ require_once 'Tiqr/UserStorage/File.php';
  */
 class Tiqr_UserSecretStorage_File extends Tiqr_UserStorage_File implements Tiqr_UserSecretStorage_Interface
 {
-    /**
-     * Create an instance
-     *
-     * @param array $config
-     */
-    public function __construct($config, $secretconfig = array())
-    {
-        $this->_path = $config["path"];
-    }
-
     /**
      * Get the user's secret
      *
@@ -52,6 +44,7 @@ class Tiqr_UserSecretStorage_File extends Tiqr_UserStorage_File implements Tiqr_
                 return $data["secret"];
             }
         }
+        $this->logger->error('Unable to retrieve the secret (user not found). In user secret storage (file)');
         return NULL;
     }
 
