@@ -56,7 +56,29 @@ class Tiqr_StateStorage
                 break;
             case "pdo":
                 require_once("Tiqr/StateStorage/Pdo.php");
-                $instance = new Tiqr_StateStorage_Pdo($options);
+
+                $requiredOptions = ['table', 'dsn', 'username', 'password'];
+                foreach ($requiredOptions as $requirement) {
+                    if (!array_key_exists($requirement, $options)) {
+                        throw new RuntimeException(
+                            sprintf(
+                                'Please configure the "%s" configuration option for the PDO state storage',
+                                $requirement
+                            )
+                        );
+                    }
+                }
+
+                $pdoInstance = new PDO($options['dsn'],$options['username'],$options['password']);
+                // Set a hard-coded default for the probability the expired state is removed
+                // 0.1 translates to a 10% chance the garbage collection is executed
+                $cleanupProbability = 0.1;
+                if (array_key_exists('cleanup_probability', $options) && is_numeric($options['cleanup_probability'])) {
+                    $cleanupProbability = $options['cleanup_probability'];
+                }
+
+                $tablename = $options['table'];
+                $instance = new Tiqr_StateStorage_Pdo($pdoInstance, $tablename, $cleanupProbability);
                 break;
             default:
                 if (!isset($type)) {
