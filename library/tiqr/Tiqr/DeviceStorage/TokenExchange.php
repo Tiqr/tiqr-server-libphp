@@ -44,8 +44,16 @@ class Tiqr_DeviceStorage_TokenExchange extends Tiqr_DeviceStorage_Abstract
         $url.= "&notificationToken=".$notificationToken;
         
         $output = file_get_contents($url);
-        if (stripos($output, "not found")!==false) return false;
-        if (stripos($output, "error")!==false) return false;
+        if (stripos($output, "not found")!==false) {
+            $this->logger->error('Token Exchange failed and responded with: not found', ['full output' => $output]);
+            return false;
+        }
+
+        if (stripos($output, "error")!==false) {
+            $this->logger->error('Token Exchange failed and responded with: error', ['full output' => $output]);
+            return false;
+        }
+
         return trim($output);
     }
 }
