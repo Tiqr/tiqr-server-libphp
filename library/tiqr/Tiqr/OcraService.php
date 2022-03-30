@@ -19,6 +19,8 @@
 
 require_once("Tiqr/OcraService/Abstract.php");
 
+use Psr\Log\LoggerInterface;
+
 /**
  * Class implementing a factory to retrieve the ocra service to use
  *
@@ -36,16 +38,16 @@ class Tiqr_OcraService
      *
      * @return Tiqr_OcraService_Interface
      */
-    public static function getOcraService($type="tiqr", $options=array())
+    public static function getOcraService($type="tiqr", $options=array(), LoggerInterface $logger)
     {
         switch ($type) {
             case "tiqr":
                 require_once("Tiqr/OcraService/Tiqr.php");
-                $instance = new Tiqr_OcraService_Tiqr($options);
+                $instance = new Tiqr_OcraService_Tiqr($options, $logger);
                 break;
             case "oathserviceclient":
                 require_once("Tiqr/OcraService/OathServiceClient.php");
-                $instance = new Tiqr_OcraService_OathServiceClient($options);
+                $instance = new Tiqr_OcraService_OathServiceClient($options, $logger);
                 break;
             default:
                 if (!isset($type)) {
