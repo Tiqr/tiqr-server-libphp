@@ -19,7 +19,8 @@
 
 use Psr\Log\LoggerInterface;
 
-require_once 'Tiqr/UserStorage/File.php';
+require_once 'Tiqr/UserStorage/FileTrait.php';
+require_once 'Tiqr/UserSecretStorage/UserSecretStorageTrait.php';
 
 /**
  * This user storage implementation implements a simple user's secret storage using json files.
@@ -28,20 +29,26 @@ require_once 'Tiqr/UserStorage/File.php';
  * in a secure (e.g. hardware encrypted) storage.
  * @author ivo
  */
-class Tiqr_UserSecretStorage_File extends Tiqr_UserStorage_File implements Tiqr_UserSecretStorage_Interface
+class Tiqr_UserSecretStorage_File implements Tiqr_UserSecretStorage_Interface
 {
-    /**
-     * Create an instance
-     *
-     * ! This constructor is merely here to prevent an infinite loop when constructing
-     *   the UserStore -> UserSecretStore
-     *
-     * @param array $config
-     */
-    public function __construct($config, LoggerInterface $logger, $secretconfig = array())
-    {
+    use UserSecretStorageTrait;
+    use FileTrait;
+
+    private $userSecretStorage;
+
+    private $logger;
+
+    private $path;
+
+    public function __construct(
+        Tiqr_UserSecretStorage_Encryption_Interface $encryption,
+        string $path,
+        LoggerInterface $logger
+    ) {
+        // See UserSecretStorageTrait
+        $this->encryption = $encryption;
         $this->logger = $logger;
-        $this->_path = $config["path"];
+        $this->path = $path;
     }
 
     /**
@@ -51,7 +58,7 @@ class Tiqr_UserSecretStorage_File extends Tiqr_UserStorage_File implements Tiqr_
      *
      * @return String The user's secret
      */
-    public function getUserSecret($userId)
+    private function getUserSecret($userId)
     {
         if ($data = $this->_loadUser($userId)) {
             if (isset($data["secret"])) {
@@ -68,7 +75,7 @@ class Tiqr_UserSecretStorage_File extends Tiqr_UserStorage_File implements Tiqr_
      * @param String $userId
      * @param String $secret
      */
-    public function setUserSecret($userId, $secret)
+    private function setUserSecret($userId, $secret)
     {
         $data = $this->_loadUser($userId, false);
         $data["secret"] = $secret;

@@ -29,13 +29,8 @@ class Tiqr_UserStorageTest extends TestCase
         $this->assertEquals( 0, $userStorage->getTemporaryBlockAttempts( 'user1' ) );
         $this->assertFalse( $userStorage->isBlocked( 'user1', false ) );
         $this->assertFalse($userStorage->getTemporaryBlockTimestamp('user1') );
-        $this->assertEquals( '', $userStorage->getSecret( 'user1' ) );
         $this->assertEquals( '', $userStorage->getNotificationType( 'user1' ) );
         $this->assertEquals( '', $userStorage->getNotificationAddress( 'user1' ) );
-
-        // user secret
-        $userStorage->setSecret('user1', 'a-secret');
-        $this->assertEquals( 'a-secret', $userStorage->getSecret( 'user1' ) );
 
         // notification type
         $userStorage->setNotificationType('user1', 'NOTIFICATION_TYPE');
@@ -82,7 +77,6 @@ class Tiqr_UserStorageTest extends TestCase
         $userStorage = Tiqr_UserStorage::getStorage(
             'file',
             $options,
-            $secretoptions,
             $logger
         );
         $this->assertInstanceOf(Tiqr_UserStorage_File::class, $userStorage);
@@ -98,7 +92,6 @@ class Tiqr_UserStorageTest extends TestCase
         Tiqr_UserStorage::getStorage(
             'ldap',
             [],
-            [],
             Mockery::mock(LoggerInterface::class)
         );
     }
@@ -109,7 +102,6 @@ class Tiqr_UserStorageTest extends TestCase
         $this->expectExceptionMessage("Unable to create a UserStorage instance of type: Fictional_Service_That_Was_Implements_StateStorage.php");
         Tiqr_UserStorage::getStorage(
             'Fictional_Service_That_Was_Implements_StateStorage.php',
-            [],
             [],
             Mockery::mock(LoggerInterface::class)
         );
@@ -160,7 +152,6 @@ SQL
         $userStorage = Tiqr_UserStorage::getStorage(
             'pdo',
             $options,
-            $secretoptions,
             $logger
         );
         $this->assertInstanceOf(Tiqr_UserStorage_Pdo::class, $userStorage);
@@ -220,7 +211,6 @@ SQL
         $userStorage = Tiqr_UserStorage::getStorage(
             'pdo',
             $options,
-            $secretoptions,
             $logger
         );
         $this->assertInstanceOf(Tiqr_UserStorage_Pdo::class, $userStorage);
