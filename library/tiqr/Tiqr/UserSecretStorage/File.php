@@ -31,6 +31,20 @@ require_once 'Tiqr/UserStorage/File.php';
 class Tiqr_UserSecretStorage_File extends Tiqr_UserStorage_File implements Tiqr_UserSecretStorage_Interface
 {
     /**
+     * Create an instance
+     *
+     * ! This constructor is merely here to prevent an infinite loop when constructing
+     *   the UserStore -> UserSecretStore
+     *
+     * @param array $config
+     */
+    public function __construct($config, LoggerInterface $logger, $secretconfig = array())
+    {
+        $this->logger = $logger;
+        $this->_path = $config["path"];
+    }
+
+    /**
      * Get the user's secret
      *
      * @param String $userId

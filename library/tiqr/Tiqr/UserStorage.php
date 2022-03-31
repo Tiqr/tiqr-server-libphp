@@ -57,7 +57,7 @@ class Tiqr_UserStorage
                 break;
             case "pdo":
                 require_once("Tiqr/UserStorage/Pdo.php");
-                $instance = new Tiqr_UserStorage_Pdo($options, $secretoptions);
+                $instance = new Tiqr_UserStorage_Pdo($options, $logger, $secretoptions);
                 break;
             default: 
                 if (!isset($type)) {

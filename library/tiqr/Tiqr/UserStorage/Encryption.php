@@ -42,7 +42,7 @@ class Tiqr_UserStorage_Encryption
      */
     public static function getEncryption(LoggerInterface $logger, $type="dummy", $options=array())
     {
-        $logger->info(sprintf('Using %s as UserSTorage encryption type', $type));
+        $logger->info(sprintf('Using %s as UserStorage encryption type', $type));
         switch ($type) {
             case "dummy":
                 require_once("Tiqr/UserStorage/Encryption/Dummy.php");

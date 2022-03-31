@@ -5,6 +5,7 @@ require_once 'tiqr_autoloader.inc';
 use Mockery as m;
 use Mockery\MockInterface;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class Tiqr_StateStoragePdoTest extends TestCase
 {
@@ -17,6 +18,11 @@ class Tiqr_StateStoragePdoTest extends TestCase
      * @var MockInterface|PDO
      */
     private $pdoInstance;
+
+    /**
+     * @var \Psr\Log\LoggerInterface
+     */
+    private $logger;
 
     private function makeTempDir() {
         $tempName = tempnam(sys_get_temp_dir(),'Tiqr_StateStorageTest');
@@ -40,8 +46,10 @@ class Tiqr_StateStoragePdoTest extends TestCase
 
         $pdoInstance = new PDO($dsn, null, null);
         $this->pdoInstance = m::mock($pdoInstance);
-        $this->stateStorage = new Tiqr_StateStorage_Pdo($this->pdoInstance, 'state', 1);
+        $this->logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
+        $this->stateStorage = new Tiqr_StateStorage_Pdo($this->pdoInstance, $this->logger,'state', 1);
         $this->assertInstanceOf(Tiqr_StateStorage_Pdo::class, $this->stateStorage);
+
     }
 
     function test_called_clean_expired() {
@@ -78,7 +86,7 @@ class Tiqr_StateStoragePdoTest extends TestCase
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('The probability for removing the expired state should be expressed in a floating point value between 0 and 1.');
-        new Tiqr_StateStorage_Pdo(m::mock(PDO::class), 'tablename', $incorrectValue);
+        new Tiqr_StateStorage_Pdo(m::mock(PDO::class), $this->logger, 'tablename', $incorrectValue);
     }
 
     public function provideIncorrectCleanupProbabilityValues()

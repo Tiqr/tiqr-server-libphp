@@ -3,9 +3,20 @@
 require_once 'tiqr_autoloader.inc';
 
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class Tiqr_StateStorageTest extends TestCase
 {
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
+    protected function setUp(): void
+    {
+        $this->logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
+    }
+
     private function makeTempDir() {
         $t=tempnam(sys_get_temp_dir(),'Tiqr_StateStorageTest');
         unlink($t);
@@ -16,13 +27,13 @@ class Tiqr_StateStorageTest extends TestCase
     function testCreateStateStorage() {
         // Invalid type
         $this->expectException(Exception::class);
-        Tiqr_StateStorage::getStorage("nonexistent", array());
+        Tiqr_StateStorage::getStorage("nonexistent", array(), $this->logger);
         $this->expectException(Exception::class);
     }
 
     function testStateStorage_File() {
         // No config, always writes to /tmp
-        $ss=Tiqr_StateStorage::getStorage("file", array());
+        $ss=Tiqr_StateStorage::getStorage("file", array(), $this->logger);
         $this->assertInstanceOf(Tiqr_StateStorage_File::class, $ss);
 
         $this->stateTests($ss);
@@ -54,7 +65,7 @@ SQL
             'password' => null,
             'cleanup_probability' => 0.6
         );
-        $ss=Tiqr_StateStorage::getStorage("pdo", $options);
+        $ss=Tiqr_StateStorage::getStorage("pdo", $options, $this->logger);
         $this->assertInstanceOf(Tiqr_StateStorage_Pdo::class, $ss);
 
         $this->stateTests($ss);
@@ -67,7 +78,7 @@ SQL
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessageMatches('/^Please configure the ".*" configuration option for the PDO state storage$/');
-        Tiqr_StateStorage::getStorage("pdo", $invalidOptions);
+        Tiqr_StateStorage::getStorage("pdo", $invalidOptions, $this->logger);
     }
 
     public function provideInvalidPdoConfigurationOptions()

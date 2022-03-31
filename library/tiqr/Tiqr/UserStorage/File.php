@@ -38,8 +38,7 @@ class Tiqr_UserStorage_File extends Tiqr_UserStorage_GenericStore
      */
     public function __construct($config, LoggerInterface $logger, $secretconfig = array())
     {
-        parent::__construct($config, $secretconfig, $logger);
-        $this->logger = $logger;
+        parent::__construct($config, $logger, $secretconfig);
         $this->_path = $config["path"];
     }
 
