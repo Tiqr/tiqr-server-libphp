@@ -27,6 +27,7 @@ require_once("Tiqr/Random.php");
 require_once("Tiqr/OATH/OCRAWrapper.php");
 require_once("Tiqr/OcraService.php");
 
+use Psr\Log\LoggerInterface;
 
 /** 
  * The main Tiqr Service class.
@@ -64,6 +65,11 @@ class Tiqr_Service
      * @var Exception
      */
     protected $_notificationError = NULL;
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
      * Enrollment status codes
@@ -156,9 +162,10 @@ class Tiqr_Service
      * @param array $options
      * @param int $version The protocol version to use (defaults to the latest)
      */
-    public function __construct($options=array(), $version = 2)
+    public function __construct(LoggerInterface $logger, $options=array(), $version = 2)
     {
         $this->_options = $options;
+        $this->logger = $logger;
         
         if (isset($options["auth.protocol"])) {
             $this->_protocolAuth = $options["auth.protocol"];
@@ -198,21 +205,24 @@ class Tiqr_Service
             $type = $options["statestorage"]["type"];
             $storageOptions = $options["statestorage"];
         } else {
+            $this->logger->info('Falling back to file state storage');
             $type = "file";
             $storageOptions = array();
-        }        
-        
-        $this->_stateStorage = Tiqr_StateStorage::getStorage($type, $storageOptions);
+        }
+
+        $this->logger->info(sprintf('Creating a %s state storage', $type));
+        $this->_stateStorage = Tiqr_StateStorage::getStorage($type, $storageOptions, $logger);
         
         if (isset($options["devicestorage"])) {
             $type = $options["devicestorage"]["type"];
             $storageOptions = $options["devicestorage"];
         } else {
+            $this->logger->info('Falling back to dummy device storage');
             $type = "dummy";
             $storageOptions = array();
         }
-        
-        $this->_deviceStorage = Tiqr_DeviceStorage::getStorage($type, $storageOptions);
+        $this->logger->info(sprintf('Creating a %s device storage', $type));
+        $this->_deviceStorage = Tiqr_DeviceStorage::getStorage($type, $storageOptions, $logger);
         
         $this->_protocolVersion = $version;
         $this->_ocraWrapper = new Tiqr_OCRAWrapper($this->_ocraSuite);
@@ -231,7 +241,8 @@ class Tiqr_Service
                 $ocraConfig = $options['usersecretstorage'];
                 break;
         }
-        $this->_ocraService = Tiqr_OcraService::getOcraService($type, $ocraConfig);
+        $this->logger->info(sprintf('Creating a %s ocra service', $type));
+        $this->_ocraService = Tiqr_OcraService::getOcraService($type, $ocraConfig, $logger);
     }
     
     /**
@@ -289,9 +300,10 @@ class Tiqr_Service
 
             $class = "Tiqr_Message_{$notificationType}";
             if (!class_exists($class)) {
+                $this->logger->error(sprintf('Unable to create push notification for type "%s"', $notificationType));
                 return false;
             }
-
+            $this->logger->info(sprintf('Creating and sending a %s push notification', $notificationType));
             $message = new $class($this->_options);
             $message->setId(time());
             $message->setText("Please authenticate for " . $this->_name);
@@ -302,6 +314,7 @@ class Tiqr_Service
             return true;
         } catch (Exception $ex) {
             $this->setNotificationError($ex);
+            $this->logger->error(sprintf('Sending push notification failed with message "%s"', $ex->getMessage()));
             return false;
         }
     }
@@ -534,6 +547,7 @@ class Tiqr_Service
     {
         $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
         if (!is_array($data)) {
+            $this->logger->error('Unable to find enrollment metadata in state storage');
             return false;
         }
 
@@ -597,13 +611,14 @@ class Tiqr_Service
      */
     public function validateEnrollmentSecret($enrollmentSecret)
     {
-         $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT_SECRET.$enrollmentSecret);
-         if (is_array($data)) { 
-             // Secret is valid, application may accept the user secret. 
-             $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_PROCESSED);
-             return $data["userId"];
-         }
-         return false;
+        $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT_SECRET.$enrollmentSecret);
+        if (is_array($data)) {
+            // Secret is valid, application may accept the user secret.
+            $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_PROCESSED);
+            return $data["userId"];
+        }
+        $this->logger->info('Validation of enrollment secret failed');
+        return false;
     }
     
     /**
@@ -625,6 +640,11 @@ class Tiqr_Service
              // Enrollment is finalized, destroy our session data.
              $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_FINALIZED);
              $this->_stateStorage->unsetValue(self::PREFIX_ENROLLMENT_SECRET.$enrollmentSecret);
+         } else {
+             $this->logger->error(
+                 'Enrollment status is not finalized, enrollmentsecret was not found in state storage. ' .
+                 'Warning! the method will still return "true" as a result.'
+             );
          }
          return true;
     }
@@ -654,6 +674,7 @@ class Tiqr_Service
     {
         $state = $this->_stateStorage->getValue(self::PREFIX_CHALLENGE . $sessionKey);
         if (is_null($state)) {
+            $this->logger->info('The auth challenge could not be found in the state storage');
             return self::AUTH_RESULT_INVALID_CHALLENGE;
         }
         
@@ -666,6 +687,9 @@ class Tiqr_Service
         }
         // Check if we're dealing with a second factor
         if ($challengeUserId!=NULL && ($userId != $challengeUserId)) {
+            $this->logger->error(
+                'Authentication failed: the first factor user id does not match with that of the second factor'
+            );
             return self::AUTH_RESULT_INVALID_USERID; // only allowed to authenticate against the user that's authenticated in the first factor
         }
 
@@ -681,9 +705,10 @@ class Tiqr_Service
             
             // Clean up the challenge.
             $this->_stateStorage->unsetValue(self::PREFIX_CHALLENGE . $sessionKey);
-            
+            $this->logger->info('Authentication succeeded');
             return self::AUTH_RESULT_AUTHENTICATED;
         }
+        $this->logger->error('Authentication failed: verification failed');
         return self::AUTH_RESULT_INVALID_RESPONSE;
     }
 
@@ -732,6 +757,7 @@ class Tiqr_Service
     public function getAuthenticatedUser($sessionId="")
     {
         if ($sessionId=="") {
+            $this->logger->debug('Using the PHP session id, as no session id was provided');
             $sessionId = session_id(); 
         }
         
@@ -751,6 +777,9 @@ class Tiqr_Service
     {                
         $state = $this->_stateStorage->getValue(self::PREFIX_CHALLENGE . $sessionKey);
         if (is_null($state)) {
+            $this->logger->error(
+                'Unable find an existing challenge url in the state storage based on the existing session key'
+            );
             return false;
         }
         
