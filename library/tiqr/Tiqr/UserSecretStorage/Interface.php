@@ -35,22 +35,17 @@ use Psr\Log\LoggerInterface;
  */
 interface Tiqr_UserSecretStorage_Interface
 {
-    public function __construct($config, LoggerInterface $logger, $secretconfig = array());
-
     /**
      * Get the user's secret
-     *
      * @param String $userId
-     *
      * @return String The user's secret
      */
-    public function getUserSecret($userId);
-    
+    public function getSecret($userId);
+
     /**
-     * Store a secret for a user
-     *
+     * Store a secret for a user.
      * @param String $userId
      * @param String $secret
      */
-    public function setUserSecret($userId, $secret);
+    public function setSecret($userId, $secret);
 }
