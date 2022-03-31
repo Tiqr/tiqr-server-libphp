@@ -50,19 +50,15 @@ class Tiqr_DeviceStorage
             case "dummy":
                 require_once("Tiqr/DeviceStorage/Dummy.php");
                 $instance = new Tiqr_DeviceStorage_Dummy($options, $logger);
-                break;
+                $instance->init();
+                return $instance;
             case "tokenexchange":
                 require_once("Tiqr/DeviceStorage/TokenExchange.php");
                 $instance = new Tiqr_DeviceStorage_TokenExchange($options, $logger);
-                break;
- 
-            default:
-                $instance = NULL;
+                $instance->init();
+                return $instance;
         }
-        if ($instance!=NULL) {
-            $instance->init();
-            return $instance;
-        }
-        throw new Exception("Unknown device storage type");
+
+        throw new RuntimeException(sprintf('Unable to create a DeviceStorage instance of type: %s', $type));
     }
 }
