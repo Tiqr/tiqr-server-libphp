@@ -19,7 +19,7 @@
 
 use Psr\Log\LoggerInterface;
 
-require_once 'Tiqr/UserStorage/Encryption/Interface.php';
+require_once 'Tiqr/UserSecretStorage/Encryption/Interface.php';
 
 /**
  * Class implementing a factory for user storage encryption.
@@ -45,12 +45,12 @@ class Tiqr_UserStorage_Encryption
         $logger->info(sprintf('Using %s as UserStorage encryption type', $type));
         switch ($type) {
             case "dummy":
-                require_once("Tiqr/UserStorage/Encryption/Dummy.php");
-                $instance = new Tiqr_UserStorage_Encryption_Dummy($options);
+                require_once("Tiqr/UserSecretStorage/Encryption/Dummy.php");
+                $instance = new Tiqr_UserSecretStorage_Encryption_Dummy($options);
                 break;
             case "mcrypt":
-                require_once("Tiqr/UserStorage/Encryption/Mcrypt.php");
-                $instance = new Tiqr_UserStorage_Encryption_Mcrypt($options);
+                require_once("Tiqr/UserSecretStorage/Encryption/Mcrypt.php");
+                $instance = new Tiqr_UserSecretStorage_Encryption_Mcrypt($options);
                 break;
             default: 
                 $instance = new $type($options);
