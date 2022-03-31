@@ -17,14 +17,14 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
  
-require_once 'Tiqr/UserStorage/Encryption/Interface.php';  
+require_once 'Tiqr/UserSecretStorage/Encryption/Interface.php';
 
 /**
  * Class for encrypting/decrypting the user secret with mcrypt.
  * 
  * @author peter
  */
-class Tiqr_UserStorage_Encryption_Mcrypt implements Tiqr_UserStorage_Encryption_Interface
+class Tiqr_UserSecretStorage_Encryption_Mcrypt implements Tiqr_UserSecretStorage_Encryption_Interface
 {
     private $_cipher;
     private $_mode;
