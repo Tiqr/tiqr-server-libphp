@@ -24,19 +24,26 @@ class Tiqr_StateStorageTest extends TestCase
         return $t;
     }
 
-    function testCreateStateStorage() {
-        // Invalid type
-        $this->expectException(Exception::class);
-        Tiqr_StateStorage::getStorage("nonexistent", array(), $this->logger);
-        $this->expectException(Exception::class);
-    }
-
     function testStateStorage_File() {
         // No config, always writes to /tmp
         $ss=Tiqr_StateStorage::getStorage("file", array(), $this->logger);
         $this->assertInstanceOf(Tiqr_StateStorage_File::class, $ss);
 
         $this->stateTests($ss);
+    }
+
+    public function test_it_can_not_create_ldap_storage()
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Unable to create a StateStorage instance of type: ldap");
+        Tiqr_StateStorage::getStorage("ldap", array(), $this->logger);
+    }
+
+    public function test_it_can_not_create_storage_by_fqn_storage()
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Unable to create a StateStorage instance of type: Fictional_Service_That_Was_Implements_StateStorage.php");
+        Tiqr_StateStorage::getStorage("Fictional_Service_That_Was_Implements_StateStorage.php", array(), $this->logger);
     }
 
     function testStateStorage_Pdo() {

@@ -79,7 +79,7 @@ class Tiqr_UserStorageTest extends TestCase
         );
         $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
 
-        $userStorage = \Tiqr_UserStorage::getStorage(
+        $userStorage = Tiqr_UserStorage::getStorage(
             'file',
             $options,
             $secretoptions,
@@ -89,6 +89,30 @@ class Tiqr_UserStorageTest extends TestCase
 
         // Run user storage tests
         $this->userStorageTests($userStorage);
+    }
+
+    public function test_it_can_not_create_ldap_storage()
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Unable to create a UserStorage instance of type: ldap");
+        Tiqr_UserStorage::getStorage(
+            'ldap',
+            [],
+            [],
+            Mockery::mock(LoggerInterface::class)
+        );
+    }
+
+    public function test_it_can_not_create_storage_by_fqn_storage()
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Unable to create a UserStorage instance of type: Fictional_Service_That_Was_Implements_StateStorage.php");
+        Tiqr_UserStorage::getStorage(
+            'Fictional_Service_That_Was_Implements_StateStorage.php',
+            [],
+            [],
+            Mockery::mock(LoggerInterface::class)
+        );
     }
 
     // Test PDO user and secret storage in one table
@@ -133,7 +157,7 @@ SQL
             'password' => null,
         );
         $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
-        $userStorage = \Tiqr_UserStorage::getStorage(
+        $userStorage = Tiqr_UserStorage::getStorage(
             'pdo',
             $options,
             $secretoptions,
@@ -193,7 +217,7 @@ SQL
             'password' => null,
         );
         $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
-        $userStorage = \Tiqr_UserStorage::getStorage(
+        $userStorage = Tiqr_UserStorage::getStorage(
             'pdo',
             $options,
             $secretoptions,
