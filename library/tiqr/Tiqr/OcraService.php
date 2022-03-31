@@ -43,21 +43,11 @@ class Tiqr_OcraService
         switch ($type) {
             case "tiqr":
                 require_once("Tiqr/OcraService/Tiqr.php");
-                $instance = new Tiqr_OcraService_Tiqr($options, $logger);
-                break;
+                return new Tiqr_OcraService_Tiqr($options, $logger);
             case "oathserviceclient":
                 require_once("Tiqr/OcraService/OathServiceClient.php");
-                $instance = new Tiqr_OcraService_OathServiceClient($options, $logger);
-                break;
-            default:
-                if (!isset($type)) {
-                    throw new Exception('Class name not set');
-                } elseif (!class_exists($type)) {
-                    throw new Exception('Class not found: ' . var_export($type, TRUE));
-                }
-                $instance = new $type($options);
+                return new Tiqr_OcraService_OathServiceClient($options, $logger);
         }
-
-        return $instance;
+        throw new RuntimeException(sprintf('Unable to create a OcraService instance of type: %s', $type));
     }
 }
