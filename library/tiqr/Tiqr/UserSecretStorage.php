@@ -44,7 +44,6 @@ class Tiqr_UserSecretStorage
             case "file":
                 require_once("Tiqr/UserSecretStorage/File.php");
                 return new Tiqr_UserSecretStorage_File($options, $logger);
-                break;
             case "pdo":
                 require_once("Tiqr/UserSecretStorage/Pdo.php");
                 return new Tiqr_UserSecretStorage_Pdo($options, $logger);
