@@ -7,6 +7,8 @@
 
 namespace TestServer;
 
+use Mockery;
+use Psr\Log\LoggerInterface;
 use Tiqr_AutoLoader;
 use Tiqr_OCRAWrapper;
 use Tiqr_Service;
@@ -140,10 +142,14 @@ class TestServerController
             'type' => 'file',
             'path' => $storage_dir,
         );
+
+        $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
+
         return $userStorage = Tiqr_UserStorage::getStorage(
             'file',
             $options,
-            $secretoptions
+            $secretoptions,
+            $logger
         );
     }
 

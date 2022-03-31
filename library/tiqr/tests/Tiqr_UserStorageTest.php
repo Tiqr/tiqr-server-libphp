@@ -3,6 +3,7 @@
 require_once 'tiqr_autoloader.inc';
 
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class Tiqr_UserStorageTest extends TestCase
 {
@@ -76,10 +77,13 @@ class Tiqr_UserStorageTest extends TestCase
             'type' => 'file',
             'path' => $tmpDir
         );
+        $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
+
         $userStorage = \Tiqr_UserStorage::getStorage(
             'file',
             $options,
-            $secretoptions
+            $secretoptions,
+            $logger
         );
         $this->assertInstanceOf(Tiqr_UserStorage_File::class, $userStorage);
 
@@ -128,10 +132,12 @@ SQL
             'username' => null,
             'password' => null,
         );
+        $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
         $userStorage = \Tiqr_UserStorage::getStorage(
             'pdo',
             $options,
-            $secretoptions
+            $secretoptions,
+            $logger
         );
         $this->assertInstanceOf(Tiqr_UserStorage_Pdo::class, $userStorage);
 
@@ -186,10 +192,12 @@ SQL
             'username' => null,
             'password' => null,
         );
+        $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
         $userStorage = \Tiqr_UserStorage::getStorage(
             'pdo',
             $options,
-            $secretoptions
+            $secretoptions,
+            $logger
         );
         $this->assertInstanceOf(Tiqr_UserStorage_Pdo::class, $userStorage);
 
