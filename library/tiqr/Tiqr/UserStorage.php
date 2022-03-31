@@ -30,7 +30,7 @@ class Tiqr_UserStorage
      * Get a storage of a certain type (default: 'file')
      *
      * @param String $type The type of storage to create. Supported
-     *                     types are 'file', 'ldap' or the full class name.
+     *                     types are 'file', 'pdo' or the full class name of a custom solution.
      * @param array $options The options to pass to the storage
      *                       instance. See the documentation
      *                       in the UserStorage/ subdirectory for
@@ -49,25 +49,12 @@ class Tiqr_UserStorage
         switch ($type) {
             case "file":
                 require_once("Tiqr/UserStorage/File.php");
-                $instance = new Tiqr_UserStorage_File($options, $logger, $secretoptions);
-                break;
-            case "ldap":
-                require_once("Tiqr/UserStorage/Ldap.php");
-                $instance = new Tiqr_UserStorage_Ldap($options, $secretoptions);
-                break;
+                return new Tiqr_UserStorage_File($options, $logger, $secretoptions);
             case "pdo":
                 require_once("Tiqr/UserStorage/Pdo.php");
-                $instance = new Tiqr_UserStorage_Pdo($options, $logger, $secretoptions);
-                break;
-            default: 
-                if (!isset($type)) {
-                    throw new Exception('Class name not set');
-                } elseif (!class_exists($type)) {
-                    throw new Exception('Class not found: ' . var_export($type, TRUE));
-                }
-                $instance = new $type($options, $secretoptions);
+                return new Tiqr_UserStorage_Pdo($options, $logger, $secretoptions);
         }
 
-        return $instance;
+        throw new RuntimeException(sprintf('Unable to create a UserStorage instance of type: %s', $type));
     }
 }
