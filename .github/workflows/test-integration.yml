@@ -1,0 +1,30 @@
+name: test-integration
+on:
+  pull_request:
+  push:
+#    branches: [ master, develop ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+      - uses: actions/cache@v2
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      - name: Init environment
+        run: docker-compose up -d
+      - name: Install dependencies
+        run: |
+          docker-compose exec -T tiqr-server-libphp bash -lc 'composer install'
+      - name: Run test scripts
+        run: docker-compose exec -T tiqr-server-libphp bash -lc 'XDEBUG_MODE=coverage vendor/bin/phpunit'
+      - name: Output log files on failure
+        if: failure()
+        run: docker-compose exec -T tiqr-server-libphp -c 'cat var/log/webtest.log'
