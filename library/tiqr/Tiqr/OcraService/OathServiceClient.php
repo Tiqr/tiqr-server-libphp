@@ -53,7 +53,7 @@ class Tiqr_OcraService_OathServiceClient extends Tiqr_OcraService_Abstract
     /**
      * Get the ocra challenge
      *
-     * @return string|null The challenge or null when no challende was returned form the Oath service
+     * @return string|null The challenge or null when no challenge was returned form the Oath service
      */
     public function generateChallenge()
     {

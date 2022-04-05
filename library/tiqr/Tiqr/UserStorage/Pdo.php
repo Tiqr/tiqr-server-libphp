@@ -82,7 +82,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
             // TODO: this method should return a boolean value on all possible outcomes or throw an exception
             return $sth->fetchColumn();
         }
-        $this->logger->error('Unable fot find user in user storage (PDO)');
+        $this->logger->error('Unable to find user in user storage (PDO)');
     }
     
     public function getDisplayName($userId)
