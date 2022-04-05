@@ -75,11 +75,4 @@ class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserStorage_Pdo implements Tiqr_Us
         }
         $sth->execute(array($secret,$userId));
     }
-
-    public static function log($message)
-    {
-        $fp = fopen('/var/www/tiqr/logs/'.date("Ymd").'.log', 'a');
-        fwrite($fp, $message);
-        fclose($fp);
-    }
 }
