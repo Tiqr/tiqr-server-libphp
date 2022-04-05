@@ -40,6 +40,11 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
     private $handle;
 
     /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
+    /**
      * @param Tiqr_UserSecretStorage_Encryption_Interface $encryption
      * @param LoggerInterface $logger
      * @param string $dsn
