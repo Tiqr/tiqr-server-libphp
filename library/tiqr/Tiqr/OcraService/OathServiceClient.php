@@ -59,6 +59,13 @@ class Tiqr_OcraService_OathServiceClient extends Tiqr_OcraService_Abstract
     {
         $result = $this->_apiClient->call('/oath/challenge/ocra');
         if ($result->code == '200') {
+            $this->logger->notice(
+                sprintf(
+                    'Challenge api call returned status code %s and response body: %s.',
+                    $result->code,
+                    $result->body
+                )
+            );
             return $result->body;
         }
         $this->logger->error('The call to /oath/challenge/ocra did not yield a challenge.');
@@ -79,6 +86,13 @@ class Tiqr_OcraService_OathServiceClient extends Tiqr_OcraService_Abstract
     {
         try {
             $result = $this->_apiClient->call('/oath/validate/ocra?response='.urlencode($response).'&challenge='.urlencode($challenge).'&userId='.urlencode($userId).'&sessionKey='.urlencode($sessionKey));
+            $this->logger->notice(
+                sprintf(
+                    'Verify response api call returned status code %s and response body: %s.',
+                    $result->code,
+                    $result->body
+                )
+            );
             return true;
         } catch (Exception $e) {
             $this->logger->error(
