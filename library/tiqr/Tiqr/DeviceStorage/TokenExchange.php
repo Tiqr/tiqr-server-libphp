@@ -53,7 +53,7 @@ class Tiqr_DeviceStorage_TokenExchange extends Tiqr_DeviceStorage_Abstract
             $this->logger->error('Token Exchange failed and responded with: error', ['full output' => $output]);
             return false;
         }
-
+        $this->logger->notice(sprintf('Token exchange returned output: %s', $output));
         return trim($output);
     }
 }
