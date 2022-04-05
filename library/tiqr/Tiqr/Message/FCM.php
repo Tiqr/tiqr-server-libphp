@@ -110,7 +110,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         $response = json_decode($result, true);
         foreach ($response['results'] as $k => $v) {
             if (isset($v['error'])) {
-                throw new Tiqr_Message_Exception_SendFailure("Error in GCM response: " . $v['error'], true);
+                throw new Tiqr_Message_Exception_SendFailure("Error in FCM response: " . $v['error'], true);
             }
         }
     }

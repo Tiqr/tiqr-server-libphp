@@ -33,12 +33,12 @@ class Tiqr_Message_APNS extends Tiqr_Message_Abstract
     private static $_services = array();
     
     /**
-     * Factory method for returning a C2DM service instance for the given 
+     * Factory method for returning a APNS service instance for the given
      * configuration options.
      *
      * @param array $options configuration options
      *
-     * @return Zend_Service_Google_C2dm service instance
+     * @return Zend_Mobile_Push_Apns service instance
      *
      * @throws Tiqr_Message_Exception_AuthError
      */
