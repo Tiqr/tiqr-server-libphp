@@ -86,7 +86,7 @@ class Tiqr_Message_APNS extends Tiqr_Message_Abstract
         } catch (Zend_Mobile_Push_Exception_ServerUnavailable $e) {
             throw new Tiqr_Message_Exception_SendFailure("Server unavailable", true, $e);
         } catch (Zend_Mobile_Push_Exception_InvalidToken $e) {
-            throw new Tiqr_Message_Exception_InvalidDevice("Invalid token", $e);
+            throw new Tiqr_Message_Exception_SendFailure("Invalid token", false, $e);
         } catch (Zend_Mobile_Push_Exception_InvalidPayload $e) {
             throw new Tiqr_Message_Exception_SendFailure("Invalid payload", false, $e);
         } catch (Zend_Mobile_Push_Exception_InvalidTopic $e) {
