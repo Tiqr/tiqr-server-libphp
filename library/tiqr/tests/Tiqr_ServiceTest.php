@@ -19,9 +19,6 @@ class Tiqr_ServiceTest extends TestCase
             // 'apns.path'
             // 'apns.certificate'
             'apns.environment' => 'sandbox',
-            'c2dm.username' => 'test_c2dm_username',
-            'c2dm.password' => 'test_c2dm_password',
-            'c2dm.application' => 'org.example.authenticator.test',
             'statestorage' => array(
                 'type' => 'file',
             ),
