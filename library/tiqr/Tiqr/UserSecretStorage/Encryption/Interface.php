@@ -16,24 +16,20 @@
  *
  * @copyright (C) 2010-2012 SURFnet BV
  */
- 
-require_once 'Tiqr/UserStorage/Encryption/Interface.php'; 
 
 /**
- * Dummy encryption class, returns the data as is.
+ * Interface for encrypting/decrypting the user secret.
  * 
  * @author peter
  */
-class Tiqr_UserStorage_Encryption_Dummy implements Tiqr_UserStorage_Encryption_Interface
+interface Tiqr_UserSecretStorage_Encryption_Interface
 {
     /**
      * Construct an encryption instance.
      *
      * @param $config The configuration that a specific configuration class may use.
      */
-    public function __construct($config)
-    {
-    }
+    public function __construct($config);
     
     /**
      * Encrypts the given data. 
@@ -42,10 +38,7 @@ class Tiqr_UserStorage_Encryption_Dummy implements Tiqr_UserStorage_Encryption_I
      *
      * @return encrypted data
      */
-    public function encrypt($data)
-    {
-        return $data;
-    }
+    public function encrypt($data);
     
     /**
       * Decrypts the given data.
@@ -54,8 +47,5 @@ class Tiqr_UserStorage_Encryption_Dummy implements Tiqr_UserStorage_Encryption_I
      *
      * @return decrypted data
      */
-    public function decrypt($data)
-    {
-        return $data;
-    }
+    public function decrypt($data);
 }

@@ -26,19 +26,16 @@ require_once('Tiqr/API/Client.php');
  */
 class Tiqr_UserSecretStorage_OathServiceClient implements Tiqr_UserSecretStorage_Interface
 {
-    protected $_apiClient;
-
+    private $client;
     /**
-     * Construct a user class
-     *
-     * @param array $config The configuration that a specific user class may use.
+     * @var LoggerInterface
      */
-    public function __construct($config, LoggerInterface $logger, $secretconfig = array())
+    private $logger;
+
+    public function __construct(Tiqr_API_Client $client, LoggerInterface $logger)
     {
         $this->logger = $logger;
-        $this->_apiClient = new Tiqr_API_Client();
-        $this->_apiClient->setBaseURL($config['apiURL']);
-        $this->_apiClient->setConsumerKey($config['consumerKey']);
+        $this->client = $client;
     }
 
     /**
@@ -47,23 +44,27 @@ class Tiqr_UserSecretStorage_OathServiceClient implements Tiqr_UserSecretStorage
      *
      * @param String $userId
      *
-     * @return String The user's secret
+     * @return string The user's secret
      */
-    public function getUserSecret($userId)
+    public function getSecret($userId)
     {
-        $this->logger->info('Calling getUserSecret on the OathServiceClient is not implemented');
+        $this->logger->notice('Calling getUserSecret on the OathServiceClient is not implemented');
         return null;
     }
 
     /**
      * Store a secret for a user
      *
-     * @param String $userId
-     * @param String $secret
+     * Note that this storage engine does not use the encryption mechnism that PDO and File storage do implement. This
+     * is taken care of by the OathService itself.
+     *
+     * @param string $userId
+     * @param string $secret
+     * @throws Exception
      */
-    public function setUserSecret($userId, $secret)
+    public function setSecret($userId, $secret)
     {
         $this->logger->info('Storing the user secret on the OathServiceClient (api call)');
-        $this->_apiClient->call('/secrets/'.urlencode($userId), 'POST', array('secret' => $secret));
+        $this->client->call('/secrets/'.urlencode($userId), 'POST', array('secret' => $secret));
     }
 }
