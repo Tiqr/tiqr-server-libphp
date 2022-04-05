@@ -42,6 +42,7 @@ class Tiqr_DeviceStorage
      * @param array $options Options for the device storage. See the
      *                       documentation in DeviceStorage/ for specific 
      *                       config options per type.
+     * @param LoggerInterface $logger
      * @throws Exception An exception if an unknown storage is requested.
      */
     public static function getStorage($type="dummy", $options=array(), LoggerInterface $logger)

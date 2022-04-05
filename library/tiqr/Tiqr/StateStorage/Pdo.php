@@ -47,7 +47,9 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
      * @param PDO $pdoInstance The PDO instance where all state storage operations are performed on
      * @param LoggerInterface
      * @param string $tablename The tablename that is used for storing and retrieving the state storage
-     * @param int $cleanupProbability The probability the expired state storage items are removed on a 'setValue' call. Example usage: 0 = never, 0.5 = 50% chance, 1 = always
+     * @param float $cleanupProbability The probability the expired state storage items are removed on a 'setValue' call. Example usage: 0 = never, 0.5 = 50% chance, 1 = always
+     *
+     * @throws RuntimeException when an invalid cleanupProbability is configured
      */
     public function __construct(PDO $pdoInstance, LoggerInterface $logger, string $tablename, float $cleanupProbability)
     {

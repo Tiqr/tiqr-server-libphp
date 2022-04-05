@@ -40,9 +40,12 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
     private $handle;
 
     /**
-     * Construct a user class
-     *
-     * @param array $config The configuration that a specific user class may use.
+     * @param Tiqr_UserSecretStorage_Encryption_Interface $encryption
+     * @param LoggerInterface $logger
+     * @param string $dsn
+     * @param string $userName
+     * @param string $password
+     * @param string $tableName
      */
     public function __construct(
         Tiqr_UserSecretStorage_Encryption_Interface $encryption,

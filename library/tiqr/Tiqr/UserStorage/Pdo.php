@@ -79,6 +79,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
     {
         $sth = $this->handle->prepare("SELECT userid FROM ".$this->tablename." WHERE userid = ?");
         if ($sth->execute(array($userId))) {
+            // TODO: this method should return a boolean value on all possible outcomes or throw an exception
             return $sth->fetchColumn();
         }
         $this->logger->error('Unable fot find user in user storage (PDO)');

@@ -43,7 +43,9 @@ class Tiqr_StateStorage
      *                       instance. See the documentation
      *                       in the StateStorage/ subdirectory for
      *                       options per type.
-     * @throws Exception If an unknown type is requested.
+     * @throws RuntimeException If an unknown type is requested.
+     * @throws RuntimeException When the options configuration array misses a required parameter
+     *
      */
     public static function getStorage($type="file", $options=array(), LoggerInterface $logger)
     {

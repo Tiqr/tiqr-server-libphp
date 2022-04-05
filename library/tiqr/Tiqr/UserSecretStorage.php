@@ -37,6 +37,8 @@ class Tiqr_UserSecretStorage
      *                       options per type.
      *
      * @return Tiqr_UserSecretStorage_Interface
+     * @throws RuntimeException If an unknown type is requested.
+     * @throws RuntimeException When the options configuration array misses a required parameter
      */
     public static function getSecretStorage(string $type = "file", LoggerInterface $logger, array $options = [])
     {

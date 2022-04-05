@@ -17,8 +17,13 @@ trait FileTrait
 
     /**
      * This function takes care of loading the user data from a JSON file.
-     * @param String $userId
+     *
+     * @param string $userId
+     * @param boolean $failIfNotFound
+     *
      * @return false if the data is not present, or an array containing the data.
+     *
+     * @throws Exception when the data can not be found and failIfNotFound is set to true
      */
     protected function _loadUser($userId, $failIfNotFound = TRUE)
     {

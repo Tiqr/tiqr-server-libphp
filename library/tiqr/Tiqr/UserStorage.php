@@ -35,24 +35,21 @@ class Tiqr_UserStorage
      *                       instance. See the documentation
      *                       in the UserStorage/ subdirectory for
      *                       options per type.
-     * @param array $secretoptions  The options to pass to the secret storage
-     *                              instance. See the documentation
-     *                              in the UserSecretStorage/ subdirectory for
-     *                              options per type.
+     * @param LoggerInterface $logger
      *
      * @return Tiqr_UserStorage_Interface
      *
-     * @throws Exception
+     * @throws Exception An exception if an unknown user storage is requested.
      */
-    public static function getStorage($type="file", $options=array(), $secretoptions=array(), LoggerInterface $logger)
+    public static function getStorage($type="file", $options=array(), LoggerInterface $logger)
     {
         switch ($type) {
             case "file":
                 require_once("Tiqr/UserStorage/File.php");
-                return new Tiqr_UserStorage_File($options, $logger, $secretoptions);
+                return new Tiqr_UserStorage_File($options, $logger);
             case "pdo":
                 require_once("Tiqr/UserStorage/Pdo.php");
-                return new Tiqr_UserStorage_Pdo($options, $logger, $secretoptions);
+                return new Tiqr_UserStorage_Pdo($options, $logger);
         }
 
         throw new RuntimeException(sprintf('Unable to create a UserStorage instance of type: %s', $type));

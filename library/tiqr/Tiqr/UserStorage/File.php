@@ -37,7 +37,8 @@ class Tiqr_UserStorage_File extends Tiqr_UserStorage_GenericStore
 
     /**
      * Create an instance
-     * @param $config
+     * @param array $config
+     * @param LoggerInterface $logger
      */
     public function __construct($config, LoggerInterface $logger)
     {
