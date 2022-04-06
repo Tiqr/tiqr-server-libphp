@@ -201,6 +201,28 @@ implementation. It can be found [here](./TestServer/README.md). Or have a look a
 [Stepup-tiqr](https://github.com/OpenConext/Stepup-tiqr) project. A good entrypoint is the [TiqrServer](https://github.com/OpenConext/Stepup-tiqr/blob/develop/src/Tiqr/Legacy/TiqrService.php) 
 and the [TiqrFactory](https://github.com/OpenConext/Stepup-tiqr/blob/develop/src/Tiqr/TiqrFactory.php).
 
+# Logging
+An effort was put into providing relevant logging to the library. Logging adheres to the PSR-3 logging standard.
+Services, Repositories and other helper classes are configured with a LoggerInterface instance when they are 
+instantiated. Your application should have a logging solution that can fit into that. Otherwise we suggest looking at
+Monolog as a logging solution that is very flexible, and adheres to the PSR-3 standard.
+
+In practice, when creating the Tiqr_Service, you need to inject your Logger in the constructor. The factory classes
+also ask for a logger instance, for example: when creating a user secret storage.  
+
+An example using Monolog (your framework will allow you to DI the logger into your own tiqr service implementation):
+
+```php 
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+// Create a log channel
+$logger = new Logger('name');
+$logger->pushHandler(new StreamHandler('path/to/your.log', Logger::WARNING));
+
+$this->tiqrService = new Tiqr_Service($logger, $options);
+```
+
 # Running tests
 A growing set of unit tests can and should be used when developing the tiqr-server-libphp project.
 

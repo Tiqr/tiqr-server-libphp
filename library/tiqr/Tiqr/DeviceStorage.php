@@ -23,6 +23,8 @@
  */
 require_once("Tiqr/DeviceStorage/Abstract.php");
 
+use Psr\Log\LoggerInterface;
+
 /**
  * A utility class to create an instance of a specific type of storage that 
  * can retrieve deviceTokens.
@@ -40,27 +42,24 @@ class Tiqr_DeviceStorage
      * @param array $options Options for the device storage. See the
      *                       documentation in DeviceStorage/ for specific 
      *                       config options per type.
+     * @param LoggerInterface $logger
      * @throws Exception An exception if an unknown storage is requested.
      */
-    public static function getStorage($type="dummy", $options=array())
+    public static function getStorage($type="dummy", $options=array(), LoggerInterface $logger)
     {
         switch ($type) {
             case "dummy":
                 require_once("Tiqr/DeviceStorage/Dummy.php");
-                $instance = new Tiqr_DeviceStorage_Dummy($options);
-                break;
+                $instance = new Tiqr_DeviceStorage_Dummy($options, $logger);
+                $instance->init();
+                return $instance;
             case "tokenexchange":
                 require_once("Tiqr/DeviceStorage/TokenExchange.php");
-                $instance = new Tiqr_DeviceStorage_TokenExchange($options);           
-                break;
- 
-            default:
-                $instance = NULL;
+                $instance = new Tiqr_DeviceStorage_TokenExchange($options, $logger);
+                $instance->init();
+                return $instance;
         }
-        if ($instance!=NULL) {
-            $instance->init();
-            return $instance;
-        }
-        throw new Exception("Unknown device storage type");
+
+        throw new RuntimeException(sprintf('Unable to create a DeviceStorage instance of type: %s', $type));
     }
 }

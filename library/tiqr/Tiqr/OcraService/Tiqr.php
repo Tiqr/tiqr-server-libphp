@@ -18,6 +18,8 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 require_once("Tiqr/OATH/OCRAWrapper.php");
 require_once("Tiqr/OATH/OCRAWrapper_v1.php");
 
@@ -35,16 +37,22 @@ class Tiqr_OcraService_Tiqr extends Tiqr_OcraService_Abstract
     protected $_protocolVersion;
 
     /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
+    /**
      * Construct a ocra service class
      *
      * @param array $config The configuration that a specific user class may use.
      */
-    public function __construct($config)
+    public function __construct($config, LoggerInterface $logger)
     {
         $this->_ocraSuite = $config['ocra.suite'];
         $this->_protocolVersion = $config['protocolVersion'];
         $this->_ocraWrapper_v1 = new Tiqr_OCRAWrapper_v1($this->_ocraSuite);
         $this->_ocraWrapper = new Tiqr_OCRAWrapper($this->_ocraSuite);
+        $this->logger = $logger;
     }
 
     /**
@@ -55,8 +63,10 @@ class Tiqr_OcraService_Tiqr extends Tiqr_OcraService_Abstract
     protected function _getProtocolSpecificOCRAWrapper()
     {
         if ($this->_protocolVersion < 2) {
+            $this->logger->info('Using Tiqr_OCRAWrapper_v1 as protocol');
             return $this->_ocraWrapper_v1;
         } else {
+            $this->logger->info('Using Tiqr_OCRAWrapper as protocol');
             return $this->_ocraWrapper;
         }
     }
@@ -83,6 +93,7 @@ class Tiqr_OcraService_Tiqr extends Tiqr_OcraService_Abstract
      */
     public function verifyResponseWithSecret($response, $userSecret, $challenge, $sessionKey)
     {
+        $this->logger->info('Verify the response is correct');
         return $this->_getProtocolSpecificOCRAWrapper()->verifyResponse($response, $userSecret, $challenge, $sessionKey);
     }
 }

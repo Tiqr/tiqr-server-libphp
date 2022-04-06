@@ -18,6 +18,8 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 /**
  * The interface that defines what a ocra service class should implement.
  *
@@ -33,7 +35,7 @@ interface Tiqr_OcraService_Interface
      *
      * @param array $config The configuration that a specific user class may use.
      */
-    public function __construct($config);
+    public function __construct($config, LoggerInterface $logger);
 
     /**
      * Get the ocra challenge

@@ -57,6 +57,8 @@ class Tiqr_StateStorage_File extends Tiqr_StateStorage_Abstract
         $filename = $this->_stateFilename($key);
         if (file_exists($filename)) {
             unlink($filename);
+        } else {
+            $this->logger->error('Unable to unlink the value from state storage, key not found on filesystem');
         }
     }
     
@@ -72,12 +74,14 @@ class Tiqr_StateStorage_File extends Tiqr_StateStorage_Abstract
             if ($envelope["expire"]!=0) {
                  // This data is time-limited. If it's too old we discard it.
                  if (time()-$envelope["createdAt"] > $envelope["expire"]) {
-                     $this->unsetValue($key); 
+                     $this->unsetValue($key);
+                     $this->logger->error('Unable to retrieve the state storage value, it is expired');
                      return NULL;
                  }
             }
             return $envelope["value"];
         }
+        $this->logger->error('Unable to retrieve the state storage value, file not found');
         return NULL;
     }
     

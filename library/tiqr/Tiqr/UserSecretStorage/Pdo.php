@@ -21,7 +21,9 @@
  * 
  */
 
-require_once 'Tiqr/UserStorage/Pdo.php';
+require_once 'Tiqr/UserSecretStorage/UserSecretStorageTrait.php';
+
+use Psr\Log\LoggerInterface;
 
 /**
  * This user storage implementation implements a user secret storage using PDO.
@@ -29,21 +31,56 @@ require_once 'Tiqr/UserStorage/Pdo.php';
  * 
  * @author Patrick Honing <Patrick.Honing@han.nl>
  */
-class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserStorage_Pdo implements Tiqr_UserSecretStorage_Interface
+class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
 {
+    use UserSecretStorageTrait;
+
+    private $tableName;
+
+    private $handle;
+
     /**
-     * Construct a user class
-     *
-     * @param array $config The configuration that a specific user class may use.
+     * @var LoggerInterface
      */
-    public function __construct($config, $secretconfig = array())
-    {
-        $this->tablename = isset($config['table']) ? $config['table'] : 'tiqrusersecret';
+    private $logger;
+
+    /**
+     * @param Tiqr_UserSecretStorage_Encryption_Interface $encryption
+     * @param LoggerInterface $logger
+     * @param string $dsn
+     * @param string $userName
+     * @param string $password
+     * @param string $tableName
+     */
+    public function __construct(
+        Tiqr_UserSecretStorage_Encryption_Interface $encryption,
+        LoggerInterface $logger,
+        string $dsn,
+        string $userName,
+        string $password,
+        string $tableName = 'tiqrusersecret'
+    ) {
+        $this->encryption = $encryption;
+        $this->logger = $logger;
+        $this->tableName = $tableName;
         try {
-            $this->handle = new PDO($config['dsn'],$config['username'],$config['password']);
+            $this->handle = new PDO($dsn, $userName, $password);
         } catch (PDOException $e) {
-            return false;
+            $this->logger->error(
+                sprintf('Unable to establish a PDO connection. Error message from PDO: %s', $e->getMessage())
+            );
         }
+    }
+    private function userExists($userId)
+    {
+        $sth = $this->handle->prepare("SELECT userid FROM ".$this->tableName." WHERE userid = ?");
+        $sth->execute(array($userId));
+        $result = $sth->fetchColumn();
+        if ($result !== false) {
+            return true;
+        }
+        $this->logger->debug('Unable fot find user in user secret storage (PDO)');
+        return false;
     }
 
     /**
@@ -51,13 +88,18 @@ class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserStorage_Pdo implements Tiqr_Us
      *
      * @param String $userId
      *
-     * @return String The user's secret
+     * @return mixed: null|string
      */
-    public function getUserSecret($userId)
+    private function getUserSecret($userId)
     {
-        $sth = $this->handle->prepare("SELECT secret FROM ".$this->tablename." WHERE userid = ?");
-        $sth->execute(array($userId));
-        return $sth->fetchColumn();
+        $sth = $this->handle->prepare("SELECT secret FROM ".$this->tableName." WHERE userid = ?");
+        if($sth->execute(array($userId))) {
+            $secret = $sth->fetchColumn();
+            if ($secret !== false) {
+                return $secret;
+            }
+        }
+        $this->logger->error('Unable to retrieve user secret from user secret storage (PDO)');
     }
 
     /**
@@ -66,13 +108,16 @@ class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserStorage_Pdo implements Tiqr_Us
      * @param String $userId
      * @param String $secret
      */
-    public function setUserSecret($userId, $secret)
+    private function setUserSecret($userId, $secret)
     {
         if ($this->userExists($userId)) {
-            $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET secret = ? WHERE userid = ?");
+            $sth = $this->handle->prepare("UPDATE ".$this->tableName." SET secret = ? WHERE userid = ?");
         } else {
-            $sth = $this->handle->prepare("INSERT INTO ".$this->tablename." (secret,userid) VALUES (?,?)");
+            $sth = $this->handle->prepare("INSERT INTO ".$this->tableName." (secret,userid) VALUES (?,?)");
         }
-        $sth->execute(array($secret,$userId));
+        $result = $sth->execute(array($secret,$userId));
+        if (!$result) {
+            $this->logger->error('Unable to persist user secret in user secret storage (PDO)');
+        }
     }
 }

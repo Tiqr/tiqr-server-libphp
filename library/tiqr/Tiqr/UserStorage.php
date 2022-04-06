@@ -17,6 +17,8 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 /**
  * Class implementing a factory to retrieve user data.
  *
@@ -28,44 +30,28 @@ class Tiqr_UserStorage
      * Get a storage of a certain type (default: 'file')
      *
      * @param String $type The type of storage to create. Supported
-     *                     types are 'file', 'ldap' or the full class name.
+     *                     types are 'file', 'pdo' or the full class name of a custom solution.
      * @param array $options The options to pass to the storage
      *                       instance. See the documentation
      *                       in the UserStorage/ subdirectory for
      *                       options per type.
-     * @param array $secretoptions  The options to pass to the secret storage
-     *                              instance. See the documentation
-     *                              in the UserSecretStorage/ subdirectory for
-     *                              options per type.
+     * @param LoggerInterface $logger
      *
      * @return Tiqr_UserStorage_Interface
      *
-     * @throws Exception
+     * @throws Exception An exception if an unknown user storage is requested.
      */
-    public static function getStorage($type="file", $options=array(), $secretoptions=array())
+    public static function getStorage($type="file", $options=array(), LoggerInterface $logger)
     {
         switch ($type) {
             case "file":
                 require_once("Tiqr/UserStorage/File.php");
-                $instance = new Tiqr_UserStorage_File($options, $secretoptions);
-                break;
-            case "ldap":
-                require_once("Tiqr/UserStorage/Ldap.php");
-                $instance = new Tiqr_UserStorage_Ldap($options, $secretoptions);
-                break;
+                return new Tiqr_UserStorage_File($options, $logger);
             case "pdo":
                 require_once("Tiqr/UserStorage/Pdo.php");
-                $instance = new Tiqr_UserStorage_Pdo($options, $secretoptions);
-                break;
-            default: 
-                if (!isset($type)) {
-                    throw new Exception('Class name not set');
-                } elseif (!class_exists($type)) {
-                    throw new Exception('Class not found: ' . var_export($type, TRUE));
-                }
-                $instance = new $type($options, $secretoptions);
+                return new Tiqr_UserStorage_Pdo($options, $logger);
         }
 
-        return $instance;
+        throw new RuntimeException(sprintf('Unable to create a UserStorage instance of type: %s', $type));
     }
 }

@@ -22,6 +22,8 @@
  * 
  */
 
+use Psr\Log\LoggerInterface;
+
 
 /**
  * This user storage implementation implements a user storage using PDO.
@@ -39,14 +41,16 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
      * @param array $config
      * @param array $secretconfig
      */
-    public function __construct($config, $secretconfig = array())
+    public function __construct($config, LoggerInterface $logger)
     {
-        parent::__construct($config, $secretconfig);
+        parent::__construct($config, $logger);
         $this->tablename = isset($config['table']) ? $config['table'] : 'tiqruser';
         try {
             $this->handle = new PDO($config['dsn'],$config['username'],$config['password']);
         } catch (PDOException $e) {
-            return false;
+            $this->logger->error(
+                sprintf('Unable to establish a PDO connection. Error message from PDO: %s', $e->getMessage())
+            );
         }
     }
 
@@ -57,61 +61,88 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
         } else {
             $sth = $this->handle->prepare("INSERT INTO ".$this->tablename." (displayname,userid) VALUES (?,?)");
         }
-        $sth->execute(array($displayName,$userId));
-        return $this->userExists($userId);
+        if ($sth->execute(array($displayName,$userId))){
+            return $this->userExists($userId);
+        }
+        $this->logger->error('The user could not be saved in the user storage (PDO)');
     }
-    
+
+    /**
+     * Be carefull! This method does not return an expected boolean value. Instead it returns:
+     * - void (if user was not found)
+     * - userid (if user was found)
+     *
+     * @param $userId
+     * @return mixed
+     */
     public function userExists($userId)
     {
         $sth = $this->handle->prepare("SELECT userid FROM ".$this->tablename." WHERE userid = ?");
-        $sth->execute(array($userId));
-        return $sth->fetchColumn();
+        if ($sth->execute(array($userId))) {
+            // TODO: this method should return a boolean value on all possible outcomes or throw an exception
+            return $sth->fetchColumn();
+        }
+        $this->logger->error('Unable to find user in user storage (PDO)');
     }
     
     public function getDisplayName($userId)
     {
         $sth = $this->handle->prepare("SELECT displayname FROM ".$this->tablename." WHERE userid = ?");
-        $sth->execute(array($userId));
-        return $sth->fetchColumn();
+        if ($sth->execute(array($userId))) {
+            return $sth->fetchColumn();
+        }
+        $this->logger->error('Retrieving the users display name failed in the user storage (PDO)');
     }
 
     public function getNotificationType($userId)
     {
         $sth = $this->handle->prepare("SELECT notificationtype FROM ".$this->tablename." WHERE userid = ?");
-        $sth->execute(array($userId));
-        return $sth->fetchColumn();
+        if ($sth->execute(array($userId))) {
+            return $sth->fetchColumn();
+        }
+        $this->logger->error('Unable to retrieve notification type from user storage (PDO)');
     }
     
     public function setNotificationType($userId, $type)
     {
         $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET notificationtype = ? WHERE userid = ?");
-        $sth->execute(array($type,$userId));
+        if (!$sth->execute(array($type,$userId))) {
+            $this->logger->error('Unable to set the notification type in user storage for a given user (PDO)');
+        }
     }
     
     public function getNotificationAddress($userId)
     {
         $sth = $this->handle->prepare("SELECT notificationaddress FROM ".$this->tablename." WHERE userid = ?");
-        $sth->execute(array($userId));
-        return $sth->fetchColumn();
+        if ($sth->execute(array($userId))) {
+            return $sth->fetchColumn();
+        }
+        $this->logger->error('Unable to retrieve notification address from user storage (PDO)');
     }
     
     public function setNotificationAddress($userId, $address)
     {
         $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET notificationaddress = ?  WHERE userid = ?");
-        $sth->execute(array($address,$userId));
+        if (!$sth->execute(array($address,$userId))) {
+            $this->logger->error('Unable to set the notification address in user storage for a given user (PDO)');
+        }
     }
     
     public function getLoginAttempts($userId)
     {
         $sth = $this->handle->prepare("SELECT loginattempts FROM ".$this->tablename." WHERE userid = ?");
-        $sth->execute(array($userId));
-        return $sth->fetchColumn();
+        if ($sth->execute(array($userId))) {
+            return $sth->fetchColumn();
+        }
+        $this->logger->error('Unable to retrieve login attempts from user storage (PDO)');
     }
     
     public function setLoginAttempts($userId, $amount)
     {
         $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET loginattempts = ? WHERE userid = ?");
-        $sth->execute(array($amount,$userId));
+        if (!$sth->execute(array($amount,$userId))) {
+            $this->logger->error('Unable to set login attempts in user storage for a given user (PDO)');
+        }
     }
     
     public function isBlocked($userId, $duration)
@@ -134,22 +165,32 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
     public function setBlocked($userId, $blocked)
     {
         $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET blocked = ? WHERE userid = ?");
-        $sth->execute(array(
-                ($blocked) ? "1" : "0",
-                $userId
-        ));
+        $isBlocked = ($blocked) ? "1" : "0";
+        if (!$sth->execute([$isBlocked, $userId])) {
+            $this->logger->error('Unable to block the user in the user storage (PDO)');
+        }
     }
     
     public function setTemporaryBlockAttempts($userId, $amount) {
         $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET tmpblockattempts = ? WHERE userid = ?");
-        $sth->execute(array($amount,$userId));
+        if (!$sth->execute(array($amount,$userId))) {
+            $this->logger->error('Unable to set temp login attempts in user storage for a given user (PDO)');
+        }
     }
-    
+
+    /**
+     * @param $userId
+     * @return int
+     * @throws RuntimeException when the query fails, a runtime exception is raised. As continuing execution from that
+     *                          point would either throw an error, or return 0
+     */
     public function getTemporaryBlockAttempts($userId) {
         if ($this->userExists($userId)) {
             $sth = $this->handle->prepare("SELECT tmpblockattempts FROM ".$this->tablename." WHERE userid = ?");
-            $sth->execute(array($userId));
-            return $sth->fetchColumn();
+            if (!$sth->execute(array($userId))) {
+                throw new RuntimeException('Unable to get temp login attempts in user storage for a given user (PDO)');
+            }
+            return (int) $sth->fetchColumn();
         }
         return 0;
     }
@@ -157,7 +198,9 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
     public function setTemporaryBlockTimestamp($userId, $timestamp)
     {
         $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET tmpblocktimestamp = ? WHERE userid = ?");
-        $sth->execute(array($timestamp,$userId));
+        if (!$sth->execute(array($timestamp,$userId))) {
+            $this->logger->error('Unable to update temp lock timestamp in user storage for a given user (PDO)');
+        }
     }
             
     public function getTemporaryBlockTimestamp($userId)
@@ -168,6 +211,8 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
             $timestamp = $sth->fetchColumn(); 
             if (null !== $timestamp) {
                 return $timestamp;
+            } else {
+                $this->logger->info('No temp lock timestamp found in user storage for a given user (PDO)');
             }
         }
         return false;

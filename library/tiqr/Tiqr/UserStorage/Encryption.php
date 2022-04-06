@@ -16,8 +16,10 @@
  *
  * @copyright (C) 2010-2012 SURFnet BV
  */
- 
-require_once 'Tiqr/UserStorage/Encryption/Interface.php'; 
+
+use Psr\Log\LoggerInterface;
+
+require_once 'Tiqr/UserSecretStorage/Encryption/Interface.php';
 
 /**
  * Class implementing a factory for user storage encryption.
@@ -38,16 +40,17 @@ class Tiqr_UserStorage_Encryption
      *
      * @return Tiqr_UserStorage_Encryption_Interface
      */
-    public static function getEncryption($type="dummy", $options=array())
+    public static function getEncryption(LoggerInterface $logger, $type="dummy", $options=array())
     {
+        $logger->info(sprintf('Using %s as UserStorage encryption type', $type));
         switch ($type) {
             case "dummy":
-                require_once("Tiqr/UserStorage/Encryption/Dummy.php");
-                $instance = new Tiqr_UserStorage_Encryption_Dummy($options);
+                require_once("Tiqr/UserSecretStorage/Encryption/Dummy.php");
+                $instance = new Tiqr_UserSecretStorage_Encryption_Dummy($options);
                 break;
             case "mcrypt":
-                require_once("Tiqr/UserStorage/Encryption/Mcrypt.php");
-                $instance = new Tiqr_UserStorage_Encryption_Mcrypt($options);
+                require_once("Tiqr/UserSecretStorage/Encryption/Mcrypt.php");
+                $instance = new Tiqr_UserSecretStorage_Encryption_Mcrypt($options);
                 break;
             default: 
                 $instance = new $type($options);
