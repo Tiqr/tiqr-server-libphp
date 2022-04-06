@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="vendor/autoload.php">
+<phpunit bootstrap="../../../vendor/autoload.php">
   <testsuites>
     <testsuite name="tests">
-      <directory>library/tiqr/tests</directory>
+      <directory>../../../library/tiqr/tests</directory>
     </testsuite>
   </testsuites>
   <logging>
@@ -10,9 +10,9 @@
   </logging>
   <filter>
     <whitelist>
-      <directory>./library/tiqr</directory>
+      <directory>../../../library/tiqr</directory>
       <exclude>
-        <directory>./library/tiqr/tests</directory>
+        <directory>../../../library/tiqr/tests</directory>
       </exclude>
     </whitelist>
   </filter>
