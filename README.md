@@ -12,8 +12,7 @@ This project is a PHP implementation of a Tiqr server. This server is more of a 
 
 1. Handling of authentications and registration flows using suitable and safe authentication methods (HOTP, Ocra)
 2. Storing of user authentication and user secret data
-3. Sending of push notification (Google Cloud Messaging, Firebase Cloud Messaging, Apple Push Notifications and Cloud 
-   to Device Messaging)
+3. Sending of push notification (Firebase Cloud Messaging, Apple Push Notifications)
 4. Storing of application state (for state persistency during registration and authentication workflows)
 
 # Who should use this library?
