@@ -6,18 +6,15 @@
 A PHP library for implementing a Tiqr authentication server
 
 # Introduction
-This project is a PHP implementation of a Tiqr server. This server is more of a library that helps Tiqr server backends
-(called Tiqr-GSSP in our eco-system) with several tasks. These tasks include:
+This project is a PHP implementation of a library to implement a Tiqr server. This library is not a server by itself, instead it contains functionality that help Tiqr server implementations with several tasks. These tasks include:
 
-1. Handling of authentications and registration flows using suitable and safe authentication methods (HOTP, Ocra)
+1. Handling of authentications and registration flows of the Tiqr protocol (OCRA)
 2. Storing of user authentication and user secret data
 3. Sending of push notification (Firebase Cloud Messaging, Apple Push Notifications)
 4. Storing of application state (for state persistency during registration and authentication workflows)
 
 # Who should use this library?
-Basically anyone who wants to implement a Tiqr server for their Tiqr Apps (Android & iOS). As Tiqr is tightly integrated
-into the OpenConext StepUp ecosystem, we chose to implement the Tiqr server into our [Tiqr GSSP](https://github.com/OpenConext/Stepup-tiqr)
-If you seek to implement a Tiqr backend yourself, you can look to that project for pointers. 
+Basically anyone who wants to implement a Tiqr server for their Tiqr client Apps (Android & iOS).
 
 # History
 A brief overview of notable points in time of this project
@@ -29,10 +26,11 @@ A brief overview of notable points in time of this project
 - 2019: FCM push message support was added
 - 2020: PHP 5 support was dropped
 - 2022: Unit & integration test coverage was added
+- 2022: Major refactoring of UserStorage and UserSecretStorage classes, addition of PSR Logging, removal of deprecated functionality
 
 # Ecosystem
 The tiqr-server-libphp uses external libraries sparingly. The most notable external dependency is the Zend Framework 1.
-This framework is  not used for any infrastructural support work like routing, command handling, logging, and so forth. 
+This framework is not used for any infrastructural support work like routing, command handling, logging, and so forth. 
 The framework is currently only used to implement sending push notifications using the APNS protocol.
 
 For creating QR codes, another external library is used. This is the Kairos PHPQRcode library. 
@@ -48,27 +46,27 @@ For testing purposes we use additional dev-dependencies. They include well know 
 - New code must not depend on the Zend Framework 1
 
 # Using the library
-Examples on how to work with the library can be found in the aforementioned Tiqr GSSP. But some examples are included 
-here to get a basic understanding of the capabilities of the library.
+If you seek to implement a Tiqr server yourself, you can look at how this library is used by the Tiqr GSSP. Tiqr is an important second factor authentication method in the OpenConext Stepup ecosystem and this library is used by the [Tiqr GSSP](https://github.com/OpenConext/Stepup-tiqr). 
+
+Another example for using this library is the [Tiqr TestServer](TestServer) that is included with the library
 
 The API of the tiqr-server-libphp can be found in the `Tiqr` 'namespace' (`library/tiqr/Tiqr`). Notable classes found 
 here are:
 
-- `Autoloader` the homemade autoloader, used to load the external dependencies and the following services and storage backends 
-- `Service` the main service class used to interact with the underlying features of the library
-- `Factories` the `UserStorage`, `UserSecretStorage` and `StateStorage` are creating the specified storage backend based 
-   on the way you configured Tiqr
+- `Tiqr_Autoloader` the homemade autoloader, used to load the external dependencies and the following services and storage backends 
+- `Tiqr_Service` the main service class implementing the utility functions to handle user enrollement and authentication from a Tiqr Server.
+- Factories for creating Tiqr_UserStorage and Tiqr_UserSecretStorage for different storage backends.
 
 ## Creating the Service
 An example on how to configure, create and work with the `Service`.
 
 ### Config
-To create the Tiqr Service, we encourage you to create a factory in your consuming code base. In order to create the 
-service, you will first need to create a Tiqr server configuration. A brief example is listed below. Note that this
-example is taken from a Symfony parameters file. This YAML is later transformed to a PHP Array. But for readability the
-YAML format is retained in this example:
+To create the Tiqr Service you need to provide it with configuration options for the Tiqr_Service as well as the configuration for the Tiqr_StateStorage. The Tiqr_StateStorage is used to link the API calls from the tiqr client with the API calls from your tiqr server webinterface. You must select and configure the type you want to use – (e.g. pdo) corresponds with the class (e.g. type pdo will use Tiqr_StateStorage_PDO). 
+
+The APNS and FCM configuration and the Token exchange configuration is required for sending Push Notifications to iOS and Android clients. These push notifications are an optional alternative way to start an authentication for a know user. When not using push notifications the user must always scan a QR code.
 
 ```php
+// Options for Tiqr_Service
 $options = [
     // General settings
     'auth.protocol' => 'tiqrauth',
@@ -93,14 +91,6 @@ $options = [
         'username' => 'state_rw'
         'password' => 'secret'
         'cleanup_probability' => 0.75
-    ],
-    // User storage
-    'userstorage' => [
-        'type' => 'dummy',
-    ],
-    
-    'usersecretstorage' => [
-        'type' => 'dummy',
     ],
 
     // Token exchange configuration
