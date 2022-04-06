@@ -25,7 +25,7 @@ jobs:
       - name: Run Static analysis
         run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer static-analysis'
       - name: Run test scripts
-        run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer phpununit & security-tests'
+        run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer phpunit && composer security-tests'
       - name: Output log files on failure
         if: failure()
         run: cd ci/docker && docker-compose exec -T tiqr-server-libphp -c 'cat var/log/webtest.log'
