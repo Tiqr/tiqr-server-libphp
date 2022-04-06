@@ -34,12 +34,8 @@ A brief overview of notable points in time of this project
 
 # Ecosystem
 The tiqr-server-libphp uses external libraries sparingly. The most notable external dependency is the Zend Framework 1.
-This framework is used primarily for removing complexity in certain parts of the library. It is not used for any 
-infrastructural support work like routing, command handling, logging, and so forth. Where the framework is used is:
-
-- Implementing push notifications for the following protocols: APNS, C2DM and GCM
-- UserSecret storage supports LDAP for a storage engine. The LDAP implementation is ZF1 based.
-- User storage supports a similar LDAP solution
+This framework is  not used for any infrastructural support work like routing, command handling, logging, and so forth. 
+The framework is currently only used to implement sending push notifications using the APNS protocol.
 
 For creating QR codes, another external library is used. This is the Kairos PHPQRcode library. 
 
@@ -49,7 +45,7 @@ For testing purposes we use additional dev-dependencies. They include well know 
 
 # Future strategy
 - Having a robust test coverage on the code should have a high priority on every new feature created or bug fixed.
-- Moving away from the long past Zend Framework is not a high priority, keeping the library working and increasing its 
+- Moving away from the long past Zend Framework is a long term goal, but is not a high priority now. Keeping the library working and increasing its 
   predictability is far more important. 
 - New code must not depend on the Zend Framework 1
 
