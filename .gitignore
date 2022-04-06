@@ -2,3 +2,5 @@ composer.lock
 vendor
 .idea
 TestServer/config/config
+.phpunit.result.cache
+coverage.xml
