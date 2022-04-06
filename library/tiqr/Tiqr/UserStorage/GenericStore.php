@@ -105,6 +105,7 @@ abstract class Tiqr_UserStorage_GenericStore extends Tiqr_UserStorage_Abstract
                return $data["notificationAddress"];
             }
         }
+        $this->logger->info('Unable to find notification address for user');
         return NULL;
     }
 

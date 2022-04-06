@@ -17,6 +17,8 @@
  * @copyright (C) 2010-2011 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 
 /**
  * The abstract baseclass for DeviceStorage implementations
@@ -30,6 +32,9 @@ abstract class Tiqr_DeviceStorage_Abstract
      * @var array
      */
     protected $_options = array();
+
+    /** @var LoggerInterface */
+    protected $logger;
     
     /**
      * get a deviceToken for a certain notificationToken.
@@ -53,9 +58,10 @@ abstract class Tiqr_DeviceStorage_Abstract
      * the Tiqr_DeviceStorage factory will call this for you.
      * @param array $options The options for the s
      */
-    public function __construct($options=array())
+    public function __construct($options=array(), LoggerInterface $logger)
     {
-        $this->_options = $options;        
+        $this->_options = $options;
+        $this->logger = $logger;
     }
         
 }

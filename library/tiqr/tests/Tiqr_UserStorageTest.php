@@ -3,6 +3,7 @@
 require_once 'tiqr_autoloader.inc';
 
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class Tiqr_UserStorageTest extends TestCase
 {
@@ -28,13 +29,8 @@ class Tiqr_UserStorageTest extends TestCase
         $this->assertEquals( 0, $userStorage->getTemporaryBlockAttempts( 'user1' ) );
         $this->assertFalse( $userStorage->isBlocked( 'user1', false ) );
         $this->assertFalse($userStorage->getTemporaryBlockTimestamp('user1') );
-        $this->assertEquals( '', $userStorage->getSecret( 'user1' ) );
         $this->assertEquals( '', $userStorage->getNotificationType( 'user1' ) );
         $this->assertEquals( '', $userStorage->getNotificationAddress( 'user1' ) );
-
-        // user secret
-        $userStorage->setSecret('user1', 'a-secret');
-        $this->assertEquals( 'a-secret', $userStorage->getSecret( 'user1' ) );
 
         // notification type
         $userStorage->setNotificationType('user1', 'NOTIFICATION_TYPE');
@@ -76,15 +72,39 @@ class Tiqr_UserStorageTest extends TestCase
             'type' => 'file',
             'path' => $tmpDir
         );
-        $userStorage = \Tiqr_UserStorage::getStorage(
+        $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
+
+        $userStorage = Tiqr_UserStorage::getStorage(
             'file',
             $options,
-            $secretoptions
+            $logger
         );
         $this->assertInstanceOf(Tiqr_UserStorage_File::class, $userStorage);
 
         // Run user storage tests
         $this->userStorageTests($userStorage);
+    }
+
+    public function test_it_can_not_create_ldap_storage()
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Unable to create a UserStorage instance of type: ldap");
+        Tiqr_UserStorage::getStorage(
+            'ldap',
+            [],
+            Mockery::mock(LoggerInterface::class)
+        );
+    }
+
+    public function test_it_can_not_create_storage_by_fqn_storage()
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Unable to create a UserStorage instance of type: Fictional_Service_That_Was_Implements_StateStorage.php");
+        Tiqr_UserStorage::getStorage(
+            'Fictional_Service_That_Was_Implements_StateStorage.php',
+            [],
+            Mockery::mock(LoggerInterface::class)
+        );
     }
 
     // Test PDO user and secret storage in one table
@@ -128,10 +148,11 @@ SQL
             'username' => null,
             'password' => null,
         );
-        $userStorage = \Tiqr_UserStorage::getStorage(
+        $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
+        $userStorage = Tiqr_UserStorage::getStorage(
             'pdo',
             $options,
-            $secretoptions
+            $logger
         );
         $this->assertInstanceOf(Tiqr_UserStorage_Pdo::class, $userStorage);
 
@@ -186,10 +207,11 @@ SQL
             'username' => null,
             'password' => null,
         );
-        $userStorage = \Tiqr_UserStorage::getStorage(
+        $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
+        $userStorage = Tiqr_UserStorage::getStorage(
             'pdo',
             $options,
-            $secretoptions
+            $logger
         );
         $this->assertInstanceOf(Tiqr_UserStorage_Pdo::class, $userStorage);
 

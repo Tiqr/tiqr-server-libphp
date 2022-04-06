@@ -1,4 +1,6 @@
-<?php 
+<?php
+
+use Psr\Log\LoggerInterface;
 
 /**
  * This file is part of the tiqr project.
@@ -43,10 +45,13 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
 
     /**
      * @param PDO $pdoInstance The PDO instance where all state storage operations are performed on
+     * @param LoggerInterface
      * @param string $tablename The tablename that is used for storing and retrieving the state storage
-     * @param int $cleanupProbability The probability the expired state storage items are removed on a 'setValue' call. Example usage: 0 = never, 0.5 = 50% chance, 1 = always
+     * @param float $cleanupProbability The probability the expired state storage items are removed on a 'setValue' call. Example usage: 0 = never, 0.5 = 50% chance, 1 = always
+     *
+     * @throws RuntimeException when an invalid cleanupProbability is configured
      */
-    public function __construct(PDO $pdoInstance, string $tablename, float $cleanupProbability)
+    public function __construct(PDO $pdoInstance, LoggerInterface $logger, string $tablename, float $cleanupProbability)
     {
         if ($cleanupProbability < 0 || $cleanupProbability > 1) {
             throw new RuntimeException('The probability for removing the expired state should be expressed in a floating point value between 0 and 1.');
@@ -54,18 +59,23 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         $this->cleanupProbability = $cleanupProbability;
         $this->tablename = $tablename;
         $this->handle = $pdoInstance;
+        $this->logger = $logger;
     }
 
     private function keyExists($key)
     {
         $sth = $this->handle->prepare("SELECT `key` FROM ".$this->tablename." WHERE `key` = ?");
-        $sth->execute(array($key));
-        return $sth->fetchColumn();
+        if ($sth->execute(array($key))) {
+            return $sth->fetchColumn();
+        }
+        $this->logger->error('The state storage key could not be found in the database');
     }
 
     private function cleanExpired() {
         $sth = $this->handle->prepare("DELETE FROM ".$this->tablename." WHERE `expire` < ? AND NOT `expire` = 0");
-        $sth->execute(array(time()));
+        if (!$sth->execute(array(time()))){
+            $this->logger->error('Unable to remove expired keys from the pdo state storage');
+        }
     }
     
     /**
@@ -96,7 +106,9 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
     public function unsetValue($key)
     {
         $sth = $this->handle->prepare("DELETE FROM ".$this->tablename." WHERE `key` = ?");
-        $sth->execute(array($key));
+        if (!$sth->execute(array($key))) {
+            $this->logger->error('Unable to unset key from the pdo state storage');
+        }
     }
     
     /**
@@ -108,14 +120,17 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         if ($this->keyExists($key)) {
             $sth = $this->handle->prepare("SELECT `value` FROM ".$this->tablename." WHERE `key` = ? AND (`expire` >= ? OR `expire` = 0)");
             if (false === $sth) {
+                $this->logger->error('Unable to prepare the get key statement');
                 return NULL;
             }
             if (false === $sth->execute(array($key, time())) ) {
+                $this->logger->error('Unable to get key from the pdo state storage');
                 return NULL;
             }
             $result = $sth->fetchColumn();
             return  unserialize($result);
         }
+        $this->logger->info('Unable to find key in the pdo state storage');
         return NULL;
     }
 }

@@ -3,9 +3,17 @@
 require_once 'tiqr_autoloader.inc';
 
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class Tiqr_ServiceTest extends TestCase
 {
+    private $logger;
+
+    protected function setUp(): void
+    {
+        $this->logger  = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
+    }
+
     private function getOptions() {
         return array(
             'auth.protocol' => 'testauth',
@@ -19,9 +27,6 @@ class Tiqr_ServiceTest extends TestCase
             // 'apns.path'
             // 'apns.certificate'
             'apns.environment' => 'sandbox',
-            'c2dm.username' => 'test_c2dm_username',
-            'c2dm.password' => 'test_c2dm_password',
-            'c2dm.application' => 'org.example.authenticator.test',
             'statestorage' => array(
                 'type' => 'file',
             ),
@@ -34,13 +39,13 @@ class Tiqr_ServiceTest extends TestCase
     // Test creating a new tiqr service
     public function testDefaultConstructor() {
         $_SERVER['SERVER_NAME'] = 'dummy.example.org';
-        $service = new Tiqr_Service();
+        $service = new Tiqr_Service($this->logger);
         $this->assertInstanceOf(Tiqr_Service::class, $service);
     }
 
     public function testOptions() {
 
-        $service = new Tiqr_Service($this->getOptions());
+        $service = new Tiqr_Service($this->logger, $this->getOptions());
         $this->assertInstanceOf(Tiqr_Service::class, $service);
 
         $this->assertSame($service->getIdentifier(), 'test.identifier.example.org');
@@ -51,7 +56,7 @@ class Tiqr_ServiceTest extends TestCase
         $session_id = 'test_session_id_'.time();
 
         // Creat tiqr service
-        $service = new Tiqr_Service($this->getOptions());
+        $service = new Tiqr_Service($this->logger, $this->getOptions());
         $this->assertInstanceOf(Tiqr_Service::class, $service);
 
         $status = $service->getEnrollmentStatus($session_id);
@@ -132,7 +137,7 @@ class Tiqr_ServiceTest extends TestCase
         $session_id = 'test_session_id_'.time();
 
         // Create tiqr service
-        $service = new Tiqr_Service($this->getOptions());
+        $service = new Tiqr_Service($this->logger, $this->getOptions());
         $this->assertInstanceOf(Tiqr_Service::class, $service);
 
         $userid = 'test-auth-user'; // The user to authenticate

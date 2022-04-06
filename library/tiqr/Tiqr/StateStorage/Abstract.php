@@ -17,6 +17,7 @@
  * @copyright (C) 2010-2011 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
 
 /**
  * The Abstract base class for all StateStorage implementations
@@ -34,7 +35,12 @@ abstract class Tiqr_StateStorage_Abstract
      * @var array
      */
     protected $_options = array();
-    
+
+    /**
+     * @var LoggerInterface
+     */
+    protected $logger;
+
     /**
      * Store a value with a certain key in the statestorage.
      * @param String $key The key identifying the data
@@ -75,8 +81,9 @@ abstract class Tiqr_StateStorage_Abstract
      * a state storage instance of a certain type.
      * @param array $options An array of options for the state storage
      */
-    public function __construct($options=array())
+    public function __construct($options=array(), LoggerInterface $logger)
     {
+        $this->logger = $logger;
         $this->_options = $options;        
     }
         
