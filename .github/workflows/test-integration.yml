@@ -2,7 +2,7 @@ name: test-integration
 on:
   pull_request:
   push:
-#    branches: [ master, develop ]
+    branches: [ master, develop ]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,8 +22,10 @@ jobs:
         run: cd ci/docker && docker-compose up -d
       - name: Install dependencies
         run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer install'
+      - name: Run Static analysis
+        run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer static-analysis'
       - name: Run test scripts
-        run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer test'
+        run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer phpununit & security-tests'
       - name: Output log files on failure
         if: failure()
         run: cd ci/docker && docker-compose exec -T tiqr-server-libphp -c 'cat var/log/webtest.log'
