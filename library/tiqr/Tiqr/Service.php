@@ -133,10 +133,6 @@ class Tiqr_Service
      *                     Defaults to ../certificates/cert.pem
      * - apns.environment: Whether to use apple's "sandbox" or "production" 
      *                     apns environment
-     * - c2dm.username: The username for your android c2dm account
-     * - c2dm.password: The password for your android c2dm account
-     * - c2dm.application: The application identifier for your android 
-     *                     app, e.g. com.example.authenticator.
      * - statestorage: An array with the configuration of the storage for 
      *                 temporary data. It has the following sub keys:
      *                 - type: The type of state storage. (default: file) 
@@ -275,7 +271,7 @@ class Tiqr_Service
     /**
      * Send a push notification to a user containing an authentication challenge
      * @param String $sessionKey          The session key identifying this authentication session
-     * @param String $notificationType    Notification type, e.g. APNS, C2DM, GCM, (SMS?)
+     * @param String $notificationType    Notification type, e.g. APNS, FCM
      * @param String $notificationAddress Notification address, e.g. device token, phone number etc.
      *
      * @return boolean True if the notification was sent succesfully, false if not.
@@ -715,7 +711,7 @@ class Tiqr_Service
      */
     public function translateNotificationAddress($notificationType, $notificationAddress)
     {
-        if ($notificationType == 'APNS' || $notificationType == 'C2DM' || $notificationType == 'GCM' || $notificationType == 'FCM') {
+        if ($notificationType == 'APNS' || $notificationType == 'FCM') {
             return $this->_deviceStorage->getDeviceToken($notificationAddress);
         } else {
             return $notificationAddress;
