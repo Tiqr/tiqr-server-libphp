@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+cd $(dirname $0)/../../
+
+printf "Running PHP Mess Detector\n"
+#phpmd static analysis
+./vendor/bin/phpmd library text ci/qa/qa-config/phpmd.xml --suffixes php
+
+printf "Running PHP Code Sniffer\n"
+#phpcs static analysis
+./vendor/bin/phpcs --standard=ci/qa/qa-config/phpcs.xml --report=full --warning-severity=0 ./library
+
+exit 0

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+cd $(dirname $0)/../../
+
+printf "Running PHPUnit\n"
+XDEBUG_MODE=off vendor/bin/phpunit --configuration=ci/qa/qa-config/phpunit.xml

@@ -1,0 +1,8 @@
+version: '3.7'
+
+services:
+  tiqr-server-libphp:
+    stdin_open: true
+    image: ghcr.io/openconext/openconext-containers/openconext-php-test-stepup:latest
+    volumes:
+      - ../../:/var/www

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Zend Framework Coding Standard">
+
+    <rule ref="../../../vendor/zendframework/zend-coding-standard/ruleset.xml"/>
+
+    <!-- Paths to check -->
+    <file>bin/</file>
+    <file>config/</file>
+    <file>public/</file>
+    <file>src/</file>
+    <file>dev/</file>
+
+        <!-- Lines can be a little bit longer before they break the build -->
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="120"/>
+            <property name="absoluteLineLimit" value="150"/>
+        </properties>
+    </rule>
+</ruleset>
+
