@@ -22,7 +22,7 @@ jobs:
         run: cd ci/docker && docker-compose up -d
       - name: Install dependencies
         run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer install'
-      - name: Run Static analysis (Allowed failure)
+      - name: Run test scripts (allowed to fail)
         run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer static-analysis'
       - name: Run test scripts
         run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer phpunit && composer security-tests'
