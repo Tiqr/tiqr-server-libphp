@@ -26,7 +26,7 @@ class Tiqr_StateStorageTest extends TestCase
 
     function testStateStorage_File() {
         // No config, always writes to /tmp
-        $ss=Tiqr_StateStorage::getStorage("file", array(), $this->logger);
+        $ss = Tiqr_StateStorage::getStorage("file", ['path' => '/tmp'], $this->logger);
         $this->assertInstanceOf(Tiqr_StateStorage_File::class, $ss);
 
         $this->stateTests($ss);
@@ -101,7 +101,7 @@ SQL
         ];
     }
 
-    private function stateTests(Tiqr_StateStorage_Abstract $ss) {
+    private function stateTests(Tiqr_StateStorage_StateStorageInterface $ss) {
         $ss->unsetValue("nonexistent_key");
 
         // Gettng nonexistent value returns NULL
