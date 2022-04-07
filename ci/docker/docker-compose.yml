@@ -6,5 +6,3 @@ services:
     image: ghcr.io/openconext/openconext-containers/openconext-php-test-stepup:latest
     volumes:
       - ../../:/var/www
-    environment:
-      APP_ENV: test

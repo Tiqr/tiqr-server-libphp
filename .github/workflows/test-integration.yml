@@ -22,10 +22,10 @@ jobs:
         run: cd ci/docker && docker-compose up -d
       - name: Install dependencies
         run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer install'
-      - name: Run Static analysis
+      - name: Run Static analysis (Allowed failure)
         run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer static-analysis'
       - name: Run test scripts
         run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer phpunit && composer security-tests'
       - name: Output log files on failure
         if: failure()
-        run: cd ci/docker && docker-compose exec -T tiqr-server-libphp -c 'cat var/log/webtest.log'
+        run: tail -2000 /var/log/syslog

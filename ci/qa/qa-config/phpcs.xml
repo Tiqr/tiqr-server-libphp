@@ -1,21 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Zend Framework Coding Standard">
 
-<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="../../../vendor/squizlabs/php_codesniffer/phpcs.xsd">
+    <rule ref="../../../vendor/zendframework/zend-coding-standard/ruleset.xml"/>
 
-    <arg name="basepath" value="."/>
-    <arg name="colors"/>
-    <arg name="extensions" value="php"/>
-
-    <rule ref="PSR2"/>
-
+    <!-- Paths to check -->
     <file>bin/</file>
     <file>config/</file>
     <file>public/</file>
     <file>src/</file>
     <file>dev/</file>
 
-    <!-- Lines can be a little bit longer before they break the build -->
+        <!-- Lines can be a little bit longer before they break the build -->
     <rule ref="Generic.Files.LineLength">
         <properties>
             <property name="lineLimit" value="120"/>
@@ -23,3 +18,4 @@
         </properties>
     </rule>
 </ruleset>
+
