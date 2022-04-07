@@ -82,7 +82,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
             // TODO: this method should return a boolean value on all possible outcomes or throw an exception
             return $sth->fetchColumn();
         }
-        $this->logger->error('Unable to find user in user storage (PDO)');
+        $this->logger->notice('Unable to find user in user storage (PDO)');
     }
     
     public function getDisplayName($userId)
@@ -91,7 +91,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
         if ($sth->execute(array($userId))) {
             return $sth->fetchColumn();
         }
-        $this->logger->error('Retrieving the users display name failed in the user storage (PDO)');
+        $this->logger->notice('Retrieving the users display name failed in the user storage (PDO)');
     }
 
     public function getNotificationType($userId)
@@ -100,7 +100,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
         if ($sth->execute(array($userId))) {
             return $sth->fetchColumn();
         }
-        $this->logger->error('Unable to retrieve notification type from user storage (PDO)');
+        $this->logger->notice('Unable to retrieve notification type from user storage (PDO)');
     }
     
     public function setNotificationType($userId, $type)
@@ -117,7 +117,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
         if ($sth->execute(array($userId))) {
             return $sth->fetchColumn();
         }
-        $this->logger->error('Unable to retrieve notification address from user storage (PDO)');
+        $this->logger->notice('Unable to retrieve notification address from user storage (PDO)');
     }
     
     public function setNotificationAddress($userId, $address)
@@ -134,7 +134,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
         if ($sth->execute(array($userId))) {
             return $sth->fetchColumn();
         }
-        $this->logger->error('Unable to retrieve login attempts from user storage (PDO)');
+        $this->logger->notice('Unable to retrieve login attempts from user storage (PDO)');
     }
     
     public function setLoginAttempts($userId, $amount)
@@ -212,7 +212,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
             if (null !== $timestamp) {
                 return $timestamp;
             } else {
-                $this->logger->info('No temp lock timestamp found in user storage for a given user (PDO)');
+                $this->logger->notice('No temp lock timestamp found in user storage for a given user (PDO)');
             }
         }
         return false;

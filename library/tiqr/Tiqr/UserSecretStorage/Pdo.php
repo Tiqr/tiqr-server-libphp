@@ -99,7 +99,7 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
                 return $secret;
             }
         }
-        $this->logger->error('Unable to retrieve user secret from user secret storage (PDO)');
+        $this->logger->notice('Unable to retrieve user secret from user secret storage (PDO)');
     }
 
     /**
