@@ -107,9 +107,12 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
         $key = $this->_getKeyPrefix().$key;
 
         if (self::$extension === '\memcached') {
-            $this->_memcache->set($key, $value, $expire);
+            $result = $this->_memcache->set($key, $value, $expire);
         } else {
-            $this->_memcache->set($key, $value, 0, $expire);
+            $result = $this->_memcache->set($key, $value, 0, $expire);
+        }
+        if (!$result) {
+            throw new Tiqr_Exception_ReadWriteException(sprintf('Unable to store "%s" state to Memcache', $key));
         }
     }
     
@@ -120,8 +123,16 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
     public function unsetValue($key)
     {
         $key = $this->_getKeyPrefix().$key;
-        
-        return $this->_memcache->delete($key);
+        $result = $this->_memcache->delete($key);
+        if (!$result) {
+            throw new Tiqr_Exception_ReadWriteException(
+                sprintf(
+                    'Unable to unlink the "%s" value from state storage, key not found in Memcache',
+                    $key
+                )
+            );
+        }
+        return $result;
     }
     
     /**
