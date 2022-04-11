@@ -73,8 +73,16 @@ class Tiqr_UserSecretStorage
                 $userName = $options['username'];
                 $password = $options['password'];
 
+                try {
+                    $handle = new PDO($dsn, $userName, $password);
+                } catch (PDOException $e) {
+                    $logger->error(
+                        sprintf('Unable to establish a PDO connection. Error message from PDO: %s', $e->getMessage())
+                    );
+                }
+
                 require_once("Tiqr/UserSecretStorage/Pdo.php");
-                return new Tiqr_UserSecretStorage_Pdo($encryption, $logger, $dsn, $userName, $password, $tableName);
+                return new Tiqr_UserSecretStorage_Pdo($encryption, $logger, $handle, $tableName);
             case "oathserviceclient":
                 require_once("Tiqr/UserSecretStorage/OathServiceClient.php");
                 if (!array_key_exists('apiURL', $options)) {

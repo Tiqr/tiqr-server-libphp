@@ -14,7 +14,7 @@ class Tiqr_UserSecretStorageTest extends TestCase
     {
         $allOptions = [
             'path' => './',
-            'dsn' => 'foobar:user:pass',
+            'dsn' => 'sqlite:/tmp/db.sqlite',
             'username'=> 'user',
             'password'=>'secret',
             'apiURL'=>'',

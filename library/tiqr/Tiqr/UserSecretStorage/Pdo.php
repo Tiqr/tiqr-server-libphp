@@ -47,29 +47,18 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
     /**
      * @param Tiqr_UserSecretStorage_Encryption_Interface $encryption
      * @param LoggerInterface $logger
-     * @param string $dsn
-     * @param string $userName
-     * @param string $password
-     * @param string $tableName
+     * @param PDO $handle
      */
     public function __construct(
         Tiqr_UserSecretStorage_Encryption_Interface $encryption,
         LoggerInterface $logger,
-        string $dsn,
-        string $userName,
-        string $password,
-        string $tableName = 'tiqrusersecret'
+        PDO $handle,
+        string $tableName
     ) {
         $this->encryption = $encryption;
         $this->logger = $logger;
+        $this->handle = $handle;
         $this->tableName = $tableName;
-        try {
-            $this->handle = new PDO($dsn, $userName, $password);
-        } catch (PDOException $e) {
-            $this->logger->error(
-                sprintf('Unable to establish a PDO connection. Error message from PDO: %s', $e->getMessage())
-            );
-        }
     }
     private function userExists($userId)
     {
@@ -117,7 +106,7 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
         }
         $result = $sth->execute(array($secret,$userId));
         if (!$result) {
-            $this->logger->error('Unable to persist user secret in user secret storage (PDO)');
+            throw new Tiqr_Exception_ReadWriteException('Unable to persist user secret in user secret storage (PDO)');
         }
     }
 }
