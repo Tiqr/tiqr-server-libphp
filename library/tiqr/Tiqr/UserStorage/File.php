@@ -45,18 +45,4 @@ class Tiqr_UserStorage_File extends Tiqr_UserStorage_GenericStore
         parent::__construct($config, $logger);
         $this->path = $config["path"];
     }
-
-    /**
-     * Delete user data (un-enroll).
-     * @param String $userId
-     */
-    protected function _deleteUser($userId)
-    {
-        $filename = $this->getPath().$userId.".json";
-        if (file_exists($filename)) {
-            unlink($filename);
-        } else {
-            $this->logger->error('Unable to remove the user from user storage (file storage)');
-        }
-    }
 }
