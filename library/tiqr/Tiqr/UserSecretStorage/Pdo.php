@@ -106,7 +106,7 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
         }
         $result = $sth->execute(array($secret,$userId));
         if (!$result) {
-            throw new Tiqr_Exception_ReadWriteException('Unable to persist user secret in user secret storage (PDO)');
+            throw new ReadWriteException('Unable to persist user secret in user secret storage (PDO)');
         }
     }
 }

@@ -22,14 +22,14 @@ interface Tiqr_StateStorage_StateStorageInterface
      * @param String $key The key identifying the data
      * @param mixed $value The data to store in state storage
      * @param int $expire The expiration (in seconds) of the data
-     * @throws Tiqr_Exception_ReadWriteException
+     * @throws ReadWriteException
      */
     public function setValue($key, $value, $expire=0);
 
     /**
      * Remove a value from the state storage
      * @param String $key The key identifying the data to be removed.
-     * @throws Tiqr_Exception_ReadWriteException
+     * @throws ReadWriteException
      */
     public function unsetValue($key);
 

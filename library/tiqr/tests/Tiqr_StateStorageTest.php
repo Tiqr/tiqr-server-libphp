@@ -56,7 +56,7 @@ class Tiqr_StateStorageTest extends TestCase
 
     public function test_unsetting_a_non_existing_key_results_in_error() {
         $stateStorage = $this->createStateStorage();
-        $this->expectException(Tiqr_Exception_ReadWriteException::class);
+        $this->expectException(ReadWriteException::class);
         $stateStorage->unsetValue('i-do-not-exist');
     }
 

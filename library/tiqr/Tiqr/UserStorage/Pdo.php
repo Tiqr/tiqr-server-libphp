@@ -64,7 +64,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
         if ($sth->execute(array($displayName,$userId))){
             return $this->userExists($userId);
         }
-        throw new Tiqr_Exception_ReadWriteException('The user could not be saved in the user storage (PDO)');
+        throw new ReadWriteException('The user could not be saved in the user storage (PDO)');
     }
 
     /**

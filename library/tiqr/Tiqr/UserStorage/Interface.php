@@ -47,7 +47,7 @@ interface Tiqr_UserStorage_Interface
      * Store a new user with a certain displayName.
      * @param String $userId
      * @param String $displayName
-     * @throws Tiqr_Exception_ReadWriteException
+     * @throws ReadWriteException
      */
     public function createUser($userId, $displayName);
     
@@ -76,7 +76,7 @@ interface Tiqr_UserStorage_Interface
      * Set the notification type of a user.
      * @param String $userId
      * @param String $type
-     * @throws Tiqr_Exception_ReadWriteException
+     * @throws ReadWriteException
      */
     public function setNotificationType($userId, $type);
     
@@ -91,7 +91,7 @@ interface Tiqr_UserStorage_Interface
      * Set the notification address of a user's device
      * @param String $userId
      * @param String $address
-     * @throws Tiqr_Exception_ReadWriteException
+     * @throws ReadWriteException
      */
     public function setNotificationAddress($userId, $address);
     
@@ -104,7 +104,7 @@ interface Tiqr_UserStorage_Interface
      * Set the amount of unsuccessful login attempts.
      * @param String $userId
      * @param int $amount
-     * @throws Tiqr_Exception_ReadWriteException
+     * @throws ReadWriteException
      */
     public function setLoginAttempts($userId, $amount);
     
@@ -119,7 +119,7 @@ interface Tiqr_UserStorage_Interface
      * Block the user account.
      * @param $userId
      * @param $blocked true to block, false to unblock
-     * @throws Tiqr_Exception_ReadWriteException
+     * @throws ReadWriteException
      */
     public function setBlocked($userId, $blocked);
     
@@ -127,7 +127,7 @@ interface Tiqr_UserStorage_Interface
      * Set the number of times a temporary block was set during this session
      * @param string $userId
      * @param int $amount
-     * @throws Tiqr_Exception_ReadWriteException
+     * @throws ReadWriteException
      */
     public function setTemporaryBlockAttempts($userId, $amount);
     
@@ -141,7 +141,7 @@ interface Tiqr_UserStorage_Interface
      * Set the timestamp for the temporary block
      * @param string $userId
      * @param string $timestamp
-     * @throws Tiqr_Exception_ReadWriteException
+     * @throws ReadWriteException
      */
     public function setTemporaryBlockTimestamp($userId, $timestamp);
     

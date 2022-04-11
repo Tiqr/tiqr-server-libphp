@@ -65,7 +65,7 @@ class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface
     public function unsetValue($key)
     {
         $filename = $this->getFilenameByKey($key);
-        if (file_exists($filename) & !unlink($filename)) {
+        if (file_exists($filename) && !unlink($filename)) {
             throw new ReadWriteException(
                 sprintf(
                     'Unable to unlink the "%s" value from state storage on filesystem',

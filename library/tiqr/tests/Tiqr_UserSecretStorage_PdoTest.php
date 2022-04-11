@@ -66,7 +66,7 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
             ->with('UPDATE tiqrusersecret SET secret = ? WHERE userid = ?')
             ->andReturn($updateStatement);
 
-        $this->expectException(Tiqr_Exception_ReadWriteException::class);
+        $this->expectException(ReadWriteException::class);
         $this->expectExceptionMessage('Unable to persist user secret in user secret storage (PDO)');
         $store->setSecret('UserId', 'My Secret');
     }

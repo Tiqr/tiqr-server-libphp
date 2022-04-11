@@ -16,6 +16,6 @@
  * limitations under the License.
  */
 
-class Tiqr_Exception_ReadWriteException extends RuntimeException
+class ReadWriteException extends RuntimeException
 {
 }
