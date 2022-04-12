@@ -2,11 +2,13 @@
 
 require_once 'tiqr_autoloader.inc';
 
+use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 class Tiqr_StateStorageTest extends TestCase
 {
+    use MockeryPHPUnitIntegration;
     /**
      * @var LoggerInterface
      */
@@ -17,14 +19,16 @@ class Tiqr_StateStorageTest extends TestCase
         $this->logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
     }
 
-    private function makeTempDir() {
+    private function makeTempDir()
+    {
         $t=tempnam(sys_get_temp_dir(),'Tiqr_StateStorageTest');
         unlink($t);
         mkdir($t);
         return $t;
     }
 
-    public function testStateStorage_File() {
+    public function testStateStorage_File()
+    {
         // No config, always writes to /tmp
         $ss = Tiqr_StateStorage::getStorage("file", ['path' => '/tmp'], $this->logger);
         $this->assertInstanceOf(Tiqr_StateStorage_File::class, $ss);
@@ -46,17 +50,18 @@ class Tiqr_StateStorageTest extends TestCase
         Tiqr_StateStorage::getStorage("Fictional_Service_That_Was_Implements_StateStorage.php", array(), $this->logger);
     }
 
-    public function testStateStorage_Pdo() {
-
+    public function testStateStorage_Pdo()
+    {
         $stateStorage = $this->createStateStorage();
         $this->assertInstanceOf(Tiqr_StateStorage_Pdo::class, $stateStorage);
 
         $this->stateTests($stateStorage);
     }
 
-    public function test_unsetting_a_non_existing_key_results_in_error() {
+    public function test_unsetting_a_non_existing_key_does_not_result_in_error()
+    {
         $stateStorage = $this->createStateStorage();
-        $this->expectException(ReadWriteException::class);
+        $this->logger->shouldReceive('info')->once();
         $stateStorage->unsetValue('i-do-not-exist');
     }
 
@@ -83,7 +88,8 @@ class Tiqr_StateStorageTest extends TestCase
         ];
     }
 
-    private function stateTests(Tiqr_StateStorage_StateStorageInterface $ss) {
+    private function stateTests(Tiqr_StateStorage_StateStorageInterface $ss)
+    {
         // Gettng nonexistent value returns NULL
         $this->assertEquals(NULL,  $ss->getValue("nonexistent_key"));
 
