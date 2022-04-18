@@ -17,6 +17,7 @@ namespace TestServer;
 require_once __DIR__ . '/TestServerApp.php';
 require_once __DIR__ . '/TestServerController.php';
 require_once __DIR__ . '/TestServerView.php';
+require_once __DIR__ . '/TestServerPsrLogger.php';
 
 // TODO: Update / set configuration. See readme
 $config_filename = 'config';
@@ -37,10 +38,8 @@ $apns_certificate_filename =  App::realpath($config['apns_certificate_filename']
 $apns_environment =  $config['apns_environment'] ?? 'sandbox';
 $firebase_apikey = $config['firebase_apikey'] ?? '';
 
-
-
-
-$test_server = new TestServerController($host_url, $tiqrauth_protocol, $tiqrenroll_protocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_apikey);
+$psr_logger = new TestServerPsrLogger();
+$test_server = new TestServerController($psr_logger, $host_url, $tiqrauth_protocol, $tiqrenroll_protocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_apikey);
 $app = new TestServerApp($test_server);
 $app->HandleHTTPRequest();
 

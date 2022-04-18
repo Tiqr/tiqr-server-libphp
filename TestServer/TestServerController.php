@@ -18,9 +18,11 @@ class TestServerController
 {
     private $tiqrService;
     private $userStorage;
+    private $userSecretStorage;
     private $host_url;
     private $apns_certificate_filename;
     private $apns_environment;
+    private $logger;
 
     /**
      * @param $host_url This is the URL by which the tiqr client can reach this server, including http(s):// and port.
@@ -38,12 +40,14 @@ class TestServerController
      * @param string $apns_environment The APNS environment to use. 'production' or 'sandbox'
      * @param string $firebase_apikey The Google firebase API key. Required for sending FCM push notifications
      */
-    function __construct(string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_apikey)
+    function __construct(LoggerInterface $logger, string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_apikey)
     {
+        $this->logger = $logger;
         $this->host_url = $host_url;
         $this->initTiqrLibrary();
         $this->tiqrService = $this->createTiqrService($host_url, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_apikey);
         $this->userStorage = $this->createUserStorage();
+        $this->userSecretStorage = $this->createUserSecretStorage();
     }
 
     /** Initialize the tiqr-server-libphp's autoloader
@@ -90,6 +94,7 @@ class TestServerController
         $storage_dir = $this->getStorageDir();
 
         $tiqr_service = new Tiqr_Service(
+            $this->logger,
             [
                 'auth.protocol' => $authProtocol,
                 'enroll.protocol' => $enrollProtocol,
@@ -138,18 +143,26 @@ class TestServerController
             'type' => 'file',
             'path' => $storage_dir,
         );
-        $secretoptions = array(
-            'type' => 'file',
-            'path' => $storage_dir,
-        );
-
-        $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
 
         return $userStorage = Tiqr_UserStorage::getStorage(
             'file',
             $options,
-            $secretoptions,
-            $logger
+            $this->logger
+        );
+    }
+
+    private function createUserSecretStorage()
+    {
+        $storage_dir = $this->getStorageDir();
+        $options = array(
+            'type' => 'file',
+            'path' => $storage_dir,
+        );
+
+        return $userStorage = \Tiqr_UserSecretStorage::getSecretStorage(
+            'file',
+            $this->logger,
+            $options
         );
     }
 
@@ -377,7 +390,7 @@ class TestServerController
         $app::log_info("Created user $userid");
 
         // Set the user secret
-        $this->userStorage->setSecret($userid, $secret);
+        $this->userSecretStorage->setSecret($userid, $secret);
         $app::log_info("Secret for $userid was stored");
 
         // Store notification type and the notification address that the client sent us
@@ -459,7 +472,7 @@ class TestServerController
         if (strlen($user_id) > 0) {
             // Calculate response
             $app::log_info("Calculating response for $user_id");
-            $secret = $this->userStorage->getSecret($user_id);
+            $secret = $this->userSecretStorage->getSecret($user_id);
             $app::log_info("secret=$secret");
             $exploded = explode('/', $authentication_URL);
             $session_key = $exploded[3]; // hex encoded session
@@ -617,7 +630,7 @@ class TestServerController
         }
 
         // Lookup the secret of the user by ID
-        $userSecret = $this->userStorage->getSecret($userId);   // Assume this works
+        $userSecret = $this->userSecretStorage->getSecret($userId);   // Assume this works
         $app::log_info("userSercret=$userSecret");
 
         $app::log_info("Authenticating user");
