@@ -52,7 +52,10 @@ class Tiqr_StateStorage
         switch ($type) {
             case "file":
                 require_once("Tiqr/StateStorage/File.php");
-                $instance = new Tiqr_StateStorage_File($options, $logger);
+                if (!array_key_exists('path', $options)) {
+                    throw new RuntimeException('The path is missing in the StateStorage configuration');
+                }
+                $instance = new Tiqr_StateStorage_File($options['path'], $logger);
                 $instance->init();
                 return $instance;
             case "memcache":

@@ -72,9 +72,13 @@ class Tiqr_StateStoragePdoTest extends TestCase
         // declared to prevent expectation errors. Covering them in the expectation above
         // raises side effects, as it becomes impossible to tell in what order the prepare
         // statement is called.
+        $statement = m::mock(PDOStatement::class)->shouldIgnoreMissing();
         $this->pdoInstance
             ->shouldReceive('prepare')
-            ->andReturn(m::mock(PDOStatement::class)->shouldIgnoreMissing());
+            ->andReturn($statement);
+        $statement
+            ->shouldReceive('execute')
+            ->andReturn(true);
 
         $this->stateStorage->setValue('key', 'data', 1);
     }

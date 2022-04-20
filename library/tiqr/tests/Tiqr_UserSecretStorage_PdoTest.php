@@ -17,12 +17,17 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
      */
     private $dsn;
 
+    /**
+     * @var \Mockery\LegacyMockInterface|\Mockery\MockInterface|PDO
+     */
+    private $pdoInstance;
+
     protected function setUp(): void
     {
         $targetPath = $this->makeTempDir();
         $this->dsn = 'sqlite:' . $targetPath . '/state.sq3';
         $this->setUpDatabase($this->dsn);
-        $pdoInstance = new PDO($this->dsn, null, null);
+        $pdoInstance = new PDO($this->dsn, 'root', 'secret');
         $this->pdoInstance = Mockery::mock($pdoInstance);
         $this->logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
     }
@@ -37,6 +42,33 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
     {
         // For refactoring: user secret storage should not be on the user storage anymore
         $this->assertClassNotHasAttribute('_userSecretStorage', Tiqr_UserStorage_Pdo::class);
+    }
+
+    public function test_exception_expected_when_set_secret_fails()
+    {
+        $store = $this->buildUserSecretStorage();
+
+        $selectStatement = Mockery::mock(PDOStatement::class);
+        $selectStatement->shouldReceive('execute')->andReturn(true);
+        $selectStatement->shouldReceive('fetchColumn')->andReturn('user1');
+
+        $updateStatement = Mockery::mock(PDOStatement::class);
+        $updateStatement->shouldReceive('execute')->andReturn(false);
+
+        $this->pdoInstance
+            ->shouldReceive('prepare')
+            ->with('SELECT userid FROM tiqrusersecret WHERE userid = ?')
+            ->andReturn($selectStatement);
+
+
+        $this->pdoInstance
+            ->shouldReceive('prepare')
+            ->with('UPDATE tiqrusersecret SET secret = ? WHERE userid = ?')
+            ->andReturn($updateStatement);
+
+        $this->expectException(ReadWriteException::class);
+        $this->expectExceptionMessage('Unable to persist user secret in user secret storage (PDO)');
+        $store->setSecret('UserId', 'My Secret');
     }
 
     public function test_it_can_store_and_retrieve_an_user_secret()
@@ -68,9 +100,7 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
         return new Tiqr_UserSecretStorage_Pdo(
             new Tiqr_UserSecretStorage_Encryption_Dummy([]),
             $this->logger,
-            $this->dsn,
-            'root',
-            'secret',
+            $this->pdoInstance,
             'tiqrusersecret'
         );
     }

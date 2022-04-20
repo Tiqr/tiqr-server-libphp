@@ -2,11 +2,13 @@
 
 require_once 'tiqr_autoloader.inc';
 
+use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 class Tiqr_StateStorageTest extends TestCase
 {
+    use MockeryPHPUnitIntegration;
     /**
      * @var LoggerInterface
      */
@@ -17,16 +19,18 @@ class Tiqr_StateStorageTest extends TestCase
         $this->logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
     }
 
-    private function makeTempDir() {
+    private function makeTempDir()
+    {
         $t=tempnam(sys_get_temp_dir(),'Tiqr_StateStorageTest');
         unlink($t);
         mkdir($t);
         return $t;
     }
 
-    function testStateStorage_File() {
+    public function testStateStorage_File()
+    {
         // No config, always writes to /tmp
-        $ss=Tiqr_StateStorage::getStorage("file", array(), $this->logger);
+        $ss = Tiqr_StateStorage::getStorage("file", ['path' => '/tmp'], $this->logger);
         $this->assertInstanceOf(Tiqr_StateStorage_File::class, $ss);
 
         $this->stateTests($ss);
@@ -46,36 +50,19 @@ class Tiqr_StateStorageTest extends TestCase
         Tiqr_StateStorage::getStorage("Fictional_Service_That_Was_Implements_StateStorage.php", array(), $this->logger);
     }
 
-    function testStateStorage_Pdo() {
-        $tmpDir = $this->makeTempDir();
-        $dsn = 'sqlite:' . $tmpDir . '/state.sq3';
-        // Create test database
-        $pdo = new PDO(
-            $dsn,
-            null,
-            null,
-            array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,)
-        );
-        $this->assertTrue(
-            0 === $pdo->exec( <<<SQL
-                CREATE TABLE state (
-                    key varchar(255) PRIMARY KEY,
-                    expire int,
-                    value text
-                );
-SQL
-            ) );
-        $options=array(
-            'table' => 'state',
-            'dsn' => $dsn,
-            'username' => null,
-            'password' => null,
-            'cleanup_probability' => 0.6
-        );
-        $ss=Tiqr_StateStorage::getStorage("pdo", $options, $this->logger);
-        $this->assertInstanceOf(Tiqr_StateStorage_Pdo::class, $ss);
+    public function testStateStorage_Pdo()
+    {
+        $stateStorage = $this->createStateStorage();
+        $this->assertInstanceOf(Tiqr_StateStorage_Pdo::class, $stateStorage);
 
-        $this->stateTests($ss);
+        $this->stateTests($stateStorage);
+    }
+
+    public function test_unsetting_a_non_existing_key_does_not_result_in_error()
+    {
+        $stateStorage = $this->createStateStorage();
+        $this->logger->shouldReceive('info')->once();
+        $stateStorage->unsetValue('i-do-not-exist');
     }
 
     /**
@@ -101,9 +88,8 @@ SQL
         ];
     }
 
-    private function stateTests(Tiqr_StateStorage_Abstract $ss) {
-        $ss->unsetValue("nonexistent_key");
-
+    private function stateTests(Tiqr_StateStorage_StateStorageInterface $ss)
+    {
         // Gettng nonexistent value returns NULL
         $this->assertEquals(NULL,  $ss->getValue("nonexistent_key"));
 
@@ -152,5 +138,28 @@ SQL
         // Check that keys with longer expiry still exist
         $this->assertEquals('long-expiry-value', $ss->getValue('long-expiry-key'));  // Must still exist
         $this->assertEquals('second-value', $ss->getValue('update_key'));  // Must still exist because we set it to never expire
+    }
+
+    private function createStateStorage(): Tiqr_StateStorage_Pdo
+    {
+        $tmpDir = $this->makeTempDir();
+        $dsn = 'sqlite:' . $tmpDir . '/state.sq3';
+        // Create test database
+        $pdo = new PDO(
+            $dsn,
+            null,
+            null,
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,]
+        );
+        $pdo->exec("CREATE TABLE state (key varchar(255) PRIMARY KEY, expire int, value text)");
+
+        $options = [
+            'table' => 'state',
+            'dsn' => $dsn,
+            'username' => null,
+            'password' => null,
+            'cleanup_probability' => 0.6,
+        ];
+        return Tiqr_StateStorage::getStorage("pdo", $options, $this->logger);
     }
 }

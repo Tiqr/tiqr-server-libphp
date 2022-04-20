@@ -68,12 +68,14 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         if ($sth->execute(array($key))) {
             return $sth->fetchColumn();
         }
-        $this->logger->error('The state storage key could not be found in the database');
+        $this->logger->info('The state storage key could not be found in the database');
     }
 
     private function cleanExpired() {
         $sth = $this->handle->prepare("DELETE FROM ".$this->tablename." WHERE `expire` < ? AND NOT `expire` = 0");
-        if (!$sth->execute(array(time()))){
+        $result = $sth->execute(array(time()));
+        if (!$result || $sth->rowCount() === 0){
+            // No exception is thrown here. The application can continue with expired state for now.
             $this->logger->error('Unable to remove expired keys from the pdo state storage');
         }
     }
@@ -96,7 +98,9 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         if ($expire != 0) {
             $expire+=time();    // Store unix timestamp after which the expires
         }
-        $sth->execute(array(serialize($value),$expire,$key));
+        if (!$sth->execute(array(serialize($value),$expire,$key))) {
+            throw new ReadWriteException(sprintf('Unable to store "%s" state to the PDO', $key));
+        }
     }
         
     /**
@@ -105,10 +109,20 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
      */
     public function unsetValue($key)
     {
-        $sth = $this->handle->prepare("DELETE FROM ".$this->tablename." WHERE `key` = ?");
-        if (!$sth->execute(array($key))) {
-            $this->logger->error('Unable to unset key from the pdo state storage');
+        if ($this->keyExists($key)) {
+            $sth = $this->handle->prepare("DELETE FROM " . $this->tablename . " WHERE `key` = ?");
+            $result = $sth->execute(array($key));
+            if (!$result || $sth->rowCount() === 0) {
+                throw new ReadWriteException(
+                    sprintf(
+                        'Unable to unlink the "%s" value from state storage, key not found on pdo',
+                        $key
+                    )
+                );
+            }
+            return;
         }
+        $this->logger->info(sprintf('Unable to unlink the "%s" value from state storage, key does not exist on pdo', $key));
     }
     
     /**

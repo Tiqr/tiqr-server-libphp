@@ -23,31 +23,35 @@ class Tiqr_ServiceTest extends TestCase
             'name' => 'Test service name',
             'logoUrl' => 'http://tiqr.example.org/logoUrl',
             'infoUrl' => 'http://tiqr.example.org/infoUrl',
-            // 'phpqrcode.path'
-            // 'apns.path'
-            // 'apns.certificate'
             'apns.environment' => 'sandbox',
-            'statestorage' => array(
+            'statestorage' => [
                 'type' => 'file',
-            ),
-            'devicestorage' => array(
+                'path' => '/tmp',
+            ],
+            'devicestorage' => [
                 'type' => 'dummy',
-            )
+            ]
         );
     }
 
     // Test creating a new tiqr service
     public function testDefaultConstructor() {
         $_SERVER['SERVER_NAME'] = 'dummy.example.org';
-        $service = new Tiqr_Service($this->logger);
+        $service = new Tiqr_Service($this->logger, ['statestorage' => ['type' => 'file', 'path' => '/src']]);
+        $this->assertInstanceOf(Tiqr_Service::class, $service);
+    }
+
+    // Test creating a new tiqr service
+    public function testDefaultConstructorPathOnFileStateStorageIsRequired() {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('The path is missing in the StateStorage configuration');
+        $service = new Tiqr_Service($this->logger, ['statestorage' => ['type' => 'file']]);
         $this->assertInstanceOf(Tiqr_Service::class, $service);
     }
 
     public function testOptions() {
-
         $service = new Tiqr_Service($this->logger, $this->getOptions());
         $this->assertInstanceOf(Tiqr_Service::class, $service);
-
         $this->assertSame($service->getIdentifier(), 'test.identifier.example.org');
     }
 

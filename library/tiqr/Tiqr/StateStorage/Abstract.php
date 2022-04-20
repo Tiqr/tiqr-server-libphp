@@ -27,7 +27,7 @@ use Psr\Log\LoggerInterface;
  * @author ivo
  *
  */
-abstract class Tiqr_StateStorage_Abstract
+abstract class Tiqr_StateStorage_Abstract implements Tiqr_StateStorage_StateStorageInterface
 {
     /**
      * The options for the storage. Derived classes can access this
@@ -41,27 +41,6 @@ abstract class Tiqr_StateStorage_Abstract
      */
     protected $logger;
 
-    /**
-     * Store a value with a certain key in the statestorage.
-     * @param String $key The key identifying the data
-     * @param mixed $value The data to store in state storage
-     * @param int $expire The expiration (in seconds) of the data
-     */
-    public abstract function setValue($key, $value, $expire=0);
-    
-    /**
-     * Remove a value from the state storage
-     * @param String $key The key identifying the data to be removed.
-     */
-    public abstract function unsetValue($key);
-    
-    /**
-     * Retrieve the data for a certain key.
-     * @param String $key The key identifying the data to be retrieved.
-     * @return mixed The data associated with the key
-     */
-    public abstract function getValue($key);
-    
     /**
      * An initializer that will be called directly after instantiating
      * the storage. Derived classes can override this to perform 
@@ -84,7 +63,6 @@ abstract class Tiqr_StateStorage_Abstract
     public function __construct($options=array(), LoggerInterface $logger)
     {
         $this->logger = $logger;
-        $this->_options = $options;        
+        $this->_options = $options;
     }
-        
 }

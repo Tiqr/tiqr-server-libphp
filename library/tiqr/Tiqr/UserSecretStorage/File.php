@@ -65,7 +65,7 @@ class Tiqr_UserSecretStorage_File implements Tiqr_UserSecretStorage_Interface
                 return $data["secret"];
             }
         }
-        $this->logger->error('Unable to retrieve the secret (user not found). In user secret storage (file)');
+        $this->logger->notice('Unable to retrieve the secret (user not found). In user secret storage (file)');
         return NULL;
     }
 

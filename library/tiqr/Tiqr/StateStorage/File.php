@@ -17,6 +17,8 @@
  * @copyright (C) 2010-2011 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 
 /**
  * File based implementation to store session state data. 
@@ -30,20 +32,28 @@
  * @author ivo
  *
  */
-class Tiqr_StateStorage_File extends Tiqr_StateStorage_Abstract
+class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface
 {
-    /**
-     * (non-PHPdoc)
-     * @see library/tiqr/Tiqr/StateStorage/Tiqr_StateStorage_Abstract::setValue()
-     */
+    private $logger;
+
+    private $path;
+
+    public function __construct(string $path, LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+        $this->path = $path;
+    }
+
     public function setValue($key, $value, $expire=0)
     {   
         $envelope = array("expire"=>$expire,
                           "createdAt"=>time(),
                           "value"=>$value);
-        $filename = $this->_stateFilename($key);
+        $filename = $this->getFilenameByKey($key);
         
-        file_put_contents($filename, serialize($envelope));
+        if (!file_put_contents($filename, serialize($envelope))) {
+            throw new ReadWriteException(sprintf('Unable to store "%s" state to the filesystem', $key));
+        }
         
         return $key;
     }
@@ -54,11 +64,14 @@ class Tiqr_StateStorage_File extends Tiqr_StateStorage_Abstract
      */
     public function unsetValue($key)
     {
-        $filename = $this->_stateFilename($key);
-        if (file_exists($filename)) {
-            unlink($filename);
-        } else {
-            $this->logger->error('Unable to unlink the value from state storage, key not found on filesystem');
+        $filename = $this->getFilenameByKey($key);
+        if (file_exists($filename) && !unlink($filename)) {
+            throw new ReadWriteException(
+                sprintf(
+                    'Unable to unlink the "%s" value from state storage on filesystem',
+                    $key
+                )
+            );
         }
     }
     
@@ -68,30 +81,43 @@ class Tiqr_StateStorage_File extends Tiqr_StateStorage_Abstract
      */
     public function getValue($key)
     {
-        $filename = $this->_stateFilename($key);
+        $filename = $this->getFilenameByKey($key);
         if (file_exists($filename)) {
-            $envelope = unserialize(file_get_contents($filename));
-            if ($envelope["expire"]!=0) {
-                 // This data is time-limited. If it's too old we discard it.
-                 if (time()-$envelope["createdAt"] > $envelope["expire"]) {
-                     $this->unsetValue($key);
-                     $this->logger->error('Unable to retrieve the state storage value, it is expired');
-                     return NULL;
-                 }
+            $envelope = unserialize(file_get_contents($filename), ['allowed_classes' => false]);
+            // This data is time-limited. If it's too old we discard it.
+            if (($envelope["expire"] != 0) && time() - $envelope["createdAt"] > $envelope["expire"]) {
+                $this->unsetValue($key);
+                $this->logger->notice('Unable to retrieve the state storage value, it is expired');
+                return null;
             }
             return $envelope["value"];
         }
-        $this->logger->error('Unable to retrieve the state storage value, file not found');
+        $this->logger->notice('Unable to retrieve the state storage value, file not found');
         return NULL;
     }
-    
+
+    private function getPath(): string
+    {
+        if (substr($this->path, -1)!=="/") {
+            return $this->path . "/";
+        }
+        return $this->path;
+    }
+
     /**
      * Determine the name of a temporary file to hold the contents of $key
-     * @param String $key The key for which to store data.
      */
-    protected function _stateFilename($key)
+    private function getFilenameByKey(string $key): string
     {
-        return "/tmp/tiqr_state_".strtr(base64_encode($key), '+/', '-_');
+        return sprintf(
+            "%stiqr_state_%s",
+            $this->getPath(),
+            strtr(base64_encode($key), '+/', '-_')
+        );
     }
-    
+
+    public function init()
+    {
+        # Nothing to do here
+    }
 }

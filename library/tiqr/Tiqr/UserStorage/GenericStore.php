@@ -33,8 +33,6 @@ abstract class Tiqr_UserStorage_GenericStore extends Tiqr_UserStorage_Abstract
   
     abstract protected function _saveUser($userId, $data);
 
-    abstract protected function _deleteUser($userId);
-
 
     /**
      * (non-PHPdoc)

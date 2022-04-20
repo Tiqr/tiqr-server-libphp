@@ -201,9 +201,7 @@ class Tiqr_Service
             $type = $options["statestorage"]["type"];
             $storageOptions = $options["statestorage"];
         } else {
-            $this->logger->info('Falling back to file state storage');
-            $type = "file";
-            $storageOptions = array();
+            throw new RuntimeException('No state storage configuration is configured, please provide one');
         }
 
         $this->logger->info(sprintf('Creating a %s state storage', $type));
