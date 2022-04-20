@@ -44,10 +44,6 @@ class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface
         $this->path = $path;
     }
 
-    /**
-     * (non-PHPdoc)
-     * @see library/tiqr/Tiqr/StateStorage/Tiqr_StateStorage_Abstract::setValue()
-     */
     public function setValue($key, $value, $expire=0)
     {   
         $envelope = array("expire"=>$expire,
@@ -56,7 +52,7 @@ class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface
         $filename = $this->getFilenameByKey($key);
         
         if (!file_put_contents($filename, serialize($envelope))) {
-            $this->logger->error('Unable to write the value to state storage');
+            throw new ReadWriteException(sprintf('Unable to store "%s" state to the filesystem', $key));
         }
         
         return $key;
@@ -69,10 +65,13 @@ class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface
     public function unsetValue($key)
     {
         $filename = $this->getFilenameByKey($key);
-        if (file_exists($filename)) {
-            unlink($filename);
-        } else {
-            $this->logger->error('Unable to unlink the value from state storage, key not found on filesystem');
+        if (file_exists($filename) && !unlink($filename)) {
+            throw new ReadWriteException(
+                sprintf(
+                    'Unable to unlink the "%s" value from state storage on filesystem',
+                    $key
+                )
+            );
         }
     }
     

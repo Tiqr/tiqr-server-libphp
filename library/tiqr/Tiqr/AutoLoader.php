@@ -37,6 +37,8 @@ class Tiqr_AutoLoader {
 			$file = $self->qrcodePath . DIRECTORY_SEPARATOR . 'qrlib.php';
 		} elseif ($substr5 === 'Zend_') {
 			$file = $self->zendPath . DIRECTORY_SEPARATOR . str_replace('_', DIRECTORY_SEPARATOR, $className) . '.php';
+        } elseif ($className === 'ReadWriteException') {
+            $file = $self->tiqrPath . DIRECTORY_SEPARATOR . 'Tiqr/Exception/ReadWriteException.php';
 		} else {
 			return;
 		}

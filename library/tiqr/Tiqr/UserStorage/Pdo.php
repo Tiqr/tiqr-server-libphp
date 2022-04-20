@@ -64,7 +64,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
         if ($sth->execute(array($displayName,$userId))){
             return $this->userExists($userId);
         }
-        $this->logger->error('The user could not be saved in the user storage (PDO)');
+        throw new ReadWriteException('The user could not be saved in the user storage (PDO)');
     }
 
     /**
@@ -107,7 +107,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
     {
         $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET notificationtype = ? WHERE userid = ?");
         if (!$sth->execute(array($type,$userId))) {
-            $this->logger->error('Unable to set the notification type in user storage for a given user (PDO)');
+            throw new ReadWriteException('Unable to set the notification type in user storage for a given user (PDO)');
         }
     }
     
@@ -124,7 +124,8 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
     {
         $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET notificationaddress = ?  WHERE userid = ?");
         if (!$sth->execute(array($address,$userId))) {
-            $this->logger->error('Unable to set the notification address in user storage for a given user (PDO)');
+            throw new ReadWriteException('Unable to set the notification address in user storage for a given user (PDO)');
+
         }
     }
     
@@ -141,7 +142,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
     {
         $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET loginattempts = ? WHERE userid = ?");
         if (!$sth->execute(array($amount,$userId))) {
-            $this->logger->error('Unable to set login attempts in user storage for a given user (PDO)');
+            throw new ReadWriteException('Unable to set login attempts in user storage for a given user (PDO)');
         }
     }
     
@@ -167,14 +168,14 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
         $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET blocked = ? WHERE userid = ?");
         $isBlocked = ($blocked) ? "1" : "0";
         if (!$sth->execute([$isBlocked, $userId])) {
-            $this->logger->error('Unable to block the user in the user storage (PDO)');
+            throw new ReadWriteException('Unable to block the user in the user storage (PDO)');
         }
     }
     
     public function setTemporaryBlockAttempts($userId, $amount) {
         $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET tmpblockattempts = ? WHERE userid = ?");
         if (!$sth->execute(array($amount,$userId))) {
-            $this->logger->error('Unable to set temp login attempts in user storage for a given user (PDO)');
+            throw new ReadWriteException('Unable to set temp login attempts in user storage for a given user (PDO)');
         }
     }
 
@@ -199,7 +200,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
     {
         $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET tmpblocktimestamp = ? WHERE userid = ?");
         if (!$sth->execute(array($timestamp,$userId))) {
-            $this->logger->error('Unable to update temp lock timestamp in user storage for a given user (PDO)');
+            throw new ReadWriteException('Unable to update temp lock timestamp in user storage for a given user (PDO)');
         }
     }
             
@@ -217,5 +218,4 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
         }
         return false;
     }
-    
 }

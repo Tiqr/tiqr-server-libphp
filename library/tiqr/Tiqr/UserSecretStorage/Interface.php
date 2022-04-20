@@ -46,6 +46,7 @@ interface Tiqr_UserSecretStorage_Interface
      * Store a secret for a user.
      * @param String $userId
      * @param String $secret
+     * @throws ReadWriteException
      */
     public function setSecret($userId, $secret);
 }

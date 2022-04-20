@@ -19,14 +19,14 @@ trait FileTrait
 {
     /**
      * This function takes care of actually saving the user data to a JSON file.
-     * @param String $userId
+     * @param string $userId
      * @param array $data
+     * @throws ReadWriteException
      */
     protected function _saveUser($userId, $data)
     {
         if (file_put_contents($this->getPath().$userId.".json", json_encode($data)) === false) {
-            $this->logger->error('Unable to save the user to user storage (file storage)');
-            return false;
+            throw new ReadWriteException('Unable to save the user to user storage (file storage)');
         }
         return true;
     }
