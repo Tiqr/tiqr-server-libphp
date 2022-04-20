@@ -24,6 +24,8 @@
  */
 require_once("Tiqr/StateStorage/Abstract.php");
 
+use Psr\Log\LoggerInterface;
+
 /**
  * Utility class to create specific StateStorage instances.
  * StateStorage is used to store temporary information used during 
@@ -36,40 +38,61 @@ class Tiqr_StateStorage
     /**
      * Get a storage of a certain type (default: 'file')
      * @param String $type The type of storage to create. Supported
-     *                     types are 'file' and 'memcache'.
+     *                     types are 'file', 'pdo' and 'memcache'.
      * @param array $options The options to pass to the storage
      *                       instance. See the documentation
      *                       in the StateStorage/ subdirectory for
      *                       options per type.
-     * @throws Exception If an unknown type is requested.
+     * @throws RuntimeException If an unknown type is requested.
+     * @throws RuntimeException When the options configuration array misses a required parameter
+     *
      */
-    public static function getStorage($type="file", $options=array())
+    public static function getStorage($type="file", $options=array(), LoggerInterface $logger)
     {
         switch ($type) {
             case "file":
                 require_once("Tiqr/StateStorage/File.php");
-                $instance = new Tiqr_StateStorage_File($options);
-                break;
+                if (!array_key_exists('path', $options)) {
+                    throw new RuntimeException('The path is missing in the StateStorage configuration');
+                }
+                $instance = new Tiqr_StateStorage_File($options['path'], $logger);
+                $instance->init();
+                return $instance;
             case "memcache":
                 require_once("Tiqr/StateStorage/Memcache.php");
-                $instance = new Tiqr_StateStorage_Memcache($options);
-                break;
+                $instance = new Tiqr_StateStorage_Memcache($options, $logger);
+                $instance->init();
+                return $instance;
             case "pdo":
                 require_once("Tiqr/StateStorage/Pdo.php");
-                $instance = new Tiqr_StateStorage_Pdo($options);
-                break;
-            default:
-                if (!isset($type)) {
-                    throw new Exception('Class name not set');
-                } elseif (!class_exists($type)) {
-                    throw new Exception('Class not found: ' . var_export($type, TRUE));
-                } elseif (!is_subclass_of($type, 'Tiqr_StateStorage_Abstract')) {
-                    throw new Exception('Class ' . $type . ' not subclass of Tiqr_StateStorage_Abstract');
+
+                $requiredOptions = ['table', 'dsn', 'username', 'password'];
+                foreach ($requiredOptions as $requirement) {
+                    if (!array_key_exists($requirement, $options)) {
+                        throw new RuntimeException(
+                            sprintf(
+                                'Please configure the "%s" configuration option for the PDO state storage',
+                                $requirement
+                            )
+                        );
+                    }
                 }
-                $instance = new $type($options);
+
+                $pdoInstance = new PDO($options['dsn'],$options['username'],$options['password']);
+                // Set a hard-coded default for the probability the expired state is removed
+                // 0.1 translates to a 10% chance the garbage collection is executed
+                $cleanupProbability = 0.1;
+                if (array_key_exists('cleanup_probability', $options) && is_numeric($options['cleanup_probability'])) {
+                    $cleanupProbability = $options['cleanup_probability'];
+                }
+
+                $tablename = $options['table'];
+                $instance = new Tiqr_StateStorage_Pdo($pdoInstance, $logger, $tablename, $cleanupProbability);
+                $instance->init();
+                return $instance;
+
         }
 
-        $instance->init();
-        return $instance;
+        throw new RuntimeException(sprintf('Unable to create a StateStorage instance of type: %s', $type));
     }
 }

@@ -17,6 +17,9 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
+require_once 'Tiqr/UserStorage/FileTrait.php';
 require_once 'Tiqr/UserStorage/GenericStore.php';
 
 /**
@@ -28,74 +31,18 @@ require_once 'Tiqr/UserStorage/GenericStore.php';
  */
 class Tiqr_UserStorage_File extends Tiqr_UserStorage_GenericStore
 {
-    protected $_path;
+    use FileTrait;
+
+    protected $path;
 
     /**
      * Create an instance
-     * @param $config
+     * @param array $config
+     * @param LoggerInterface $logger
      */
-    public function __construct($config, $secretconfig = array())
+    public function __construct($config, LoggerInterface $logger)
     {
-        parent::__construct($config, $secretconfig);
-        $this->_path = $config["path"];
+        parent::__construct($config, $logger);
+        $this->path = $config["path"];
     }
-
-    /**
-     * This function takes care of actually saving the user data to a JSON file.
-     * @param String $userId
-     * @param array $data
-     */
-    protected function _saveUser($userId, $data)
-    {
-        file_put_contents($this->getPath().$userId.".json", json_encode($data));
-        return true;
-    }
-  
-    /**
-     * This function takes care of loading the user data from a JSON file.
-     * @param String $userId
-     * @return false if the data is not present, or an array containing the data.
-     */
-    protected function _loadUser($userId, $failIfNotFound = TRUE)
-    {
-        $fileName = $this->getPath().$userId.".json";
-
-        $data = NULL;
-        if (file_exists($fileName)) { 
-            $data = json_decode(file_get_contents($this->getPath().$userId.".json"), true);
-        }
-
-        if ($data === NULL) {
-            if ($failIfNotFound) {
-                throw new Exception('Error loading data for user: ' . var_export($userId, TRUE));
-            } else {
-                return false;
-            }
-        } else {
-            return $data;
-        }
-    }
-
-    /**
-     * Delete user data (un-enroll).
-     * @param String $userId
-     */
-    protected function _deleteUser($userId)
-    {
-        $filename = $this->getPath().$userId.".json";
-        if (file_exists($filename)) {
-            unlink($filename);
-        }
-    }
-
-    /**
-     * Retrieve the path where the json files are stored.
-     * @return String
-     */
-    public function getPath()
-    {
-         if (substr($this->_path, -1)!="/") return $this->_path."/";
-         return $this->_path;
-    }
-    
 }

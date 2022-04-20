@@ -19,6 +19,8 @@
 
 require_once("Tiqr/OcraService/Abstract.php");
 
+use Psr\Log\LoggerInterface;
+
 /**
  * Class implementing a factory to retrieve the ocra service to use
  *
@@ -35,27 +37,18 @@ class Tiqr_OcraService
      *                       instance.
      *
      * @return Tiqr_OcraService_Interface
+     * @throws Exception An exception if an unknown orca service type is requested.
      */
-    public static function getOcraService($type="tiqr", $options=array())
+    public static function getOcraService($type="tiqr", $options=array(), LoggerInterface $logger)
     {
         switch ($type) {
             case "tiqr":
                 require_once("Tiqr/OcraService/Tiqr.php");
-                $instance = new Tiqr_OcraService_Tiqr($options);
-                break;
+                return new Tiqr_OcraService_Tiqr($options, $logger);
             case "oathserviceclient":
                 require_once("Tiqr/OcraService/OathServiceClient.php");
-                $instance = new Tiqr_OcraService_OathServiceClient($options);
-                break;
-            default:
-                if (!isset($type)) {
-                    throw new Exception('Class name not set');
-                } elseif (!class_exists($type)) {
-                    throw new Exception('Class not found: ' . var_export($type, TRUE));
-                }
-                $instance = new $type($options);
+                return new Tiqr_OcraService_OathServiceClient($options, $logger);
         }
-
-        return $instance;
+        throw new RuntimeException(sprintf('Unable to create a OcraService instance of type: %s', $type));
     }
 }

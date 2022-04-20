@@ -34,9 +34,11 @@ class Tiqr_AutoLoader {
 		if ($substr5 === 'Tiqr_' || $substr5 === 'OATH_') {
 			$file = $self->tiqrPath . DIRECTORY_SEPARATOR . str_replace('_', DIRECTORY_SEPARATOR, $className) . '.php';
 		} elseif ($className === 'QRcode') {
-			$file = $self->qrcodePath . DIRECTORY_SEPARATOR . 'phpqrcode.php';
+			$file = $self->qrcodePath . DIRECTORY_SEPARATOR . 'qrlib.php';
 		} elseif ($substr5 === 'Zend_') {
 			$file = $self->zendPath . DIRECTORY_SEPARATOR . str_replace('_', DIRECTORY_SEPARATOR, $className) . '.php';
+        } elseif ($className === 'ReadWriteException') {
+            $file = $self->tiqrPath . DIRECTORY_SEPARATOR . 'Tiqr/Exception/ReadWriteException.php';
 		} else {
 			return;
 		}

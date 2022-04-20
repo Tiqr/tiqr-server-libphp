@@ -1,6 +1,7 @@
 filter:
     excluded_paths:
         - 'library/tiqr/tests/*'
+        - 'TestServer/*'
 
 checks:
     php:
@@ -11,8 +12,17 @@ coding_style:
     php: {  }
     
 build:
+    environment:
+        php: 7.2
     nodes:
         analysis:
             tests:
                 override:
                     - php-scrutinizer-run
+        coverage:
+            tests:
+                override:
+                    - command: XDEBUG_MODE=coverage; ./vendor/bin/phpunit
+                      coverage:
+                          file: coverage.xml
+                          format: clover

@@ -8,6 +8,26 @@
         "kairos/phpqrcode": "~1.0",
         "ext-gd": "*",
         "ext-curl": "*",
-        "ext-json": "*"
+        "ext-json": "*",
+        "php": ">=7.0",
+        "psr/log": "^1.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8.5",
+        "ext-pdo_sqlite": "*",
+        "mockery/mockery": "^1.3",
+        "phpmd/phpmd": "^2.12",
+        "squizlabs/php_codesniffer": "^2.9.2",
+        "zendframework/zend-coding-standard": "^1.0"
+    },
+    "scripts": {
+        "test": [
+            "@static-analysis",
+            "@phpunit",
+            "@security-tests"
+        ],
+        "static-analysis": "./ci/qa/static-analysis",
+        "phpunit": "./ci/qa/phpunit",
+        "security-tests": "./ci/qa/security-tests"
     }
 }

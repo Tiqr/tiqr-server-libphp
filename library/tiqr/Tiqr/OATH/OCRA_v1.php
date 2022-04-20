@@ -224,7 +224,7 @@ class OCRA_v1 {
     /**
      * Truncate a result to a certain length
      */    
-    function _oath_truncate($hash, $length = 6)
+    static function _oath_truncate($hash, $length = 6)
     {
         // Convert to dec
         foreach(str_split($hash,2) as $hex)

@@ -17,6 +17,8 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 /**
  * The interface that defines what a user class should implement. 
  * This interface can be used to adapt the module to a custom user backend. 
@@ -37,14 +39,15 @@ interface Tiqr_UserStorage_Interface
     /**
      * Construct a user class
      * @param array $config         The configuration that a specific user class may use.
-     * @param array $secretconfig   The configuration for storing the user's secret, fallback to $config if not available
+     * @param LoggerInterface $logger
      */
-    public function __construct($config, $secretconfig = array());
+    public function __construct($config, LoggerInterface $logger);
     
     /**
      * Store a new user with a certain displayName.
      * @param String $userId
      * @param String $displayName
+     * @throws ReadWriteException
      */
     public function createUser($userId, $displayName);
     
@@ -61,20 +64,6 @@ interface Tiqr_UserStorage_Interface
      * @return String the display name of this user
      */
     public function getDisplayName($userId);
-    
-    /**
-     * Get the user's secret
-     * @param String $userId
-     * @return String The user's secret
-     */
-    public function getSecret($userId);
-
-    /**
-     * Store a secret for a user.
-     * @param String $userId
-     * @param String $secret
-     */
-    public function setSecret($userId, $secret);
 
     /**
      * Get the type of device notifications a user supports 
@@ -87,6 +76,7 @@ interface Tiqr_UserStorage_Interface
      * Set the notification type of a user.
      * @param String $userId
      * @param String $type
+     * @throws ReadWriteException
      */
     public function setNotificationType($userId, $type);
     
@@ -101,6 +91,7 @@ interface Tiqr_UserStorage_Interface
      * Set the notification address of a user's device
      * @param String $userId
      * @param String $address
+     * @throws ReadWriteException
      */
     public function setNotificationAddress($userId, $address);
     
@@ -113,6 +104,7 @@ interface Tiqr_UserStorage_Interface
      * Set the amount of unsuccessful login attempts.
      * @param String $userId
      * @param int $amount
+     * @throws ReadWriteException
      */
     public function setLoginAttempts($userId, $amount);
     
@@ -127,6 +119,7 @@ interface Tiqr_UserStorage_Interface
      * Block the user account.
      * @param $userId
      * @param $blocked true to block, false to unblock
+     * @throws ReadWriteException
      */
     public function setBlocked($userId, $blocked);
     
@@ -134,6 +127,7 @@ interface Tiqr_UserStorage_Interface
      * Set the number of times a temporary block was set during this session
      * @param string $userId
      * @param int $amount
+     * @throws ReadWriteException
      */
     public function setTemporaryBlockAttempts($userId, $amount);
     
@@ -147,6 +141,7 @@ interface Tiqr_UserStorage_Interface
      * Set the timestamp for the temporary block
      * @param string $userId
      * @param string $timestamp
+     * @throws ReadWriteException
      */
     public function setTemporaryBlockTimestamp($userId, $timestamp);
     
