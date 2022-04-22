@@ -118,9 +118,10 @@ class TestServerController
                 'c2dm.password' => 'test_c2dm_password',
                 'c2dm.application' => 'org.example.authenticator.test',
 
-                // Session storage, always stored in /tmp/tiqr_state_*
+                // Session storage
                 'statestorage' => array(
                     'type' => 'file',
+                    'path' => $storage_dir,
                 ),
 
                 // Token exchange configuration
