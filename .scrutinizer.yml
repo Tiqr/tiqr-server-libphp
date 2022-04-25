@@ -22,7 +22,7 @@ build:
         coverage:
             tests:
                 override:
-                    - command: XDEBUG_MODE=coverage; ./vendor/bin/phpunit
+                    - command: XDEBUG_MODE=coverage; ./vendor/bin/phpunit --configuration=./ci/qa/qa-config/phpunit.xml
                       coverage:
-                          file: coverage.xml
+                          file: ./ci/qa/qa-config/coverage.xml
                           format: clover
