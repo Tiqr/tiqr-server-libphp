@@ -186,9 +186,15 @@ class OCRA {
                 $sessionInformation = "0" . $sessionInformation;
         
             $sessionInformationLength=64;
-        } else if (stripos($dataInput, "s") !== false ) {
+        } else if (stripos($dataInput, "-s") !== false ) {
             // deviation from spec. Officially 's' without a length indicator is not in the reference implementation.
             // RFC is ambigious. However we have supported this in Tiqr since day 1, so we continue to support it.
+
+            // See the format of the datainput below. "[]" denotes optional.
+            // Because Q is mandatory, s will always be preceded by the separator "-". Matching "-s" is required
+            // to prevent matching the "s" in the password input e.g. "psha1".
+            // [C] | QFxx | [PH | Snnn | TG] : Challenge-Response computation
+            // [C] | QFxx | [PH | TG] : Plain Signature computation
             while(strlen($sessionInformation) < 128)
                 $sessionInformation = "0" . $sessionInformation;
             
