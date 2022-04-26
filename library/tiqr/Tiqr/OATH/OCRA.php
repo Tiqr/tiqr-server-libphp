@@ -32,12 +32,14 @@ class OCRA {
      * @param String crypto     the crypto algorithm (sha1, sha256 or sha512)
      * @param String keyBytes   the bytes to use for the HMAC key
      * @param String text       the message or text to be authenticated.
+     * @throws Exception
      */
-    private static function _hmac_sha1($crypto,
-            $keyBytes,
-            $text)
+    private static function _hmac(string $crypto, string $keyBytes, string $text) : string
     {
-         $hash = hash_hmac ($crypto, $text, $keyBytes);
+         $hash = hash_hmac($crypto, $text, $keyBytes);
+         if (false === $hash) {
+             throw new Exception("calculating hash_hmac failed");
+         }
          return $hash;
     }
 
