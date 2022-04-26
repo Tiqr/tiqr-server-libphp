@@ -46,12 +46,34 @@ class OCRA {
     /**
      * This method converts HEX string to Byte[]
      *
-     * @param String hex   the HEX string
+     * @param string $hex The hex string to decode
+     * @param int $maxBytes The maximum length of the resulting decoded string
+     * @param string $parameterName A descriptive name for the $hex parameter, used in exception error message
+     * @return String a string with the decoded raw bytes of $hex
+     * @throws InvalidArgumentException
      *
-     * @return String a string with raw bytes
+     * The length of the returned string will always be length($hex)/2 bytes
+     * Note that $maxBytes is the max length of the returned string, not the max number of hex digits in $hex
      */
-    private static function _hexStr2Bytes($hex){
-        return pack("H*", $hex);
+    private static function _hexStr2Bytes(string $hex, int $maxBytes, string $parameterName) : string
+    {
+        $len = strlen($hex);
+        if ( ($len !== 0) && (! ctype_xdigit($hex)) ) {
+            throw new InvalidArgumentException("Parameter '$parameterName' contains non hex digits");
+        }
+        if ( $len % 2 !== 0 ) {
+            throw new InvalidArgumentException("Parameter '$parameterName' contains odd number of hex digits");
+        }
+        if ( $len > $maxBytes * 2) {
+            throw new InvalidArgumentException("Parameter '$parameterName' too long");
+        }
+        // hex2bin logs PHP warnings when $hex contains invalid characters or has uneven length. Because we
+        // check for these conditions above hex2bin() should always be silent
+        $res=hex2bin($hex);
+        if (false === $res) {
+            throw new InvalidArgumentException("Parameter '$parameterName' could not be decoded");
+        }
+        return $res;
     }
 
 
