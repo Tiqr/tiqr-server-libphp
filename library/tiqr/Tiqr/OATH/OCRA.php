@@ -78,32 +78,33 @@ class OCRA {
 
 
     /**
-     * This method generates an OCRA HOTP value for the given
-     * set of parameters.
+     * Calculate the OCRA (RFC 6287) response for the given set of parameters
+     * This implementation uses the same interface as the Java reference implementation from the RFC
      *
-     * @param ocraSuite    the OCRA Suite
-     * @param key          the shared secret, HEX encoded
-     * @param counter      the counter that changes
-     *                     on a per use basis,
-     *                     HEX encoded
-     * @param question     the challenge question, HEX encoded
-     * @param password     a password that can be used,
-     *                     HEX encoded
-     * @param sessionInformation
-     *                     Static information that identifies the
-     *                     current session, Hex encoded
-     * @param timeStamp    a value that reflects a time
+     * @param string $ocraSuite the OCRASuite
+     * @param string $key the shared OCRA secret, HEX encoded
+     * @param string $counter the counter (C), HEX encoded
+     * @param string $question the challenge question (Q), HEX encoded
+     * @param string $password the Hashed version of PIN/password (P), HEX encoded
+     * @param string $sessionInformation the session information (S), HEX encoded
+     * @param string $timeStamp the timestamp (T), HEX encoded
      *
-     * @return A numeric String in base 10 that includes
-     * {@link truncationDigits} digits
+     * @return string The Response, A numeric String in base 10 that includes number of digits specified in the OCRASuite
+     * @throws InvalidArgumentException|Exception InvalidArgumentException is thrown when a HEX encoded parameter does not contain hex or when it exceeds its maximum length
+     *
+     * Note: The OCRA secret and the parameters C, Q, P, S and T must be provided as HEX encoded strings.
+     *       How each parameter must be encoded is specified in the RFC
+     *
+     * In addition to the RFC reference implementation this implementation supports using "-S" in OCRASuite as an
+     * alternative to "-S064"
      */
-    static function generateOCRA($ocraSuite,
-                                 $key,
-                                 $counter,
-                                 $question,
-                                 $password,
-                                 $sessionInformation,
-                                 $timeStamp)
+    static function generateOCRA(string $ocraSuite,
+                                 string $key,
+                                 string $counter,
+                                 string $question,
+                                 string $password,
+                                 string $sessionInformation,
+                                 string $timeStamp) : string
     {
         $codeDigits = 0;
         $crypto = "";
@@ -220,12 +221,12 @@ class OCRA {
         }
         
         // Delimiter
-        $msg[strlen($ocraSuite)] = self::_hexStr2Bytes("0");
+        $msg[strlen($ocraSuite)] = "\0";
 
         // Put the bytes of "Counter" to the message
         // Input is HEX encoded
         if($counterLength > 0 ) {
-            $bArray = self::_hexStr2Bytes($counter);
+            $bArray = self::_hexStr2Bytes($counter, $counterLength, 'counter');
             for ($i=0;$i<strlen($bArray);$i++) {
                 $msg [$i + $ocraSuiteLength + 1] = $bArray[$i];
             }
@@ -235,7 +236,7 @@ class OCRA {
         // Put the bytes of "question" to the message
         // Input is text encoded
         if($questionLength > 0 ) {
-            $bArray = self::_hexStr2Bytes($question);
+            $bArray = self::_hexStr2Bytes($question, $questionLength, 'question');
             for ($i=0;$i<strlen($bArray);$i++) {
                 $msg [$i + $ocraSuiteLength + 1 + $counterLength] = $bArray[$i];
             }
@@ -244,35 +245,35 @@ class OCRA {
         // Put the bytes of "password" to the message
         // Input is HEX encoded
         if($passwordLength > 0){
-            $bArray = self::_hexStr2Bytes($password);
+            $bArray = self::_hexStr2Bytes($password, $passwordLength, 'password');
             for ($i=0;$i<strlen($bArray);$i++) {
                 $msg [$i + $ocraSuiteLength + 1 + $counterLength + $questionLength] = $bArray[$i];
             }
         }
 
         // Put the bytes of "sessionInformation" to the message
-        // Input is text encoded
+        // Input is HEX encoded
         if($sessionInformationLength > 0 ){
-            $bArray = self::_hexStr2Bytes($sessionInformation);
+            $bArray = self::_hexStr2Bytes($sessionInformation, $sessionInformationLength, 'sessionInformation');
             for ($i=0;$i<strlen($bArray);$i++) {
                 $msg [$i + $ocraSuiteLength + 1 + $counterLength + $questionLength + $passwordLength] = $bArray[$i];
             }
         }
 
         // Put the bytes of "time" to the message
-        // Input is text value of minutes
+        // Input is HEX encoded value of minutes
         if($timeStampLength > 0){
-            $bArray = self::_hexStr2Bytes($timeStamp);
+            $bArray = self::_hexStr2Bytes($timeStamp, $timeStampLength, 'timeStamp');
             for ($i=0;$i<strlen($bArray);$i++) {
                 $msg [$i + $ocraSuiteLength + 1 + $counterLength + $questionLength + $passwordLength + $sessionInformationLength] = $bArray[$i];
             }
         }
         
-        $byteKey = self::_hexStr2Bytes($key);
+        $byteKey = self::_hexStr2Bytes($key, strlen($key)/2, 'key');
               
         $msg = implode("", $msg);
-        
-        $hash = self::_hmac_sha1($crypto, $byteKey, $msg);
+
+        $hash = self::_hmac($crypto, $byteKey, $msg);
         
         $result = self::_oath_truncate($hash, $codeDigits);
              
@@ -287,7 +288,7 @@ class OCRA {
      * @param int $length number of decimal digits to truncate to
      * @return string of $length digits
      */    
-    static function _oath_truncate($hash, $length = 6)
+    static function _oath_truncate(string $hash, int $length = 6) : string
     {
         // Convert to dec
         foreach(str_split($hash,2) as $hex)
