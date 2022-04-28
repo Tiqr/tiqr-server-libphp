@@ -279,15 +279,15 @@ class OcraTest extends TestCase
     {
         return [
             // [ expected return value or exception, hex, maxBytes, parameterName]
-            ['', '', 0, 'dummy'], // empty string => empty result
-            ['', '', 10, 'dummy'],  // empty string => empty result - for any maxBytes value
-            ["\0", '00', 1, 'dummy'], // nul byte
-            ["\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f", '000102030405060708090a0b0c0d0e0f', 16, ''],
-            ["\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\xaa\xbb\xcc\xdd\xee\xff", '00010203040506070809aAbBcCdDeEfF', 16, ''], // Case does not matter
-            ["The quick brown fox...", '54686520717569636B2062726F776E20666F782E2E2E', 40, ''],
-            [new InvalidArgumentException("Parameter 'p' contains non hex digits"), 'not hex', 100, 'p'],
-            [new InvalidArgumentException("Parameter 'q' contains odd number of hex digits"), '123', 100, 'q'],
-            [new InvalidArgumentException("Parameter 'someValue' too long"), '1122334455', 4, 'someValue'],
+            'empty string => empty result' => ['', '', 0, 'dummy'],
+            'empty string => empty result - for any maxBytes value' => ['', '', 10, 'dummy'],
+            'nul byte' => ["\0", '00', 1, 'dummy'],
+            '16 hex bytes - lower case' => ["\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f", '000102030405060708090a0b0c0d0e0f', 16, ''],
+            '16 hex bytes - mixed case' => ["\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\xaa\xbb\xcc\xdd\xee\xff", '00010203040506070809aAbBcCdDeEfF', 16, ''],
+            'upper case' => ["The quick brown fox...", '54686520717569636B2062726F776E20666F782E2E2E', 40, ''],
+            'invalid hex digits' => [new InvalidArgumentException("Parameter 'p' contains non hex digits"), 'not hex', 100, 'p'],
+            'odd number of hex digits' => [new InvalidArgumentException("Parameter 'q' contains odd number of hex digits"), '123', 100, 'q'],
+            'too long' => [new InvalidArgumentException("Parameter 'someValue' too long"), '1122334455', 4, 'someValue'],
         ];
     }
 
