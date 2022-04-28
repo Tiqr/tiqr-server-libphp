@@ -280,25 +280,36 @@ class Tiqr_Service
     /**
      * Send a push notification to a user containing an authentication challenge
      * @param String $sessionKey          The session key identifying this authentication session
-     * @param String $notificationType    Notification type, e.g. APNS, FCM
+     * @param String $notificationType    Notification type returned by the tiqr client: APNS, GCM, FCM, APNS_DIRECT or FCM_DIRECT
      * @param String $notificationAddress Notification address, e.g. device token, phone number etc.
      *
-     * @return boolean True if the notification was sent succesfully, false if not.
+     * @return boolean True if the notification was sent successfully, false if not.
      *
      * @todo Use exceptions in case of errors
      */
-    public function sendAuthNotification($sessionKey, $notificationType, $notificationAddress)
+    public function sendAuthNotification(string $sessionKey, string $notificationType, string $notificationAddress) : bool
     {
+        $message = NULL;
         try {
             $this->_notificationError = null;
 
-            $class = "Tiqr_Message_{$notificationType}";
-            if (!class_exists($class)) {
-                $this->logger->error(sprintf('Unable to create push notification for type "%s"', $notificationType));
-                return false;
+            switch ($notificationType) {
+                case 'APNS':
+                case 'APNS_DIRECT':
+                    $message = new Tiqr_Message_APNS($this->_options);
+                    break;
+
+                case 'GCM':
+                case 'FCM':
+                case 'FCM_DIRECT':
+                    $message = new Tiqr_Message_FCM($this->_options);
+                    break;
+
+                default:
+                    throw new InvalidArgumentException("Unsupported notification type '$notificationType'");
             }
+
             $this->logger->info(sprintf('Creating and sending a %s push notification', $notificationType));
-            $message = new $class($this->_options);
             $message->setId(time());
             $message->setText("Please authenticate for " . $this->_name);
             $message->setAddress($notificationAddress);
