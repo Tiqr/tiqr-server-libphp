@@ -287,7 +287,7 @@ class Tiqr_Service
      *
      * @todo Use exceptions in case of errors
      */
-    public function sendAuthNotification(string $sessionKey, string $notificationType, string $notificationAddress)
+    public function sendAuthNotification(string $sessionKey, string $notificationType, string $notificationAddress) : bool
     {
         $message = NULL;
         try {
