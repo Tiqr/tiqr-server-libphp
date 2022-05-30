@@ -1,6 +1,25 @@
 # Changelog
 As of release 2.0.0 we started keeping the CHANGELOG.md file. The older entries are copy pasted from the Github release page.
 
+## 2.1.0
+The release adds support for sending push notifications without using a token exchange. Added checks for invalid input 
+to the default (v2) OCRA implementation. No interface changes.
+
+**Features**
+* Add two new message types `APNS_DIRECT` and `FCM_DIRECT` to `Tiqr_Service::sendAuthNotification` that do not do
+  a lookup of the notificationAddress at the token exchange, instead the notificationAddress is used to send a
+  notification directly to the device.
+
+* Add more input validation to the default (v2) OCRA implementation. More methods in the `OCRA` and
+  `Tiqr_OCRAWrapper` classes can now throw exceptions. Added the One-Way Challenge Response test vectors from the RFC
+  to the unit tests.
+
+**Bugfix**
+* Fix bug in the OCRA v2 algorithm that computed responses that did not match the RFC reference 
+  implementation when to OCRA suite included a password component that contained an "S" (e.g. PSHA1).
+  This does not affect the Tiqr app because password components are not used there. 
+
+
 ## 2.0.0
 A release with several backward compatibility breaking changes. Most notable are:
 
