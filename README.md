@@ -217,8 +217,13 @@ $this->tiqrService = new Tiqr_Service($logger, $options);
 # Running tests
 A growing set of unit tests can and should be used when developing the tiqr-server-libphp project.
 
-How to run the tests:
+To run all te QA tests:
 ```
 composer install
 composer test
+```
+
+After `composer install`, you can run the individual tests from the `/qa/ci/` directory. E.g. to run phpunit tests only:
+```
+./ci/qa/phpunit 
 ```

@@ -23,6 +23,12 @@ class TestServerController
     private $apns_certificate_filename;
     private $apns_environment;
     private $logger;
+    private $supportedNotificationTypes = array(
+        'GCM',
+        'APNS',
+        'FCM_DIRECT',
+        'APNS_DIRECT'
+    );
 
     /**
      * @param $host_url This is the URL by which the tiqr client can reach this server, including http(s):// and port.
@@ -118,9 +124,10 @@ class TestServerController
                 'c2dm.password' => 'test_c2dm_password',
                 'c2dm.application' => 'org.example.authenticator.test',
 
-                // Session storage, always stored in /tmp/tiqr_state_*
+                // Session storage
                 'statestorage' => array(
                     'type' => 'file',
+                    'path' => $storage_dir,
                 ),
 
                 // Token exchange configuration
@@ -356,6 +363,10 @@ class TestServerController
         // The notification message type (APNS, GCM, FCM ...)
         $app::log_info("notificationType: $notificationType");
 
+        if (! in_array($notificationType, $this->supportedNotificationTypes)) {
+            $app->log_warning("Unsupported notification type: $notificationType");
+        }
+
         $notificationAddress = $app->getPOST()['notificationAddress'] ?? '';
         if (strlen($notificationAddress) == 0) {
             $app::log_warning("No notificationAddress in POST");
@@ -504,23 +515,24 @@ class TestServerController
         $notificationType=$this->userStorage->getNotificationType($user_id);
         $app->log_info("notificationType = $notificationType");
 
-        // Note that the current Tiqr app returns notification type 'APNS' or 'GCM'.
-        // The Google Cloud Messaging (GCM) API - implemented in the Tiqr_Message_GCM class - is deprecated and has
-        // been replaced by Firebase Cloud Messaging (FCM). See: https://developers.google.com/cloud-messaging
-        // So even though the tiqr app returns GCM, we must use the FCM API implemented by Tiqr_Message_FCM
-        if ($notificationType == 'GCM') {
-            $notificationType = 'FCM';
-        }
-
-        if ($notificationType != 'APNS' && $notificationType != 'FCM') {
+        if (! in_array($notificationType, $this->supportedNotificationTypes)) {
             $app->log_warning("Unsupported notification type: $notificationType");
         }
+
         $notificationAddress=$this->userStorage->getNotificationAddress($user_id);
 
         // Use tiqr tokenexchange to translate the notification address to the device's push notification address
+        // translateNotificationAddress does not translate the new APNS_DIRECT and FCM_DIRECT notificationType, it
+        // only translates APNS, GCM and FCM. For any other types it returns the unmodified $notificationAddress
         $deviceNotificationAddress = $this->tiqrService->translateNotificationAddress($notificationType, $notificationAddress);
         $app->log_info("deviceNotificationAddress (from token exchange) = $deviceNotificationAddress");
-
+        
+        // Note that the current Tiqr app returns notification type 'APNS' or 'GCM'.
+        // The Google Cloud Messaging (GCM) API - implemented in the Tiqr_Message_GCM class - is deprecated and has
+        // been replaced by Firebase Cloud Messaging (FCM). See: https://developers.google.com/cloud-messaging
+        // So even though the tiqr app returns GCM we actually use FCM implemented by Tiqr_Message_FCM
+        // sendAuthNotification() accepts GCM, FCM_DIRECT and knows to use Tiqr_Message_FCM instead. For both APNS and
+        // APNS_DIRECT Tiqr_Message_APNS will be used.
         $app->log_info("Sending push notification using $notificationType to $deviceNotificationAddress");
         $res = $this->tiqrService->sendAuthNotification($session_key, $notificationType, $deviceNotificationAddress);
         $notificationError=array();
@@ -597,6 +609,10 @@ class TestServerController
         }
         // The notification message type (APNS, GCM, FCM ...)
         $app::log_info("notificationType: $notificationType");
+
+        if (! in_array($notificationType, $this->supportedNotificationTypes)) {
+            $app->log_warning("Unsupported notification type: $notificationType");
+        }
 
         $notificationAddress = $app->getPOST()['notificationAddress'] ?? '';
         if (strlen($notificationAddress) == 0) {
