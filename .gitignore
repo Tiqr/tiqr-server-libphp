@@ -4,3 +4,5 @@ vendor
 TestServer/config/config
 .phpunit.result.cache
 coverage.xml
+*~
+TestServer/storage/
