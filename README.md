@@ -7,7 +7,7 @@
 
 A PHP library for implementing a Tiqr authentication server
 
-The library includes a test server, see its [README]([TestServer/README.md]) for details.
+The library includes a test server, see its [README](TestServer/README.md) for details.
 
 # Introduction
 This project is a PHP implementation of a library to implement a Tiqr server. This library is not a server by itself, instead it contains functionality that help Tiqr server implementations with several tasks. These tasks include:
