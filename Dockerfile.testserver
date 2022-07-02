@@ -1,0 +1,40 @@
+FROM php:7.4-cli AS tiqr-testserver
+
+# install php gd (for tiqr) and zip (for composer) extensions
+RUN apt-get update && apt-get install -y \
+		libfreetype6-dev \
+		libjpeg62-turbo-dev \
+		libpng-dev \
+        zlib1g-dev \
+        libzip-dev \
+        unzip \
+	&& docker-php-ext-configure gd --with-freetype --with-jpeg \
+	&& docker-php-ext-install -j$(nproc) gd \
+    && docker-php-ext-install zip
+
+# install composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer 
+
+# copy ticker server library and TestSever into the container
+COPY ./library /usr/src/tiqr-server-libphp/library
+COPY ./TestServer /usr/src/tiqr-server-libphp/TestServer
+
+WORKDIR /usr/src/tiqr-server-libphp
+
+# Set testserver config from config.dist, if it does not exist
+RUN if [ ! -f ./TestServer/config/config ]; then \
+        cp ./TestServer/config/config.dist ./TestServer/config/config; \
+    fi
+
+
+# copy composer files
+COPY ./composer.json /usr/src/tiqr-server-libphp/
+COPY ./composer.lock /usr/src/tiqr-server-libphp/
+
+# composer install
+RUN export COMPOSER_ALLOW_SUPERUSER=1; php /usr/local/bin/composer install --no-dev
+
+EXPOSE 8000
+
+# Run the TestServer using the PHP buildin webserver
+CMD php -S 0.0.0.0:8000 /usr/src/tiqr-server-libphp/TestServer/app.php
