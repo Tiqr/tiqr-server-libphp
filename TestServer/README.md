@@ -29,7 +29,7 @@ Copy the included `TestServer/config/config.dist` to `TestServer/config/config` 
   notification client certificate and private key (unencrypted) in PEM format. Required for sending push notifications to 
   iOS devices.
 * `apns_environment` – Optional. The apple push notification environment to use: "production" or "sandbox".
-* `firebase_apikey – Optional. The Google firebase API key. Required for sending push notifications to Android devices.
+* `firebase_apikey` – Optional. The Google firebase API key. Required for sending push notifications to Android devices.
 
 ## Installation
 The TestServer can be run from a Docker container or can be run using the PHP build-in webserver 
