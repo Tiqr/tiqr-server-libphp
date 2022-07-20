@@ -35,13 +35,13 @@ Copy the included `TestServer/config/config.dist` to `TestServer/config/config` 
 The TestServer can be run from a Docker container or can be run using the PHP build-in webserver 
 
 ### Docker
-* Create a docker image. This image will include the configuration in the config directory.
+* Create the docker image:
 ```
-docker build -f "Dockerfile.testserver" -t tiqr-testserver:latest "."
+./build-docker-testserver.sh
 ```
-* Run the docker image:
+* Run the docker image. This mounts the ./TestServer/config and ./TestServer/storage directories in the container:
 ```
-docker run -it -p 8000:8000/tcp tiqr-testserver:latest
+./run-docker-testserver.sh
 ```
 It is useful to run the container interactively (-it) so see the log messages that the testserver outputs.  
 
