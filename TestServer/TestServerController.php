@@ -23,6 +23,8 @@ class TestServerController
     private $apns_certificate_filename;
     private $apns_environment;
     private $logger;
+    private $storageDir;
+
     private $supportedNotificationTypes = array(
         'GCM',
         'APNS',
@@ -45,15 +47,17 @@ class TestServerController
      * @param string $apns_certificate_filename The filename of the file with PEM APNS signing certificate and private key
      * @param string $apns_environment The APNS environment to use. 'production' or 'sandbox'
      * @param string $firebase_apikey The Google firebase API key. Required for sending FCM push notifications
+     * @param string $storage_dir Directory to use for tiqr state storage, user storage and user sercret storage
      */
-    function __construct(LoggerInterface $logger, string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_apikey)
+    function __construct(LoggerInterface $logger, string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_apikey, string $storage_dir)
     {
+        $this->storageDir = $storage_dir;
         $this->logger = $logger;
         $this->host_url = $host_url;
         $this->initTiqrLibrary();
         $this->tiqrService = $this->createTiqrService($host_url, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_apikey);
         $this->userStorage = $this->createUserStorage();
-        $this->userSecretStorage = $this->createUserSecretStorage();
+        $this->userSecretStorage = $this->createUserSecretStorage();        
     }
 
     /** Initialize the tiqr-server-libphp's autoloader
@@ -80,7 +84,7 @@ class TestServerController
      */
     private function getStorageDir(): string
     {
-        $storage_dir = __DIR__ . '/storage';
+        $storage_dir = $this->storageDir;
         if (!is_dir($storage_dir)) {
             if (false == mkdir($storage_dir)) {
                 TestServerApp::error_exit(500, "Error creating storage directory: $storage_dir");

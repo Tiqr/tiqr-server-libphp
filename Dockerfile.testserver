@@ -1,4 +1,23 @@
-FROM php:7.4-cli AS tiqr-testserver
+FROM php:7.4-apache AS tiqr-testserver
+
+ENV APACHE_DOCUMENT_ROOT /var/www/TestServer
+
+# Set environment variables so the TestServer knows where to find its config and storage directory
+# These are set in the Docker environment that starts apache, so these are available in PHP in $_ENV[] as well.
+ENV CONFIG_DIR /config
+ENV CONFIG_FILENAME config
+ENV STORAGE_DIR /storage
+ENV SERVERNAME localhost
+
+# Enable mod-rewrite
+RUN a2enmod rewrite
+
+# Replace container default docker-php.conf with our own.
+COPY ./TestServer/docker-php.conf /etc/apache2/conf-available/docker-php.conf
+
+# Update /var/www and /var/www/html in the apache config with our document root from ENV APACHE_DOCUMENT_ROOT
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 # install php gd (for tiqr) and zip (for composer) extensions
 RUN apt-get update && apt-get install -y \
@@ -15,26 +34,25 @@ RUN apt-get update && apt-get install -y \
 # install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer 
 
-# copy ticker server library and TestSever into the container
-COPY ./library /usr/src/tiqr-server-libphp/library
-COPY ./TestServer /usr/src/tiqr-server-libphp/TestServer
+# copy tiqr server library and TestSever into the container
+COPY ./library /var/www/library
+COPY ./TestServer /var/www/TestServer
 
-WORKDIR /usr/src/tiqr-server-libphp
+WORKDIR /var/www
 
-# Set testserver config from config.dist, if it does not exist
+# Set testserver config.dist directory from config directory
 RUN if [ ! -f ./TestServer/config/config ]; then \
         cp ./TestServer/config/config.dist ./TestServer/config/config; \
-    fi
-
+    fi \
+    && mv ./TestServer/config ./TestServer/config.dist
 
 # copy composer files
-COPY ./composer.json /usr/src/tiqr-server-libphp/
-COPY ./composer.lock /usr/src/tiqr-server-libphp/
+COPY ./composer.json /var/www/
 
 # composer install
 RUN export COMPOSER_ALLOW_SUPERUSER=1; php /usr/local/bin/composer install --no-dev
 
-EXPOSE 8000
+EXPOSE 80
 
 # Run the TestServer using the PHP buildin webserver
-CMD php -S 0.0.0.0:8000 /usr/src/tiqr-server-libphp/TestServer/app.php
+CMD ["/var/www/TestServer/start.sh"]

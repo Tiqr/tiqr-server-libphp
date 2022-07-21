@@ -19,15 +19,18 @@ require_once __DIR__ . '/TestServerController.php';
 require_once __DIR__ . '/TestServerView.php';
 require_once __DIR__ . '/TestServerPsrLogger.php';
 
-// TODO: Update / set configuration. See readme
-$config_filename = 'config';
+# Get config filename and directory
+$config_filename = $_ENV['CONFIG_FILENAME'] ?? 'config';
+$config_dir = $_ENV['CONFIG_DIR'] ?? __DIR__ . '/config/';
 
-$config_dir = __DIR__ . '/config/';
-
+# Read configuration
 $config = array();
-if (file_exists($config_dir . $config_filename)) {
-    $config = json_decode(file_get_contents($config_dir . $config_filename), true);
+if (file_exists($config_dir . '/' . $config_filename)) {
+    $config = json_decode(file_get_contents($config_dir . '/' . $config_filename), true);
 }
+
+# Directory for storing session info and user data
+$storage_dir = $_ENV['STORAGE_DIR'] ?? __DIR__ . '/storage/';
 
 $host_url = $config['host_url'] ?? 'http://localhost:8000';
 $tiqrauth_protocol = $config['tiqrauth_protocol'] ?? 'tiqrauth';
@@ -39,7 +42,7 @@ $apns_environment =  $config['apns_environment'] ?? 'sandbox';
 $firebase_apikey = $config['firebase_apikey'] ?? '';
 
 $psr_logger = new TestServerPsrLogger();
-$test_server = new TestServerController($psr_logger, $host_url, $tiqrauth_protocol, $tiqrenroll_protocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_apikey);
+$test_server = new TestServerController($psr_logger, $host_url, $tiqrauth_protocol, $tiqrenroll_protocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_apikey, $storage_dir);
 $app = new TestServerApp($test_server);
 $app->HandleHTTPRequest();
 
