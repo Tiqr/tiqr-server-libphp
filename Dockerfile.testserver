@@ -2,11 +2,6 @@ FROM php:7.4-apache AS tiqr-testserver
 
 ENV APACHE_DOCUMENT_ROOT /var/www/TestServer
 
-# Set environment variables so the TestServer knows where to find its config and storage directory
-# These are set in the Docker environment that starts apache, so these are available in PHP in $_ENV[] as well.
-ENV CONFIG_DIR /config
-ENV CONFIG_FILENAME config
-ENV STORAGE_DIR /storage
 ENV SERVERNAME localhost
 
 # Enable mod-rewrite
@@ -40,11 +35,11 @@ COPY ./TestServer /var/www/TestServer
 
 WORKDIR /var/www
 
-# Set testserver config.dist directory from config directory
-RUN if [ ! -f ./TestServer/config/config ]; then \
-        cp ./TestServer/config/config.dist ./TestServer/config/config; \
-    fi \
-    && mv ./TestServer/config ./TestServer/config.dist
+# Remove config and storage directories from image, they are not used
+# Instead:
+# config is in /config (mount)
+# storage is in /storage (mount)
+RUN rm -rf /var/www/TestServer/config && rm -rf /var/www/TestServer/storage
 
 # copy composer files
 COPY ./composer.json /var/www/

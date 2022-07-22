@@ -20,8 +20,8 @@ require_once __DIR__ . '/TestServerView.php';
 require_once __DIR__ . '/TestServerPsrLogger.php';
 
 # Get config filename and directory
-$config_filename = $_ENV['CONFIG_FILENAME'] ?? 'config';
-$config_dir = $_ENV['CONFIG_DIR'] ?? __DIR__ . '/config/';
+$config_filename = 'config';
+$config_dir = __DIR__ . '/config/';
 
 # Read configuration
 $config = array();
@@ -30,7 +30,7 @@ if (file_exists($config_dir . '/' . $config_filename)) {
 }
 
 # Directory for storing session info and user data
-$storage_dir = $_ENV['STORAGE_DIR'] ?? __DIR__ . '/storage/';
+$storage_dir = __DIR__ . '/storage/';
 
 $host_url = $config['host_url'] ?? 'http://localhost:8000';
 $tiqrauth_protocol = $config['tiqrauth_protocol'] ?? 'tiqrauth';
