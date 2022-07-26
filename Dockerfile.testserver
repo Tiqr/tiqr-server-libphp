@@ -14,6 +14,9 @@ COPY ./TestServer/docker-php.conf /etc/apache2/conf-available/docker-php.conf
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
+# Enable default production php.ini
+RUN mv /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini
+
 # Disable openssl seclevel to allow md5, required for the ssl connection to the APNS gateway
 RUN sed -i -e 's/SECLEVEL=2/SECLEVEL=0/g' /etc/ssl/openssl.cnf
 
