@@ -71,8 +71,10 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
      * Initialize the statestorage by setting up the memcache instance.
      * It's not necessary to call this function, the Tiqr_StateStorage factory
      * will take care of that.
+     *
+     * @see Tiqr_StateStorage_StateStorageInterface::init()
      */
-    public function init() 
+    public function init(): void
     {
         parent::init();
 
@@ -82,7 +84,7 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
         $this->_memcache = new $class();
 
         if (!isset($this->_options["servers"])) {
-            $this->logger->info('No memcache server was configured for state storage, using preconfigured defaults.');
+            $this->logger->info('No memcache server was configured for StateStorage, using preconfigured defaults.');
             $this->_memcache->addServer(self::DEFAULT_HOST, self::DEFAULT_PORT);
         } else {
             foreach ($this->_options['servers'] as $server) {
@@ -99,11 +101,14 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
     }
     
     /**
-     * (non-PHPdoc)
-     * @see library/tiqr/Tiqr/StateStorage/Tiqr_StateStorage_Abstract::setValue()
+     * @see Tiqr_StateStorage_StateStorageInterface::setValue()
      */
-    public function setValue($key, $value, $expire=0)
-    {  
+    public function setValue(string $key, $value, int $expire=0): void
+    {
+        if (empty($key)) {
+            throw new InvalidArgumentException('Empty key not allowed');
+        }
+
         $key = $this->_getKeyPrefix().$key;
 
         if (self::$extension === '\memcached') {
@@ -112,40 +117,47 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
             $result = $this->_memcache->set($key, $value, 0, $expire);
         }
         if (!$result) {
-            throw new ReadWriteException(sprintf('Unable to store "%s" state to Memcache', $key));
+            throw new ReadWriteException(sprintf('Unable to store key "%s" to Memcache StateStorage', $key));
         }
     }
     
     /**
-     * (non-PHPdoc)
-     * @see library/tiqr/Tiqr/StateStorage/Tiqr_StateStorage_Abstract::unsetValue()
+     * @see Tiqr_StateStorage_StateStorageInterface::unsetValue()
      */
-    public function unsetValue($key)
+    public function unsetValue(string $key): void
     {
+        if (empty($key)) {
+            throw new InvalidArgumentException('Empty key not allowed');
+        }
+
         $key = $this->_getKeyPrefix().$key;
         $result = $this->_memcache->delete($key);
         if (!$result) {
             throw new ReadWriteException(
                 sprintf(
-                    'Unable to unlink the "%s" value from state storage, key not found in Memcache',
+                    'Unable to delete key "%s" from state storage, key not found in Memcache StateStorage',
                     $key
                 )
             );
         }
-        return $result;
     }
     
     /**
-     * (non-PHPdoc)
-     * @see library/tiqr/Tiqr/StateStorage/Tiqr_StateStorage_Abstract::getValue()
+     * @see Tiqr_StateStorage_StateStorageInterface::getValue()
      */
-    public function getValue($key)
+    public function getValue(string $key)
     {
+        if (empty($key)) {
+            throw new InvalidArgumentException('Empty key not allowed');
+        }
+
         $key = $this->_getKeyPrefix().$key;
 
         $result = $this->_memcache->get($key);
         if ($result === false) {
-            $this->logger->error('Unable to retrieve the state storage value from memcache, file not found');
+            // Memcache interface does not provide error information, either the key does not exists or
+            // there was an error communicating with the memcache
+            $this->logger->info( sprintf('Unable to get key "%s" from memcache StateStorage', $key) );
             return null;
         }
         return $result;

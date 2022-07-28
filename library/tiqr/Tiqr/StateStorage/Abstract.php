@@ -49,7 +49,7 @@ abstract class Tiqr_StateStorage_Abstract implements Tiqr_StateStorage_StateStor
      * Note: this method is ont abstract since not every derived class
      * will want to implement this.
      */
-    public function init()
+    public function init(): void
     {
         
     }

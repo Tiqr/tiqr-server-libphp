@@ -78,7 +78,12 @@ class Tiqr_StateStorage
                     }
                 }
 
-                $pdoInstance = new PDO($options['dsn'],$options['username'],$options['password']);
+                $pdoInstance = new PDO(
+                    $options['dsn'],
+                    $options['username'],
+                    $options['password'],
+                    array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
+                );
                 // Set a hard-coded default for the probability the expired state is removed
                 // 0.1 translates to a 10% chance the garbage collection is executed
                 $cleanupProbability = 0.1;
