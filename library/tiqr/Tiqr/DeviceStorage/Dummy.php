@@ -28,9 +28,9 @@
 class Tiqr_DeviceStorage_Dummy extends Tiqr_DeviceStorage_Abstract
 {
     /**
-     *Get a deviceToken for a given notificationToken.
+     * @see Tiqr_DeviceStorage_Abstract::getDeviceToken()
      */   
-    public function getDeviceToken($notificationToken)
+    public function getDeviceToken(string $notificationToken)
     {
         return $notificationToken;
     }
