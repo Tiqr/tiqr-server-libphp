@@ -1,4 +1,39 @@
 # Changelog
+## 3.0.0
+Increase the major version because of significant changes in the UserStorage, UserSecretStorage and StateStorage
+
+Review your use of the library from you client code!
+* Almost every function can throw an Exception now!
+* Most interfaces changed 
+* Some functions changed their behaviour
+
+interfaces:
+- Remove many differences in behaviour between type, e.g. between UserStorage 'file' and  UserStorage 'pdo' types
+- Move interface documentation from the individual drivers to the interfaces 
+- Always throw an exception when a communicating error with the backend occurs
+- Added type declarations to many interfaces
+
+* Update minimal PHP version requirement to 7.2. Supports PHP versions 7.2 and 7.4 
+
+StateStorage:
+- Empty key is now explicitly disallowed
+- Check Tiqr_StateStorage_Interface for interface changes
+
+UserStorage:
+- Several interface changes, see Tiqr_UserStorage_Interface 
+- Creating a user that already exists is now an error
+- Temporary block times are unix timestamps (time_t) now, not strings
+- PDO: timestamps are now stored as integers (unix timestamp). Requires database schema update when using temporary block
+
+UserSecretStorage:
+- Document PDO table format
+- Describe combining PDO UserStorage and UserSecretStorage in one table
+- Check Tiqr_UserSecretStorage_Interface for interface changes
+
+TiqrService:
+- More functions throw
+- Explicitly describe the functions that will not throw
+
 As of release 2.0.0 we started keeping the CHANGELOG.md file. The older entries are copy pasted from the Github release page.
 
 ## 2.0.0
@@ -17,7 +52,7 @@ Behavioral changes:
 * Implement and with it, improve logging #27
 * Add a test server for mobile app development #21
 * Improve StateStorage File implementation #35
-* Throw exceptions when unrecoveral error situation occur #36
+* Throw exceptions when unrecoverable error situation occur #36
 * Move expiry action and make probability of triggering it configurable #25
 * State storage pdo expiry #20
 * Convert TravisCI to GitHub Actions #34
