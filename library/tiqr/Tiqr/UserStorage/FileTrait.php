@@ -23,25 +23,35 @@ trait FileTrait
      * @param array $data
      * @throws ReadWriteException
      */
-    protected function _saveUser($userId, $data)
+    protected function _saveUser(string $userId, array $data): void
     {
         if (file_put_contents($this->getPath().$userId.".json", json_encode($data)) === false) {
             throw new ReadWriteException('Unable to save the user to user storage (file storage)');
         }
-        return true;
+    }
+
+    /**
+     * @param string $userId
+     * @return bool true when the user exists, false otherwise
+     *
+     * Does not throw
+     */
+    protected function _userExists(string $userId): bool {
+        $fileName = $this->getPath().$userId.".json";
+
+        return file_exists($fileName);
     }
 
     /**
      * This function takes care of loading the user data from a JSON file.
      *
      * @param string $userId
-     * @param boolean $failIfNotFound
      *
-     * @return false if the data is not present, or an array containing the data.
+     * @return array containing the user data on success.
      *
-     * @throws Exception when the data can not be found and failIfNotFound is set to true
+     * @throws Exception when the data can not be found
      */
-    protected function _loadUser($userId, $failIfNotFound = TRUE)
+    protected function _loadUser(string $userId): array
     {
         $fileName = $this->getPath().$userId.".json";
 
@@ -51,22 +61,18 @@ trait FileTrait
         }
 
         if ($data === NULL) {
-            if ($failIfNotFound) {
-                throw new Exception('Error loading data for user: ' . var_export($userId, TRUE));
-            } else {
-                $this->logger->error('Error loading data for user from user storage (file storage)');
-                return false;
-            }
-        } else {
-            return $data;
+            $this->logger->error(sprintf('Error loading user data (File) for user "%s"', $userId));
+            throw new RuntimeException('Error loading user data (File)');
         }
+
+        return $data;
     }
 
     /**
      * Retrieve the path where the json files are stored.
      * @return String
      */
-    public function getPath()
+    public function getPath(): string
     {
         if (substr($this->path, -1)!="/") return $this->path."/";
         return $this->path;

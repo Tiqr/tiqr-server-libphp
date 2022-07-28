@@ -25,67 +25,81 @@ require_once 'Tiqr/UserStorage/Abstract.php';
  * please supply your own implementation that hosts the data in your user database OR
  * in a secure (e.g. hardware encrypted) storage.
  * @author ivo
+ *
+ * Note: This implementation does not employ locking or transactions, and is not safe when the same user is updated
+ *       concurrently
  */
 abstract class Tiqr_UserStorage_GenericStore extends Tiqr_UserStorage_Abstract
 {
 
-    abstract protected function _loadUser($userId, $failOnNotFound = TRUE);
-  
-    abstract protected function _saveUser($userId, $data);
+    /** Return data of user $userId
+     * @param string $userId
+     * @return array
+     * @throws Exception
+     */
+    abstract protected function _loadUser(string $userId): array;
+
+    /** Write data of $userId
+     * @param string $userId
+     * @param array $data
+     * @throws Exception
+     */
+    abstract protected function _saveUser(string $userId, array $data): void;
+
+    /**
+     * @param string $userId
+     * @return bool trues when user exists, false otherwise
+     * @throws Exception
+     */
+    abstract protected function _userExists(string $userId): bool;
 
 
     /**
-     * (non-PHPdoc)
-     * @see simplesamlphp/modules/authTiqr/lib/User/sspmod_authTiqr_User_Interface::createUser()
+     * @see Tiqr_UserStorage_Interface::createUser()
      */
-    public function createUser($userId, $displayName) 
+    public function createUser(string $userId, string $displayName) : void
     {
         $user = array("userId"=>$userId,
                       "displayName"=>$displayName);
-        return $this->_saveUser($userId, $user);
+        $this->_saveUser($userId, $user);
     }
 
     /**
-     * (non-PHPdoc)
-     * @see simplesamlphp/modules/authTiqr/lib/User/sspmod_authTiqr_User_Interface::userExists()
+     * @see Tiqr_UserStorage_Interface::userExists()
      */
-    public function userExists($userId)
+    public function userExists(string $userId): bool
     {
-        $user = $this->_loadUser($userId, FALSE);
-        return (is_array($user)||is_object($user)); 
+        return $this->_userExists($userId);
     }
 
     /**
-     * (non-PHPdoc)
-     * @see simplesamlphp/modules/authTiqr/lib/User/sspmod_authTiqr_User_Interface::getDisplayName()
+     * @see Tiqr_UserStorage_Interface::getDisplayName()
      */
-    public function getDisplayName($userId) 
+    public function getDisplayName(string $userId): string
     {
         if ($data = $this->_loadUser($userId)) {
             return $data["displayName"];
         }
-        return NULL;
+        return '';
     }
 
     /**
-     * (non-PHPdoc)
-     * @see simplesamlphp/modules/authTiqr/lib/User/sspmod_authTiqr_User_Interface::getNotificationType()
+     * @see Tiqr_UserStorage_Interface::getNotificationType()
      */
-    public function getNotificationType($userId)
+    public function getNotificationType(string $userId): string
     {
         if ($data = $this->_loadUser($userId)) {
             if (isset($data["notificationType"])) {
                return $data["notificationType"];
             }
         }
-        return NULL;
+        return '';
     }
 
     /**
-     * (non-PHPdoc)
-     * @see simplesamlphp/modules/authTiqr/lib/User/sspmod_authTiqr_User_Interface::setNotificationType()
+     * @see Tiqr_UserStorage_Interface::setNotificationType()
      */
-    public function setNotificationType($userId, $type)
+    public function setNotificationType(string $userId, string $type): void
     {
         $data = $this->_loadUser($userId);
         $data["notificationType"] = $type;
@@ -93,10 +107,9 @@ abstract class Tiqr_UserStorage_GenericStore extends Tiqr_UserStorage_Abstract
     }    
     
     /**
-     * (non-PHPdoc)
-     * @see simplesamlphp/modules/authTiqr/lib/User/sspmod_authTiqr_User_Interface::getNotificationAddress()
+     * @see Tiqr_UserStorage_Interface::getNotificationAddress()
      */
-    public function getNotificationAddress($userId)
+    public function getNotificationAddress(string $userId): string
     {
         if ($data = $this->_loadUser($userId)) {
             if (isset($data["notificationAddress"])) {
@@ -104,14 +117,13 @@ abstract class Tiqr_UserStorage_GenericStore extends Tiqr_UserStorage_Abstract
             }
         }
         $this->logger->info('Unable to find notification address for user');
-        return NULL;
+        return '';
     }
 
     /**
-     * (non-PHPdoc)
-     * @see simplesamlphp/modules/authTiqr/lib/User/sspmod_authTiqr_User_Interface::setNotificationAddress()
+     * @see Tiqr_UserStorage_Interface::setNotificationAddress()
      */
-    public function setNotificationAddress($userId, $address)
+    public function setNotificationAddress(string $userId, string $address): void
     {
         $data = $this->_loadUser($userId);
         $data["notificationAddress"] = $address;
@@ -119,10 +131,9 @@ abstract class Tiqr_UserStorage_GenericStore extends Tiqr_UserStorage_Abstract
     } 
 
     /**
-     * (non-PHPdoc)
-     * @see simplesamlphp-module/authTiqr/lib/User/sspmod_authTiqr_User_Interface::getFailedLoginAttempts()
+     * @see Tiqr_UserStorage_Interface::getLoginAttempts()
      */
-    public function getLoginAttempts($userId)
+    public function getLoginAttempts(string $userId): int
     {
         if ($data = $this->_loadUser($userId)) {
             if (isset($data["loginattempts"])) {
@@ -133,10 +144,9 @@ abstract class Tiqr_UserStorage_GenericStore extends Tiqr_UserStorage_Abstract
     }
     
     /**
-     * (non-PHPdoc)
-     * @see simplesamlphp-module/authTiqr/lib/User/sspmod_authTiqr_User_Interface::setFailedLoginAttempts()
+     * @see Tiqr_UserStorage_Interface::setLoginAttempts()
      */
-    public function setLoginAttempts($userId, $amount)
+    public function setLoginAttempts(string $userId, int $amount): void
     {
         $data = $this->_loadUser($userId);
         $data["loginattempts"] = $amount;
@@ -144,36 +154,41 @@ abstract class Tiqr_UserStorage_GenericStore extends Tiqr_UserStorage_Abstract
     }
     
     /**
-     * (non-PHPdoc)
-     * @see simplesamlphp-module/authTiqr/lib/User/sspmod_authTiqr_User_Interface::isBlocked()
+     * @see Tiqr_UserStorage_Interface::isBlocked()
      */
-    public function isBlocked($userId, $duration)
+    public function isBlocked(string $userId, int $tempBlockDuration = 0): bool
     {
         if ($data = $this->_loadUser($userId)) {
+            if (isset($data["blocked"]) && $data["blocked"]) {
+                return true;
+            }
+
+            // Check temporary block
             $timestamp = $this->getTemporaryBlockTimestamp($userId);
-            // if not blocked or block is expired, return false
-            if (!isset($data["blocked"]) || $data["blocked"]==false || (false !== $timestamp && false != $duration && (strtotime($timestamp) + $duration * 60) < time())) {
-                return false;
+            if (0 == $timestamp || 0 == $tempBlockDuration) {
+                return false; // No temp block timestamp set or no tempBlockDuration provided
+            }
+
+            if ($timestamp + $tempBlockDuration * 60 < time()) {
+                return false;   // Temp block expired
             }
         }
-        return true;
+        return true;    // Blocked by temp block
     }
     
     /**
-     * (non-PHPdoc)
-     * @see libTiqr/library/tiqr/Tiqr/UserStorage/Tiqr_UserStorage_Interface::setTemporaryBlockAttempts()
+     * @see Tiqr_UserStorage_Interface::setTemporaryBlockAttempts()
      */
-    public function setTemporaryBlockAttempts($userId, $amount) {
+    public function setTemporaryBlockAttempts(string $userId, int $amount): void {
         $data = $this->_loadUser($userId);
         $data["temporaryBlockAttempts"] = $amount;
         $this->_saveUser($userId, $data);
     }
     
     /**
-     * (non-PHPdoc)
-     * @see libTiqr/library/tiqr/Tiqr/UserStorage/Tiqr_UserStorage_Interface::getTemporaryBlockAttempts()
+     * @see Tiqr_UserStorage_Interface::getTemporaryBlockAttempts()
      */
-    public function getTemporaryBlockAttempts($userId) {
+    public function getTemporaryBlockAttempts(string $userId): int {
         if ($data = $this->_loadUser($userId)) {
             if (isset($data["temporaryBlockAttempts"])) {
                 return $data["temporaryBlockAttempts"];
@@ -183,33 +198,30 @@ abstract class Tiqr_UserStorage_GenericStore extends Tiqr_UserStorage_Abstract
     }
     
     /**
-     * (non-PHPdoc)
-     * @see libTiqr/library/tiqr/Tiqr/UserStorage/Tiqr_UserStorage_Interface::setTemporaryBlockTimestamp()
+     * @see Tiqr_UserStorage_Interface::setTemporaryBlockTimestamp()
      */
-    public function setTemporaryBlockTimestamp($userId, $timestamp) {
+    public function setTemporaryBlockTimestamp(string $userId, int $timestamp): void {
         $data = $this->_loadUser($userId);
         $data["temporaryBlockTimestamp"] = $timestamp;
         $this->_saveUser($userId, $data);
     }
     
     /**
-     * (non-PHPdoc)
-     * @see libTiqr/library/tiqr/Tiqr/UserStorage/Tiqr_UserStorage_Interface::getTemporaryBlockTimestamp()
+     * @see Tiqr_UserStorage_Interface::getTemporaryBlockTimestamp()
      */
-    public function getTemporaryBlockTimestamp($userId) {
+    public function getTemporaryBlockTimestamp(string $userId): int {
         if ($data = $this->_loadUser($userId)) {
             if (isset($data["temporaryBlockTimestamp"])) {
                 return $data["temporaryBlockTimestamp"];
             }
         }
-        return false;
+        return 0;
     }
     
     /**
-     * (non-PHPdoc)
-     * @see simplesamlphp-module/authTiqr/lib/User/sspmod_authTiqr_User_Interface::block()
+     * @see Tiqr_UserStorage_Interface::block()
      */
-    public function setBlocked($userId, $blocked) 
+    public function setBlocked(string $userId, bool $blocked): void
     {
         $data = $this->_loadUser($userId);
         $data["blocked"] = $blocked;

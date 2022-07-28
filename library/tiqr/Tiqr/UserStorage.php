@@ -41,7 +41,7 @@ class Tiqr_UserStorage
      *
      * @throws Exception An exception if an unknown user storage is requested.
      */
-    public static function getStorage($type="file", $options=array(), LoggerInterface $logger)
+    public static function getStorage(string $type="file", array $options=array(), LoggerInterface $logger): Tiqr_UserStorage_Interface
     {
         switch ($type) {
             case "file":
