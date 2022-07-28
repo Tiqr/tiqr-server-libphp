@@ -25,7 +25,7 @@ trait UserSecretStorageTrait
      * @param String $userId
      * @return String The user's secret
      */
-    public function getSecret($userId)
+    public function getSecret(string $userId): string
     {
         $encryptedSecret = $this->getUserSecret($userId);
         return $this->encryption->decrypt($encryptedSecret);
@@ -35,8 +35,9 @@ trait UserSecretStorageTrait
      * Store a secret for a user.
      * @param String $userId
      * @param String $secret
+     * @throws Exception
      */
-    public function setSecret($userId, $secret)
+    public function setSecret(string $userId, string $secret): void
     {
         $encryptedSecret = $this->encryption->encrypt($secret);
         $this->setUserSecret($userId, $encryptedSecret);

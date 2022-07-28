@@ -30,7 +30,21 @@ use Psr\Log\LoggerInterface;
  * It is usable for any database with a PDO driver
  * 
  * @author Patrick Honing <Patrick.Honing@han.nl>
+ *
+ * You can create separate tables for Tiqr_UserSecretStorage_Pdo and Tiqr_UserStorage_Pdo
+ * You can also combine the two tables by adding a "secret" column to the user storage table
+ * @see Tiqr_UserStorage_Pdo
+ *
+ * Mysql Create statement usersecret table
+
+CREATE TABLE IF NOT EXISTS usersecret (
+    id integer NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    userid varchar(30) NOT NULL UNIQUE,
+    secret varchar(128),
+);
+ *
  */
+
 class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
 {
     use UserSecretStorageTrait;
@@ -60,53 +74,85 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
         $this->handle = $handle;
         $this->tableName = $tableName;
     }
-    private function userExists($userId)
+
+    /**
+     * @see Tiqr_UserSecretStorage_Interface::userExists()
+     *
+     * Note: duplicate of Tiqr_UserStorage_Pdo::userExists()
+     */
+    public function userExists(string $userId): bool
     {
-        $sth = $this->handle->prepare("SELECT userid FROM ".$this->tableName." WHERE userid = ?");
-        $sth->execute(array($userId));
-        $result = $sth->fetchColumn();
-        if ($result !== false) {
-            return true;
+        try {
+            $sth = $this->handle->prepare('SELECT userid FROM ' . $this->tableName . ' WHERE userid = ?');
+            $sth->execute(array($userId));
+            return (false !== $sth->fetchColumn());
         }
-        $this->logger->debug('Unable fot find user in user secret storage (PDO)');
-        return false;
+        catch (Exception $e) {
+            $this->logger->error('PDO error checking user exists', array('exception'=>$e, 'userId'=>$userId));
+            throw ReadWriteException::fromOriginalException($e);
+        }
     }
 
     /**
      * Get the user's secret
      *
      * @param String $userId
-     *
-     * @return mixed: null|string
+     * @return string
+     * @throws Exception
      */
-    private function getUserSecret($userId)
+    private function getUserSecret(string $userId): string
     {
-        $sth = $this->handle->prepare("SELECT secret FROM ".$this->tableName." WHERE userid = ?");
-        if($sth->execute(array($userId))) {
-            $secret = $sth->fetchColumn();
-            if ($secret !== false) {
-                return $secret;
+        try {
+            $sth = $this->handle->prepare('SELECT secret FROM ' . $this->tableName . ' WHERE userid = ?');
+            $sth->execute(array($userId));
+            $res=$sth->fetchColumn();
+            if ($res === false) {
+                // No result
+                $this->logger->error(sprintf('No result getting secret for user "%s"', $userId));
+                throw new RuntimeException('User not found');
             }
         }
-        $this->logger->notice('Unable to retrieve user secret from user secret storage (PDO)');
+        catch (Exception $e) {
+            $this->logger->error('PDO error getting user', array('exception' => $e, 'userId' => $userId));
+            throw ReadWriteException::fromOriginalException($e);
+        }
+
+        if (!is_string($res)) {
+            $this->logger->error(sprintf('No secret found for user "%s"', $userId));
+            throw new RuntimeException('Secret not found');
+        }
+        return $res;
     }
 
     /**
-     * Store a secret for a user.
      *
-     * @param String $userId
-     * @param String $secret
+     * @throws Exception
      */
-    private function setUserSecret($userId, $secret)
+    private function setUserSecret(string $userId, string $secret): void
     {
-        if ($this->userExists($userId)) {
-            $sth = $this->handle->prepare("UPDATE ".$this->tableName." SET secret = ? WHERE userid = ?");
-        } else {
-            $sth = $this->handle->prepare("INSERT INTO ".$this->tableName." (secret,userid) VALUES (?,?)");
+        // UserSecretStorage can be used in a separate table. In this case the table has its own userid column
+        // This means that when a user has been created using in the UserStorage, it does not exists in the
+        // UserSecretStorage so userExists will be false and we need to use an INSERT query.
+
+        // It is also possible to use one table for both the UserStorage and the UserSecretStorage, in that case the
+        // userid column is shared between the UserStorage and UserSecretStorage and the user must first have been created
+        // in the UserStorage because:
+        // - UserStorage_Pdo::create() no longer supports overwriting an existing user
+        // - The INSERT will fail when displayname has a NOT NULL constraint
+        try {
+            if ($this->userExists($userId)) {
+                $sth = $this->handle->prepare('UPDATE ' . $this->tableName . ' SET secret = ? WHERE userid = ?');
+            } else {
+                $sth = $this->handle->prepare('INSERT INTO ' . $this->tableName . ' (secret,userid) VALUES (?,?)');
+            }
+            $sth->execute(array($secret, $userId));
         }
-        $result = $sth->execute(array($secret,$userId));
-        if (!$result) {
-            throw new ReadWriteException('Unable to persist user secret in user secret storage (PDO)');
+        catch (Exception $e) {
+            $this->logger->error(
+                sprintf('Unable to persist user secret for user "%s" in user secret storage (PDO)', $userId),
+                array('exception'=>$e)
+            );
+            throw ReadWriteException::fromOriginalException($e);
         }
     }
 }

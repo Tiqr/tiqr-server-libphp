@@ -57,16 +57,17 @@ class Tiqr_UserSecretStorage_File implements Tiqr_UserSecretStorage_Interface
      * @param String $userId
      *
      * @return String The user's secret
+     * @throws Exception
      */
-    private function getUserSecret($userId)
+    private function getUserSecret(string $userId): string
     {
         if ($data = $this->_loadUser($userId)) {
             if (isset($data["secret"])) {
                 return $data["secret"];
             }
         }
-        $this->logger->notice('Unable to retrieve the secret (user not found). In user secret storage (file)');
-        return NULL;
+        $this->logger->error(sprintf('User or user secret not found in secret storage (file) for user "%s"', $userId));
+        throw new RuntimeException('User or user secret not found in secret storage (File)');
     }
 
     /**
@@ -74,10 +75,14 @@ class Tiqr_UserSecretStorage_File implements Tiqr_UserSecretStorage_Interface
      *
      * @param String $userId
      * @param String $secret
+     * @throws Exception
      */
-    private function setUserSecret($userId, $secret)
+    private function setUserSecret(string $userId, string $secret): void
     {
-        $data = $this->_loadUser($userId, false);
+        $data=array();
+        if ($this->_userExists($userId)) {
+            $data = $this->_loadUser($userId);
+        }
         $data["secret"] = $secret;
         $this->_saveUser($userId, $data);
     }
