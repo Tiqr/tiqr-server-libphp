@@ -264,8 +264,9 @@ class Tiqr_Service
      * different mechanism, pass the userId of the authenticated user to this 
      * function. 
      * @param String $sessionKey The sessionKey identifying this auth session (typically returned by startAuthenticationSession)
+     * @throws Exception
      */
-    public function generateAuthQR($sessionKey)
+    public function generateAuthQR(string $sessionKey): void
     {
         // TODO
         $challengeUrl = $this->_getChallengeUrl($sessionKey);
@@ -342,9 +343,11 @@ class Tiqr_Service
     }
 
     /**
-     * Get the notification error that occurred
+     * Get an array the notification error that occurred
      *
      * @return array
+     *
+     * Does not thow
      */
     public function getNotificationError()
     {
@@ -363,17 +366,15 @@ class Tiqr_Service
      * application, for example to create a link in a mobile website on the
      * same device as where the application is installed
      * @param String $sessionKey The session key identifying this authentication session
-     * @param String $userId The userId of a pre-authenticated user, if in  
-     *                       step-up mode. NULL in other scenario's.
-     * @param String $sessionId The application's session identifier. 
-     *                          (defaults to php session)
+     *
+     * @return string Authentication URL for the tiqr client
+     * @throws Exception
      */
-    public function generateAuthURL($sessionKey)
+    public function generateAuthURL(string $sessionKey)
     {
         $challengeUrl = $this->_getChallengeUrl($sessionKey);  
         
         return $challengeUrl;
-        
     }
 
     /**
@@ -386,8 +387,10 @@ class Tiqr_Service
      *                          defaults to the php session id).
      * @param String $spIdentifier If SP and IDP are 2 different things, pass the url/identifier of the SP the user is logging into.
      *                             For setups where IDP==SP, just leave this blank.
+     * @return Session key
+     * @throws Exception
      */
-    public function startAuthenticationSession($userId="", $sessionId="", $spIdentifier="")
+    public function startAuthenticationSession(string $userId="", string $sessionId="", string $spIdentifier=""): string
     {
         if ($sessionId=="") {
             $sessionId = session_id();
@@ -427,7 +430,7 @@ class Tiqr_Service
      *                           to php session)
      * @return String The enrollment key
      */
-    public function startEnrollmentSession($userId, $displayName, $sessionId="")
+    public function startEnrollmentSession(string $userId, string $displayName, string $sessionId="")
     {
         if ($sessionId=="") {
             $sessionId = session_id();
@@ -480,8 +483,12 @@ class Tiqr_Service
      * 
      * @param String $sessionId the application's session identifier 
      *                          (defaults to php session)
+     * @return int Enrollment status.
+     * @see Tiqr_Service for a definitation of the enrollment status codes
+     *
+     * Does not throw
      */
-    public function getEnrollmentStatus($sessionId="")
+    public function getEnrollmentStatus(string $sessionId=""): int
     { 
         if ($sessionId=="") {
             $sessionId = session_id(); 
@@ -539,13 +546,14 @@ class Tiqr_Service
      * @return array An array of metadata that the phone needs to complete
      *               enrollment. You must encode it in JSON before you send
      *               it to the phone.
+     * @throws Exception
      */
-    public function getEnrollmentMetadata($enrollmentKey, $authenticationUrl, $enrollmentUrl)
+    public function getEnrollmentMetadata($enrollmentKey, $authenticationUrl, $enrollmentUrl): array
     {
         $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
         if (!is_array($data)) {
             $this->logger->error('Unable to find enrollment metadata in state storage');
-            return false;
+            throw new Exception('Unable to find enrollment metadata in state storage');
         }
 
         $metadata = array("service"=>
@@ -579,8 +587,9 @@ class Tiqr_Service
      * @param String $enrollmentKey The enrollmentKey generated at the start
      *                              of the enrollment process.
      * @return String The enrollment secret
+     * @throws Exception
      */
-    public function getEnrollmentSecret($enrollmentKey)
+    public function getEnrollmentSecret(string $enrollmentKey): string
     {
          $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
          $secret = $this->_uniqueSessionKey(self::PREFIX_ENROLLMENT_SECRET);
@@ -733,9 +742,10 @@ class Tiqr_Service
      * @param String $notificationType    The notification type.
      * @param String $notificationAddress The address that was stored during enrollment.
      *
-     * @return String The device address that can be used to send a notification.
+     * @return String|bool The device address that can be used to send a notification.
+     *                     false on error
      */
-    public function translateNotificationAddress($notificationType, $notificationAddress)
+    public function translateNotificationAddress(string $notificationType, string $notificationAddress)
     {
         if ($notificationType == 'APNS' || $notificationType == 'FCM') {
             return $this->_deviceStorage->getDeviceToken($notificationAddress);
@@ -748,8 +758,11 @@ class Tiqr_Service
      * Retrieve the currently logged in user.
      * @param String $sessionId The application's session identifier (defaults
      *                          to the php session).
-     * @return mixed An array with user data if a user was logged in or NULL if
-     *               no user is logged in.
+     * @return mixed An array with user data if a user was logged in,
+     *               NULL if no user is logged in
+     *               NULL if the user's login state could not be determined
+     *
+     * Does not throw
      */
     public function getAuthenticatedUser($sessionId="")
     {
@@ -765,19 +778,21 @@ class Tiqr_Service
     /**
      * Generate a challenge URL
      * @param String $sessionKey The key that identifies the session.
-     * @param String $challenge The authentication challenge
-     * @param String $userId The userid to embed in the challenge url (only
-     *                       if a user was pre-authenticated)
      *
+     * @return AuthenticationURL
+     * @throws Exception
      */
-    protected function _getChallengeUrl($sessionKey)
+    protected function _getChallengeUrl($sessionKey): string
     {                
         $state = $this->_stateStorage->getValue(self::PREFIX_CHALLENGE . $sessionKey);
         if (is_null($state)) {
             $this->logger->error(
-                'Unable find an existing challenge url in the state storage based on the existing session key'
+                sprintf(
+                'Cannot get session key "%s"',
+                    $sessionKey
+                )
             );
-            return false;
+            throw new Exception('Cannot find sessionkey');
         }
         
         $userId   = NULL;
@@ -824,6 +839,7 @@ class Tiqr_Service
      * @param String $sessionId The sessionId to set the status for
      * @param int $status The new enrollment status (one of the 
      *                    self::ENROLLMENT_STATUS_* constants)
+     * @throws Exception
      */
     protected function _setEnrollmentStatus($sessionId, $status)
     {
