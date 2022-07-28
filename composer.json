@@ -9,7 +9,7 @@
         "ext-gd": "*",
         "ext-curl": "*",
         "ext-json": "*",
-        "php": ">=7.0",
+        "php": ">=7.2",
         "psr/log": "^1.1"
     },
     "require-dev": {
