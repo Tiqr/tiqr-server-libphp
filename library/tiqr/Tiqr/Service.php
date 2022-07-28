@@ -74,12 +74,19 @@ class Tiqr_Service
     /**
      * Enrollment status codes
      */
-    const ENROLLMENT_STATUS_IDLE = 1;        // Nothing happens
-    const ENROLLMENT_STATUS_INITIALIZED = 2; // An enrollment session has begun
-    const ENROLLMENT_STATUS_RETRIEVED = 3;   // The device has retrieved the metadata
-    const ENROLLMENT_STATUS_PROCESSED = 4;   // The device has snet back a secret
-    const ENROLLMENT_STATUS_FINALIZED = 5;   // The application has stored the secret
-    const ENROLLMENT_STATUS_VALIDATED = 6;   // A first succesful authentication was performed
+    // IDLE: There is no enrollment going on in this session, or there was an error getting the enrollment status
+    const ENROLLMENT_STATUS_IDLE = 1;
+    // INITIALIZED: The enrollment session was started but the tiqr client has not retrieved the metadata yet
+    const ENROLLMENT_STATUS_INITIALIZED = 2;
+    // RETRIEVED: The tiqr client has retrieved the metadata
+    const ENROLLMENT_STATUS_RETRIEVED = 3;
+    // PROCESSED: The tiqr client has sent back the tiqr authentication secret
+    const ENROLLMENT_STATUS_PROCESSED = 4;
+    // FINALIZED: The server has stored the authentication secret
+    const ENROLLMENT_STATUS_FINALIZED = 5;
+    // VALIDATD: A first succesful authentication was performed
+    // Note: Not currently used
+    const ENROLLMENT_STATUS_VALIDATED = 6;
 
     const PREFIX_ENROLLMENT_SECRET = 'enrollsecret';
     const PREFIX_ENROLLMENT = 'enroll';
@@ -473,21 +480,6 @@ class Tiqr_Service
      * 
      * @param String $sessionId the application's session identifier 
      *                          (defaults to php session)
-     * @return int Enrollment status. Can be any one of these values:
-     *             - Tiqr_Server::ENROLLMENT_STATUS_IDLE 
-     *               There is no enrollment going on in this session
-     *             - Tiqr_Server::ENROLLMENT_STATUS_INITIALIZED
-     *               An enrollment session was started but the phone has not
-     *               yet taken action. 
-     *             - Tiqr_Server::ENROLLMENT_STATUS_RETRIEVED
-     *               The device has retrieved the metadata
-     *             - Tiqr_Server::ENROLLMENT_STATUS_PROCESSED
-     *               The device has sent back a secret for the user
-     *             - Tiqr_Server::ENROLLMENT_STATUS_FINALIZED
-     *               The application has stored the secret
-     *             - Tiqr_Server::ENROLLMENT_STATUS_VALIDATED
-     *               A first successful authentication was performed 
-     *               (todo: currently not used)
      */
     public function getEnrollmentStatus($sessionId="")
     { 
