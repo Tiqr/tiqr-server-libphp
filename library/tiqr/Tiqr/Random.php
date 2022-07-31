@@ -31,12 +31,15 @@ class Tiqr_Random
      * Generate $length cryptographically secure pseudo-random bytes
      * Throws when requested number of bytes cannot be generated
      *
+     * Note that this function generates random BYTES, it uses the string type as an array of bytes with values
+     * from 0 to 255.
+     *
      * @param int $length the number of bytes to generate.
      * @return string containing $length cryptographically secure pseudo-random bytes
      *
      * @throws Exception, Error, TypeError
      */
-    public static function randomBytes($length)
+    public static function randomBytes(int $length): string
     {
         // Get $length cryptographically secure pseudo-random bytes
         $rnd=\random_bytes($length);
