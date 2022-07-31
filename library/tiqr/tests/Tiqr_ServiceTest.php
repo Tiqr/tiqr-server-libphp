@@ -2,6 +2,8 @@
 
 require_once 'tiqr_autoloader.inc';
 
+require_once __DIR__ . '/../Tiqr/OATH/OCRA.php';
+
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -73,8 +75,10 @@ class Tiqr_ServiceTest extends TestCase
         //    authentication secret
         $enrollment_key = $service->startEnrollmentSession('test_user_id', 'Test User Name', $session_id);
         $this->assertIsString($enrollment_key);
+        // Expect a hex encoded key of Tiqr_Service::SESSION_KEY_LENGTH_BYTES * 2 long
         $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $enrollment_key);
-        $this->assertEquals(64, strlen($enrollment_key));
+        $this->assertEquals(Tiqr_Service::SESSION_KEY_LENGTH_BYTES * 2, strlen($enrollment_key));
+        $this->assertTrue( Tiqr_Service::SESSION_KEY_LENGTH_BYTES >= 16, 'SECURITY: Review length of SESSION_KEY_LENGTH_BYTES');
 
         $status = $service->getEnrollmentStatus($session_id);
         $this->assertSame($status, Tiqr_Service::ENROLLMENT_STATUS_INITIALIZED);
@@ -103,7 +107,8 @@ class Tiqr_ServiceTest extends TestCase
         // So we need to generate this enrollment secret first
         $enrollment_secret = $service->getEnrollmentSecret($enrollment_key);
         $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $enrollment_secret);
-        $this->assertEquals(64, strlen($enrollment_secret));
+        $this->assertEquals(Tiqr_Service::SESSION_KEY_LENGTH_BYTES * 2, strlen($enrollment_secret));
+        $this->assertTrue( Tiqr_Service::SESSION_KEY_LENGTH_BYTES >= 16, 'SECURITY: Review length of SESSION_KEY_LENGTH_BYTES');
 
 
         $status = $service->getEnrollmentStatus($session_id);
@@ -153,8 +158,8 @@ class Tiqr_ServiceTest extends TestCase
         $session_key = $service->startAuthenticationSession($userid, $session_id );
         $this->assertIsString($session_key);
         $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $session_key);
-        $this->assertEquals(64, strlen($session_key));
-        $this->assertEquals(NULL, $service->getAuthenticatedUser($session_id));
+        $this->assertEquals(Tiqr_Service::SESSION_KEY_LENGTH_BYTES * 2, strlen($session_key));
+        $this->assertTrue( Tiqr_Service::SESSION_KEY_LENGTH_BYTES >= 16, 'SECURITY: Review length of SESSION_KEY_LENGTH_BYTES');
 
         // Generate auth URL for in QR code
         // The generated URL has the format:
@@ -176,8 +181,7 @@ class Tiqr_ServiceTest extends TestCase
         $userSecret = '3132333435363738393031323334353637383930313233343536373839303132';
 
         // Calculate a response like a tiqr client would do using the information from the auth URL
-        $ocra = new Tiqr_OCRAWrapper('OCRA-1:HOTP-SHA1-6:QH10-S' );
-        $response = $ocra->calculateResponse( $userSecret, $challenge_from_auth_url, $session_key_from_auth_url);
+        $response = OCRA::generateOCRA( 'OCRA-1:HOTP-SHA1-6:QH10-S', $userSecret, '', $challenge_from_auth_url, '', $session_key_from_auth_url, '');
 
         // Test invalid response. 1234567 is always an invalid response, responses are 6 digits.
         $this->assertEquals(Tiqr_Service::AUTH_RESULT_INVALID_RESPONSE, $service->authenticate( 'test-auth-user', $userSecret, $session_key, '1234567' ) );
