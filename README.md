@@ -1,9 +1,9 @@
 # tiqr-server-libphp
-`Master` ![test-integration workflow](https://github.com/SURFnet/tiqr-server-libphp/actions/workflows/test-integration.yml/badge.svg?branch=master)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/SURFnet/tiqr-server-libphp/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/SURFnet/tiqr-server-libphp/?branch=master)
+`Master` ![test-integration workflow](https://github.com/Tiqr/tiqr-server-libphp/actions/workflows/test-integration.yml/badge.svg?branch=master)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/Tiqr/tiqr-server-libphp/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/Tiqr/tiqr-server-libphp/?branch=master)
 <br>
-`Develop` ![test-integration workflow](https://github.com/SURFnet/tiqr-server-libphp/actions/workflows/test-integration.yml/badge.svg?branch=develop)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/SURFnet/tiqr-server-libphp/badges/quality-score.png?b=develop)](https://scrutinizer-ci.com/g/SURFnet/tiqr-server-libphp/?branch=develop)
+`Develop` ![test-integration workflow](https://github.com/Tiqr/tiqr-server-libphp/actions/workflows/test-integration.yml/badge.svg?branch=develop)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/Tiqr/tiqr-server-libphp/badges/quality-score.png?b=develop)](https://scrutinizer-ci.com/g/Tiqr/tiqr-server-libphp/?branch=develop)
 
 A PHP library for implementing a Tiqr authentication server
 
