@@ -47,7 +47,7 @@ class Tiqr_StateStorage
      * @throws RuntimeException When the options configuration array misses a required parameter
      *
      */
-    public static function getStorage($type="file", $options=array(), LoggerInterface $logger)
+    public static function getStorage(string $type="file", array $options=array(), LoggerInterface $logger)
     {
         switch ($type) {
             case "file":
