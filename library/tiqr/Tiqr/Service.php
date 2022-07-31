@@ -183,7 +183,7 @@ class Tiqr_Service
      * @param array $options
      * @param int $version The protocol version to use (defaults to the latest)
      */
-    public function __construct(LoggerInterface $logger, $options=array(), $version = 2)
+    public function __construct(LoggerInterface $logger, array $options=array(), int $version = 2)
     {
         $this->_options = $options;
         $this->logger = $logger;
@@ -267,7 +267,7 @@ class Tiqr_Service
      * Get the identifier of the service.
      * @return String identifier
      */
-    public function getIdentifier()
+    public function getIdentifier(): string
     {
         return $this->_identifier;
     }
@@ -285,7 +285,6 @@ class Tiqr_Service
      */
     public function generateAuthQR(string $sessionKey): void
     {
-        // TODO
         $challengeUrl = $this->_getChallengeUrl($sessionKey);
 
         $this->generateQR($challengeUrl);
@@ -297,7 +296,7 @@ class Tiqr_Service
      *
      * @param String $s The string to be encoded in the QR image
      */
-    public function generateQR($s)
+    public function generateQR(string $s): void
     {
         QRcode::png($s, false, 4, 5);
     }
@@ -355,7 +354,7 @@ class Tiqr_Service
      * @return string Authentication URL for the tiqr client
      * @throws Exception
      */
-    public function generateAuthURL(string $sessionKey)
+    public function generateAuthURL(string $sessionKey): string
     {
         $challengeUrl = $this->_getChallengeUrl($sessionKey);  
         
@@ -415,7 +414,7 @@ class Tiqr_Service
      *                           to php session)
      * @return String The enrollment key
      */
-    public function startEnrollmentSession(string $userId, string $displayName, string $sessionId="")
+    public function startEnrollmentSession(string $userId, string $displayName, string $sessionId=""): string
     {
         if ($sessionId=="") {
             $sessionId = session_id();
@@ -437,7 +436,7 @@ class Tiqr_Service
      * @param $sessionId The application's session identifier (defaults
      *                   to php session)
      */
-    public function resetEnrollmentSession($sessionId="")
+    public function resetEnrollmentSession(string $sessionId=""): void
     {
         if ($sessionId=="") {
             $sessionId = session_id();
@@ -452,7 +451,7 @@ class Tiqr_Service
      * in the polling mechanism and the long term state in the state
      * storage (FS/Pdo/Memcache)
      */
-    public function clearEnrollmentState(string $key)
+    public function clearEnrollmentState(string $enrollmentKey): void
     {
         $value = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT.$key);
         if (is_array($value) && array_key_exists('sessionId', $value)) {
@@ -492,7 +491,7 @@ class Tiqr_Service
      *                            for retrieving this from the request and passing it
      *                            on to the Tiqr server.
      */
-    public function generateEnrollmentQR($metadataUrl) 
+    public function generateEnrollmentQR(string $metadataUrl): void
     { 
         $enrollmentString = $this->_getEnrollString($metadataUrl);
         
@@ -503,7 +502,7 @@ class Tiqr_Service
      * Generate an enrol string
      * This string can be used to feed to a QR code generator
      */
-    public function generateEnrollString($metadataUrl)
+    public function generateEnrollString(string $metadataUrl): string
     {
         return $this->_getEnrollString($metadataUrl);
     }
@@ -533,7 +532,7 @@ class Tiqr_Service
      *               it to the phone.
      * @throws Exception
      */
-    public function getEnrollmentMetadata($enrollmentKey, $authenticationUrl, $enrollmentUrl): array
+    public function getEnrollmentMetadata(string $enrollmentKey, string $authenticationUrl, string $enrollmentUrl): array
     {
         $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
         if (!is_array($data)) {
@@ -600,7 +599,7 @@ class Tiqr_Service
      *               user secret that the phone posted.
      *               If the enrollmentSecret is invalid, false is returned.
      */
-    public function validateEnrollmentSecret($enrollmentSecret)
+    public function validateEnrollmentSecret(string $enrollmentSecret): string
     {
         $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT_SECRET.$enrollmentSecret);
         if (is_array($data)) {
@@ -708,7 +707,7 @@ class Tiqr_Service
      * @param String $sessionId The application's session identifier (defaults
      *                          to the php session).
      */
-    public function logout($sessionId="")
+    public function logout(string $sessionId=""): void
     {
         if ($sessionId=="") {
             $sessionId = session_id(); 
@@ -795,7 +794,7 @@ class Tiqr_Service
      * Generate an enrollment string
      * @param String $metadataUrl The URL you provide to the phone to retrieve metadata.
      */
-    protected function _getEnrollString($metadataUrl)
+    protected function _getEnrollString(string $metadataUrl): string
     {
         return $this->_protocolEnroll."://".$metadataUrl;
     }
