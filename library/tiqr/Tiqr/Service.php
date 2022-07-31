@@ -58,16 +58,6 @@ class Tiqr_Service
     protected $_ocraWrapper;
     protected $_ocraService;
 
-    /**
-     * The notification exception
-     *
-     * @var Exception
-     */
-    protected $_notificationError = NULL;
-
-    /**
-     * @var LoggerInterface
-     */
     private $logger;
 
     /**
@@ -317,17 +307,13 @@ class Tiqr_Service
      * @param String $sessionKey          The session key identifying this authentication session
      * @param String $notificationType    Notification type returned by the tiqr client: APNS, GCM, FCM, APNS_DIRECT or FCM_DIRECT
      * @param String $notificationAddress Notification address, e.g. device token, phone number etc.
-     *
-     * @return boolean True if the notification was sent successfully, false if not.
-     *
-     * @todo Use exceptions in case of errors
+     **
+     * @throws Exception
      */
-    public function sendAuthNotification(string $sessionKey, string $notificationType, string $notificationAddress) : bool
+    public function sendAuthNotification(string $sessionKey, string $notificationType, string $notificationAddress): void
     {
         $message = NULL;
         try {
-            $this->_notificationError = null;
-
             switch ($notificationType) {
                 case 'APNS':
                 case 'APNS_DIRECT':
@@ -350,41 +336,13 @@ class Tiqr_Service
             $message->setAddress($notificationAddress);
             $message->setCustomProperty('challenge', $this->_getChallengeUrl($sessionKey));
             $message->send();
-
-            return true;
-        } catch (Exception $ex) {
-            $this->setNotificationError($ex);
-            $this->logger->error(sprintf('Sending push notification failed with message "%s"', $ex->getMessage()));
-            return false;
+        } catch (Exception $e) {
+            $this->logger->error(
+                sprintf('Sending "%s" push notification to address "%s" failed', $notificationType, $notificationAddress),
+                array('exception' =>$e)
+            );
+            throw $e;
         }
-    }
-
-    /**
-     * Set the notification exception
-     *
-     * @param Exception $ex
-     */
-    protected function setNotificationError(Exception $ex)
-    {
-        $this->_notificationError = $ex;
-    }
-
-    /**
-     * Get an array the notification error that occurred
-     *
-     * @return array
-     *
-     * Does not thow
-     */
-    public function getNotificationError()
-    {
-        return array(
-            'code' => $this->_notificationError->getCode(),
-            'file' => $this->_notificationError->getFile(),
-            'line' => $this->_notificationError->getLine(),
-            'message' => $this->_notificationError->getMessage(),
-            'trace' => $this->_notificationError->getTraceAsString()
-        );
     }
 
     /** 
