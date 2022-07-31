@@ -40,24 +40,33 @@ class Tiqr_Service
     /**
      * @internal Various variables internal to the service class
      */
+    /** @var array  */
     protected $_options;
-    
-    protected $_protocolAuth = "tiqr";
-    protected $_protocolEnroll = "tiqrenroll";
-    
-    protected $_identifier = "";
-    protected $_ocraSuite = "";
-    protected $_name = "";
-    protected $_logoUrl = "";
-    protected $_infoUrl = "";
-    protected $_protocolVersion = 0;
-    
-    protected $_stateStorage = NULL;
-    protected $_deviceStorage = NULL;
 
-    protected $_ocraWrapper;
+    /** @var string */
+    protected $_protocolAuth;
+    /** @var string */
+    protected $_protocolEnroll;
+    /** @var string */
+    protected $_identifier;
+    /** @var string */
+    protected $_ocraSuite;
+    /** @var string */
+    protected $_name;
+    /** @var string */
+    protected $_logoUrl;
+    /** @var string */
+    protected $_infoUrl;
+    /** @var int */
+    protected $_protocolVersion;
+    /** @var Tiqr_StateStorage_StateStorageInterface */
+    protected $_stateStorage;
+    /** @var Tiqr_DeviceStorage_Abstract */
+    protected $_deviceStorage;
+    /** @var Tiqr_OcraService_Interface */
     protected $_ocraService;
 
+    /** @var LoggerInterface */
     private $logger;
 
     /**
@@ -98,7 +107,20 @@ class Tiqr_Service
     const AUTH_RESULT_INVALID_USERID    = 5;
     
     /**
-     * The default OCRA Suite to use for authentication
+     * The default OCRA Suite (RFC 6287) to use for authentication in Tiqr
+     * This basically calculates the HMAC-SHA1 over a buffer with:
+     * - A 10 hex digit long challenge
+     * - authentication session ID (32 hex digits)
+     * - client secret key (64 hex digits)
+     * and then from the calculated HMAC-SHA1 calculates a 6 decimal digit long response
+     * This means that a client has a 1 in 10^6 chance of guessing the right response.
+     * This is a tradeoff between having responses that a user can easily copy during offline authentication
+     * and resistance against guessing.
+     * The application must implement anti-guessing counter measures, e.g. locking an account after N-tries when using
+     * the default of 6.
+     * Chances of correctly guessing a 6 digit response code ofter N tries (calculated by multiplying N floats, YMMV):
+     * N=1: 1/10^6 = 0.0001%; N=2: 0.0003%; N=3: 0.0006%; N=4: 0,0010%; N=5: 0,0015%; N=6: 0,0021%; N=7: 0,0028%;
+     * N=8: 0,0036%; N=9: 0,0045%; N=10: 0,0055%l N=20: 0,0210; N=50: 0,1274%; N=100: 0,5037%; N=200: 1,708%
      */
     const DEFAULT_OCRA_SUITE = "OCRA-1:HOTP-SHA1-6:QH10-S";
 
@@ -137,130 +159,101 @@ class Tiqr_Service
      * reasonable defaults but it's recommended to at least specify a custom 
      * name and identifier and a randomly generated sessions secret.
      * If you use the Tiqr Service with your own apps, you must also specify
-     * a custom auto.protocol and enroll.protocol specifier.
+     * a custom auth.protocol and enroll.protocol specifier.
      * 
      * The options are:
-     * - auth.protocol: The protocol specifier (e.g. tiqr://) that the 
-     *                  server uses to communicate challenge urls to the phone. 
-     *                  This must match the url handler specified in the 
-     *                  iPhone app's build settings. You do not have to add the
-     *                  '://', just the protocolname.
-     *                  Default: tiqr
-     * - enroll.protocol: The protocol specifier for enrollment urls.
-     *                    Default: tiqrenroll
-     * - ocra.suite: The OCRA suite to use. Defaults to OCRA-1:HOTP-SHA1-6:QN10-S.
-     * - identifier: A short ASCII identifier for your service.
-     *               Defaults to the SERVER_NAME of the server.
-     * - name: A longer description of your service.
-     *         Defaults to the SERVER_NAME of the server.              
+     * - auth.protocol: The protocol specifier (e.g. "tiqrauth") that the server uses to communicate challenge urls to the
+     *                  iOS/Android tiqr app. This must match the url handler specified in the iPhone app's build
+     *                  settings. Do not add the '://', just the protocolname. Default: "tiqr"
+     * - enroll.protocol: The protocol specifier for enrollment urls. Do not add the '://', just the protocolname.
+     *                    Default: "tiqrenroll"
+     *
+     * - ocra.suite: The OCRA suite to use. Defaults to DEFAULT_OCRA_SUITE.
+     *
+     * - identifier: A short ASCII identifier for your service. Defaults to the SERVER_NAME of the server. This is what
+     *               a tiqr client will use to identify the server.
+     * - name: A longer description of your service. Defaults to the SERVER_NAME of the server. A descriptive name for
+     *         display purposes
+     *
      * - logoUrl: A full http url pointing to a logo for your service.
      * - infoUrl: An http url pointing to an info page of your service
-     * - phpqrcode.path: The location of the phpqrcode library.
-     *                   Defaults to ../phpqrcode
-     * - apns.path: The location of the ApnsPHP library.
-     *              Defaults to ../apns-php
-     * - apns.certificate: The location of your Apple push notification
-     *                     certificate.
+     *
+     * - ocraservice: Configuration for the OcraService to use.
+     *                - type: The ocra service type. (default: "tiqr")
+     *                - parameters depending on the ocra service. See classes inside to OcraService directory for
+     *                  supported types and their parameters.
+     *
+     * - statestorage: An array with the configuration of the storage for temporary data. It has the following sub keys:
+     *                 - type: The type of state storage. (default: "file")
+     *                 - parameters depending on the storage. See the classes inside the StateStorage folder for
+     *                   supported types and their parameters.
+     *
+     *  * For sending push notifications using the Apple push notification service (APNS)
+     * - apns.certificate: The location of the file with the Apple push notification client certificate and private key
+     *                     in PEM format.
      *                     Defaults to ../certificates/cert.pem
-     * - apns.environment: Whether to use apple's "sandbox" or "production" 
-     *                     apns environment
-     * - statestorage: An array with the configuration of the storage for 
-     *                 temporary data. It has the following sub keys:
-     *                 - type: The type of state storage. (default: file) 
-     *                 - parameters depending on the storage.
-     *                 See the classes inside the StateStorage folder for 
-     *                 supported types and their parameters.
-     * - devicestorage: An array with the configruation of the storage for
-     *                  device push notification tokens. Only necessary if 
-     *                  you use the Tiqr Service as step-up authentication
-     *                  for an already existing user. It has the following 
+     * - apns.environment: Whether to use apple's "sandbox" or "production" apns environment
+     * * For sending push notifications to Android devices using Google's firebase cloud messaging (FCM) API
+     * - firebase.apikey: String containing the FCM API key
+     *
+     * - devicestorage: An array with the configuration of the storage for device push notification tokens. Only
+     *                  necessary if you use the Tiqr Service to authenticate an already known userId (e.g. when using
+     *                  tiqr a second authentication factor AND are using a tiqr client that uses the token exchange.
+     *                  It has the following
      *                  keys:
-     *                  - type: The type of  storage. (default: dummy) 
-     *                  - parameters depending on the storage.
-     *                 See the classes inside the DeviceStorage folder for 
-     *                 supported types and their parameters.
-     *  
+     *                  - type: The type of  storage. (default: "dummy")
+     *                  - parameters depending on the storage. See the classes inside the DeviceStorage folder for
+     *                    supported types and their parameters.
+     **
+     * @param LoggerInterface $logger
      * @param array $options
-     * @param int $version The protocol version to use (defaults to the latest)
+     * @param int $version The tiqr protocol version to use (defaults to the latest)
+     * @throws Exception
      */
     public function __construct(LoggerInterface $logger, array $options=array(), int $version = 2)
     {
-        $this->_options = $options;
+        $this->_options = $options; // Used to later get settings for Tiqr_Message_*
         $this->logger = $logger;
-        
-        if (isset($options["auth.protocol"])) {
-            $this->_protocolAuth = $options["auth.protocol"];
-        }
-        
-        if (isset($options["enroll.protocol"])) {
-            $this->_protocolEnroll = $options["enroll.protocol"];
-        }
-        
-        if (isset($options["ocra.suite"])) {
-            $this->_ocraSuite = $options["ocra.suite"];
-        } else {
-            $this->_ocraSuite = self::DEFAULT_OCRA_SUITE;
-        }
-        
-        if (isset($options["identifier"])) { 
-            $this->_identifier = $options["identifier"];
-        } else {
-            $this->_identifier = $_SERVER["SERVER_NAME"];
-        }
-        
-        if (isset($options["name"])) {
-            $this->_name = $options["name"];
-        } else {
-            $this->_name = $_SERVER["SERVER_NAME"];
-        }
+        $this->_protocolAuth = $options["auth.protocol"] ?? 'tiqr';
+        $this->_protocolEnroll = $options["enroll.protocol"] ?? 'tiqrenroll';
+        $this->_ocraSuite = $options["ocra.suite"] ?? self::DEFAULT_OCRA_SUITE;
+        $this->_identifier = $options["identifier"] ?? $_SERVER["SERVER_NAME"];
+        $this->_name = $options["name"] ?? $_SERVER["SERVER_NAME"];
+        $this->_logoUrl = $options["logoUrl"] ?? '';
+        $this->_infoUrl = $options["infoUrl"] ?? '';
 
-        if (isset($options["logoUrl"])) { 
-            $this->_logoUrl = $options["logoUrl"];
-        }
+        // An idea is to create getStateStorage, getDeviceStorage and getOcraService functions to create these functions
+        // at the point that we actually need them.
 
-        if (isset($options["infoUrl"])) {
-            $this->_infoUrl = $options["infoUrl"];
-        }
-        
-        if (isset($options["statestorage"])) {
-            $type = $options["statestorage"]["type"];
-            $storageOptions = $options["statestorage"];
-        } else {
+        // Create StateStorage
+        if (!isset($options["statestorage"])) {
             throw new RuntimeException('No state storage configuration is configured, please provide one');
         }
+        $this->_stateStorage = Tiqr_StateStorage::getStorage($options["statestorage"]["type"], $options["statestorage"], $logger);
 
-        $this->logger->info(sprintf('Creating a %s state storage', $type));
-        $this->_stateStorage = Tiqr_StateStorage::getStorage($type, $storageOptions, $logger);
-        
+        // Create DeviceStorage - required when using Push Notification with a token exchange
         if (isset($options["devicestorage"])) {
-            $type = $options["devicestorage"]["type"];
-            $storageOptions = $options["devicestorage"];
+            $this->_deviceStorage = Tiqr_DeviceStorage::getStorage($options["devicestorage"]["type"], $options["devicestorage"], $logger);
         } else {
-            $this->logger->info('Falling back to dummy device storage');
-            $type = "dummy";
-            $storageOptions = array();
+            $this->_deviceStorage = Tiqr_DeviceStorage::getStorage('dummy', array(), $logger);
         }
-        $this->logger->info(sprintf('Creating a %s device storage', $type));
-        $this->_deviceStorage = Tiqr_DeviceStorage::getStorage($type, $storageOptions, $logger);
-        
+
+        // Set Tiqr protocol version, only version 2 is currently supported
+        if ($version !== 2) {
+            throw new Exception("Unsupported protocol version '${version}'");
+        }
         $this->_protocolVersion = $version;
 
-        $type = 'tiqr';
-        if (isset($options['usersecretstorage']) && $options['usersecretstorage']['type'] == 'oathserviceclient') {
-            $type = 'oathserviceclient';
+        // Create OcraService
+        // Library versions before 3.0 (confusingly) used the usersecretstorage key for this configuration
+        // and used 'tiqr' as type when no type explicitly set to oathserviceclient was configured
+        if (isset($options['ocraservice']) && $options['ocraservice']['type'] != 'tiqr') {
+            $options['ocraservice']['ocra.suite'] = $this->_ocraSuite;
+            $this->_ocraService = Tiqr_OcraService::getOcraService($options['ocraservice']['type'], $options['ocraservice'], $logger);
         }
-        $ocraConfig = array();
-        switch ($type) {
-            case 'tiqr':
-                $ocraConfig['ocra.suite'] = $this->_ocraSuite;
-                $ocraConfig['protocolVersion'] = $version;
-                break;
-            case 'oathserviceclient':
-                $ocraConfig = $options['usersecretstorage'];
-                break;
+        else { // Create default ocraservice
+            $this->_ocraService = Tiqr_OcraService::getOcraService('tiqr', array('ocra.suite' => $this->_ocraSuite), $logger);
         }
-        $this->logger->info(sprintf('Creating a %s ocra service', $type));
-        $this->_ocraService = Tiqr_OcraService::getOcraService($type, $ocraConfig, $logger);
     }
     
     /**
