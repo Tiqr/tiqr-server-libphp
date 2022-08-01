@@ -14,6 +14,8 @@ use Tiqr_OCRAWrapper;
 use Tiqr_Service;
 use Tiqr_UserStorage;
 
+require_once __DIR__ . '/../library/tiqr/Tiqr/OATH/OCRA.php'; // For calculating OCRA responses
+
 class TestServerController
 {
     private $tiqrService;
@@ -264,7 +266,7 @@ class TestServerController
         $enrollment_key = $this->tiqrService->startEnrollmentSession($user_id, $user_display_name, $session_id);
         $app::log_info("Started enrollment session $enrollment_key");
         $metadataUrl = $this->host_url . "/metadata";
-        $enroll_string = $this->tiqrService->generateEnrollString($metadataUrl) . "?enrollment_key=$enrollment_key";
+        $enroll_string = $this->tiqrService->generateEnrollString("$metadataUrl?enrollment_key=$enrollment_key");
         $encoded_enroll_string = htmlentities(urlencode($enroll_string));
         $image_url = "/qr?code=" . $encoded_enroll_string;
 
@@ -496,12 +498,20 @@ class TestServerController
             $app::log_info("Calculating response for $user_id");
             $secret = $this->userSecretStorage->getSecret($user_id);
             $app::log_info("secret=$secret");
-            $exploded = explode('/', $authentication_URL);
-            $session_key = $exploded[3]; // hex encoded session
-            $challenge = $exploded[4];   // 10 digit hex challenge
+
+            $challenge='';
+            // Parse the authentication URL to get the challenge question
+            if ( (strpos($authentication_URL, 'https://') === 0) || (strpos($authentication_URL, 'http://')) ) {
+                // New style URL, get the value of the "q" query parameter
+                parse_str(parse_url($authentication_URL, PHP_URL_QUERY), $result);
+                $challenge=$result['q'];
+            }
+            else {  // Old style URL, parameters are separated by slashes
+                $exploded = explode('/', $authentication_URL);
+                $challenge = $exploded[4];   // 10 digit hex challenge
+            }
             $app::log_info("challenge=$challenge");
-            $ocra = new Tiqr_OCRAWrapper('OCRA-1:HOTP-SHA1-6:QH10-S');
-            $response = $ocra->calculateResponse($secret, $challenge, $session_key);
+            $response=\OCRA::generateOCRA('OCRA-1:HOTP-SHA1-6:QH10-S', $secret, '', $challenge, '', $session_key, '');
             $app::log_info("response=$response");
         }
 
