@@ -30,10 +30,9 @@ use Psr\Log\LoggerInterface;
 
 /** 
  * The main Tiqr Service class.
- * This is the class that an application interacts with to provide mobile 
- * authentication
- * @author ivo
- *
+ * This is the class that an application interacts with to implement authentication and enrollment using the tiqr
+ * protocol, used with the tiqr.org mobile authentication apps
+ * See https://tiqr.org/technical/protocol/ for a specification of the protocol
  */
 class Tiqr_Service
 {
@@ -175,11 +174,29 @@ class Tiqr_Service
      * a custom auth.protocol and enroll.protocol specifier.
      * 
      * The options are:
-     * - auth.protocol: The protocol specifier (e.g. "tiqrauth") that the server uses to communicate challenge urls to the
-     *                  iOS/Android tiqr app. This must match the url handler specified in the iPhone app's build
-     *                  settings. Do not add the '://', just the protocolname. Default: "tiqr"
-     * - enroll.protocol: The protocol specifier for enrollment urls. Do not add the '://', just the protocolname.
+     * - auth.protocol: The protocol specifier that the server uses to communicate challenge urls to the
+     *                  iOS/Android tiqr app. This must match the url handler configuration in the app's build
+     *                  settings.
+     *                  Default: "tiqr".
+     *                  Two formats are supported:
+     *                  1. Custom URL scheme: Set the scheme's name. E.g. "tiqrauth". Do not add '://'.
+     *                     This will generate authentication URLs of the form:
+     *                     tiqrauth://<userId>@<idp_identifier>/<session_key>/<challenge>/<sp_idenitfier>/<version>
+     *                  2. Universal link: Set the http or https URL. E.g. "https://tiqr.org/tiqrauth/"
+     *                     This will generate authentication URLs of the form:
+     *                     https://tiqr.org/tiqrauth/?u=<userid>&s=<session_key>&q=<challenge/question>&i=<idp_identifier>&v=<version>
+     *
+     * - enroll.protocol: The protocol specifier that the server uses to start the enrollment of a new account in the
+     *                    iOS/Android tiqr app. This must match the url handler configuration in the app's build
+     *                    settings.
      *                    Default: "tiqrenroll"
+     *                    Two formats are supported:
+     *                    1. Custom URL scheme: Set the protocol name. E.g. "tiqrenroll". Do not add '://'.
+     *                       This will generate enrollment URLs of the form:
+     *                       tiqrenroll://<metadata URL>
+     *                    2. Universal link: Set the http or https URL. "https://tiqr.org/tiqrenroll/"
+     *                       This will generate enrollment URLs of the form:
+     *                       https://eduid.nl/tiqrenroll/?metadata=<URL encoded metadata URL>
      *
      * - ocra.suite: The OCRA suite to use. Defaults to DEFAULT_OCRA_SUITE.
      *
@@ -508,7 +525,7 @@ class Tiqr_Service
     }
 
     /**
-     * Generate an enrol string
+     * Generate an enroll string
      * This string can be used to feed to a QR code generator
      */
     public function generateEnrollString(string $metadataUrl): string
@@ -861,6 +878,7 @@ class Tiqr_Service
     {
         // Lookup the authentication session data and use this to generate the application specific
         // authentication URL
+        // The are two formats see: https://tiqr.org/technical/protocol/
         // We probably just generated the challenge and stored it in the StateStorage
         // We can save a roundtrip to the storage backend here by reusing this information
 
@@ -878,7 +896,21 @@ class Tiqr_Service
         $userId = $state["userId"] ?? NULL;
         $challenge = $state["challenge"] ?? '';
         $spIdentifier = $state["spIdentifier"] ?? '';
-        
+
+        if ( (strpos($this->_protocolAuth, 'https://') === 0) || (strpos($this->_protocolAuth, 'http://') === 0) ) {
+            // Create universal Link
+            $parameters=array();
+            if (!is_null($userId)) {
+                $parameters[]='u='.urlencode($userId);
+            }
+            $parameters[]='s='.urlencode($sessionKey);
+            $parameters[]='q='.urlencode($challenge);
+            $parameters[]='i='.urlencode($this->getIdentifier());
+            $parameters[]='v='.urlencode($this->_protocolVersion);
+            return $this->_protocolAuth.'?'.implode('&', $parameters);
+        }
+
+        // Create custom URL scheme
         // Last bit is the spIdentifier
         return $this->_protocolAuth."://".(!is_null($userId)?urlencode($userId).'@':'').$this->getIdentifier()."/".$sessionKey."/".$challenge."/".urlencode($spIdentifier)."/".$this->_protocolVersion;
     }
@@ -889,6 +921,14 @@ class Tiqr_Service
      */
     protected function _getEnrollString(string $metadataUrl): string
     {
+        // The are two formats see: https://tiqr.org/technical/protocol/
+
+        if ( (strpos($this->_protocolEnroll, 'https://') === 0) || (strpos($this->_protocolEnroll, 'http://') === 0) ) {
+            // Create universal Link
+            return $this->_protocolEnroll.'?metadata='.urlencode($metadataUrl);
+        }
+
+        // Create custom URL scheme
         return $this->_protocolEnroll."://".$metadataUrl;
     }
 

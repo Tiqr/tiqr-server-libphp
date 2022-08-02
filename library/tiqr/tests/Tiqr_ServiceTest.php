@@ -57,6 +57,21 @@ class Tiqr_ServiceTest extends TestCase
         $this->assertSame($service->getIdentifier(), 'test.identifier.example.org');
     }
 
+    public function testUniversalLinkEnrollURL() {
+        $options=$this->getOptions();
+        $options['enroll.protocol']='https://example.com/tiqrenroll';
+        $service = new Tiqr_Service($this->logger, $options);
+        $enrollment_key = $service->startEnrollmentSession('test_user_id', 'Test User Name', '');
+        $metadataUrl='https://example.com/metadata/?key='.$enrollment_key;
+        $enroll_string = $service->generateEnrollString($metadataUrl);
+        $result = parse_url($enroll_string, -1);
+        $this->assertEquals('https', $result['scheme']);
+        $this->assertEquals('example.com', $result['host']);
+        $this->assertEquals('/tiqrenroll', $result['path']);
+        parse_str($result['query'], $result);
+        $this->assertEquals($metadataUrl, $result['metadata']);
+    }
+
     public function testEnroll() {
         // Create unique session ID
         $session_id = 'test_session_id_'.time();
@@ -158,6 +173,46 @@ class Tiqr_ServiceTest extends TestCase
             $service->validateEnrollmentSecret($enrollment_secret);
             $this->fail('Expected exception');
         } catch (Exception $e) {}
+    }
+
+    public function testUniversalLinkAuthURLWithUser() {
+        $options=$this->getOptions();
+        $options['auth.protocol']='https://example.com/tiqrauth';
+        $service = new Tiqr_Service($this->logger, $options);
+        $session_key = $service->startAuthenticationSession('test_user_id', '' );
+        $authUrl=$service->generateAuthURL($session_key);
+
+        $result = parse_url($authUrl, -1);
+        $this->assertEquals('https', $result['scheme']);
+        $this->assertEquals('example.com', $result['host']);
+        $this->assertEquals('/tiqrauth', $result['path']);
+        parse_str($result['query'], $result);
+        $this->assertEquals('test_user_id', $result['u']);
+        $this->assertEquals($session_key, $result['s']);
+        $this->assertTrue(strlen($result['q']) == 10 );
+        $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $result['q']);
+        $this->assertEquals('test.identifier.example.org', $result['i']);
+        $this->assertEquals(2, $result['v']);
+    }
+
+    public function testUniversalLinkAuthURLWithoutUser() {
+        $options=$this->getOptions();
+        $options['auth.protocol']='https://example.com/tiqrauth';
+        $service = new Tiqr_Service($this->logger, $options);
+        $session_key = $service->startAuthenticationSession('', '' );
+        $authUrl=$service->generateAuthURL($session_key);
+
+        $result = parse_url($authUrl, -1);
+        $this->assertEquals('https', $result['scheme']);
+        $this->assertEquals('example.com', $result['host']);
+        $this->assertEquals('/tiqrauth', $result['path']);
+        parse_str($result['query'], $result);
+        $this->assertFalse(isset($result['u']));
+        $this->assertEquals($session_key, $result['s']);
+        $this->assertTrue(strlen($result['q']) == 10 );
+        $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $result['q']);
+        $this->assertEquals('test.identifier.example.org', $result['i']);
+        $this->assertEquals(2, $result['v']);
     }
 
     function testAuthentication() {
