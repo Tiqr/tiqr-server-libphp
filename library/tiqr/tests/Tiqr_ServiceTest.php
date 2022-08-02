@@ -189,7 +189,7 @@ class Tiqr_ServiceTest extends TestCase
         // The generated URL has the format:
         // testauth://test-auth-user@test.identifier.example.org/$session_key/$challenge/test.identifier.example.org/2
         // 0        1 2                                          3            4          5                           6
-        $authUrl=$service->generateAuthURL($session_key, 'test-auth-user', $session_id);
+        $authUrl=$service->generateAuthURL($session_key);
         $this->assertIsString($authUrl);
         $this->assertNotEmpty($authUrl);
 
