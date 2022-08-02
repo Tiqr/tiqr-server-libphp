@@ -558,7 +558,7 @@ class TestServerController
         $this->tiqrService->sendAuthNotification($session_key, $notificationType, $deviceNotificationAddress);
         $app->log_info("Push notification sent");
 
-        $view->PushResult("Push notification sent");
+        $view->PushResult("Sent $notificationType to $deviceNotificationAddress");
     }
 
 
@@ -676,6 +676,23 @@ class TestServerController
             case Tiqr_Service::AUTH_RESULT_INVALID_USERID:
                 $resultStr = "INVALID_USER";
                 break;
+        }
+
+        if ($result === Tiqr_Service::AUTH_RESULT_AUTHENTICATED) {
+            try {
+                if ($notificationAddress != $notificationAddress_from_userStorage) {
+                    $this->userStorage->setNotificationAddress($userId, $notificationAddress);
+                    log_info("Updated notification address");
+                }
+                if ($notificationType != $notificationType_from_userStorage) {
+                    $this->userStorage->setNotificationType($userId, $notificationType);
+                    log_info("Updated notification type");
+                }
+            }
+            catch (\Exception $e) {
+                $app::log_warning('Updating push notification information failed');
+                $app::log_warning($e);
+            }
         }
 
         $app::log_info("Returning authentication result '$resultStr'");
