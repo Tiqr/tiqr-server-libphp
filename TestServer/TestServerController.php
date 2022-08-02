@@ -182,54 +182,61 @@ class TestServerController
     {
         $view = new TestServerView();
 
-        $app::log_info("host_url=$this->host_url");
-        switch ($path) {
-            case "/":   // Test server home page
-                $view->ShowRoot();
-                break;
+        try {
+            $app::log_info("host_url=$this->host_url");
+            switch ($path) {
+                case "/":   // Test server home page
+                    $view->ShowRoot();
+                    break;
 
-            case "/list-users": // page showing currently enrolled user accounts
-                $this->list_users($app, $view);
-                break;
+                case "/list-users": // page showing currently enrolled user accounts
+                    $this->list_users($app, $view);
+                    break;
 
-            // Enrollment
-            case "/start-enrollment": // Show enroll page to user
-                $this->start_enrollment($app, $view);
-                break;
-            case "/metadata":   // tiqr client gets metadata
-                $this->metadata($app);
-                break;
-            case "/finish-enrollment": // tiqr client posts secret
-                $this->finish_enrollment($app);
-                break;
+                // Enrollment
+                case "/start-enrollment": // Show enroll page to user
+                    $this->start_enrollment($app, $view);
+                    break;
+                case "/metadata":   // tiqr client gets metadata
+                    $this->metadata($app);
+                    break;
+                case "/finish-enrollment": // tiqr client posts secret
+                    $this->finish_enrollment($app);
+                    break;
 
-            // Render a QR code
-            case "/qr": // used from start-enrollment and start_authenticate views
-                $this->qr($app);
-                break;
+                // Render a QR code
+                case "/qr": // used from start-enrollment and start_authenticate views
+                    $this->qr($app);
+                    break;
 
-            // Serve test logo
-            case "/logoUrl": // used by tiqr client to download logo, included in metadata
-                $this->logo($app);
-                break;
-            // case "infoUrl": // user in metadata
+                // Serve test logo
+                case "/logoUrl": // used by tiqr client to download logo, included in metadata
+                    $this->logo($app);
+                    break;
+                // case "infoUrl": // used in metadata
 
-            // Authentication
-            case "/start-authenticate": // Show authenticate page to user
-                $this->start_authenticate($app, $view);
-                break;
+                // Authentication
+                case "/start-authenticate": // Show authenticate page to user
+                    $this->start_authenticate($app, $view);
+                    break;
 
-            // Send push notification
-            case "/send-push-notification":
-                $this->send_push_notification($app, $view);
-                break;
+                // Send push notification
+                case "/send-push-notification":
+                    $this->send_push_notification($app, $view);
+                    break;
 
-            case "/authentication": // tiqr client posts back response
-                $this->authentication($app);
-                break;
+                case "/authentication": // tiqr client posts back response
+                    $this->authentication($app);
+                    break;
 
-            default:
-                TestServerApp::error_exit(404, "Unknown route '$path'");
+                default:
+                    TestServerApp::error_exit(404, "Unknown route '$path'");
+            }
+        }
+        catch (\Exception $e) {
+            $app::log_error("Exception: " . $e->getMessage());
+            $app::log_error($e);
+            $view->Exception($path, $e);
         }
     }
 
@@ -538,23 +545,10 @@ class TestServerController
         // sendAuthNotification() accepts GCM, FCM_DIRECT and knows to use Tiqr_Message_FCM instead. For both APNS and
         // APNS_DIRECT Tiqr_Message_APNS will be used.
         $app->log_info("Sending push notification using $notificationType to $deviceNotificationAddress");
-        $res = $this->tiqrService->sendAuthNotification($session_key, $notificationType, $deviceNotificationAddress);
-        $notificationError=array();
-        if (!$res) {
-            $app::log_error("sendAuthNotification() failed");
-            $notificationError=$this->tiqrService->getNotificationError();
-            if ($notificationError) {
-                $app::log_info("code = ${notificationError['code']}");
-                $app::log_info("file = ${notificationError['file']}");
-                $app::log_info("line = ${notificationError['line']}");
-                $app::log_info("message = ${notificationError['message']}");
-                $app::log_info("trace = ${notificationError['trace']}");
-            }
-        } else {
-            $app->log_info("Push notification sent");
-        }
+        $this->tiqrService->sendAuthNotification($session_key, $notificationType, $deviceNotificationAddress);
+        $app->log_info("Push notification sent");
 
-        $view->PushResult($notificationError);
+        $view->PushResult("Push notification sent");
     }
 
 
