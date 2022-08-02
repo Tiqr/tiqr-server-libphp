@@ -39,16 +39,16 @@ abstract class Tiqr_DeviceStorage_Abstract
     /**
      * get a deviceToken for a certain notificationToken.
      * @param String $notificationToken
-     * @return String deviceToken
+     * @return String|bool deviceToken, false on error
      */
-    public abstract function getDeviceToken($notificationToken);
+    public abstract function getDeviceToken(string $notificationToken);
            
     /**
      * Initialize the devicestorage instance right after creation. 
      * The derived classes may optionally use this to initialize the
      * storage.
      */
-    public function init()
+    public function init(): void
     {
         
     }
@@ -56,9 +56,10 @@ abstract class Tiqr_DeviceStorage_Abstract
     /**
      * Create an instance of a device storage. Should not be used directly, as
      * the Tiqr_DeviceStorage factory will call this for you.
-     * @param array $options The options for the s
+     * @param array $options The options
+     * @param LoggerInterface $logger
      */
-    public function __construct($options=array(), LoggerInterface $logger)
+    public function __construct(array $options=array(), LoggerInterface $logger)
     {
         $this->_options = $options;
         $this->logger = $logger;

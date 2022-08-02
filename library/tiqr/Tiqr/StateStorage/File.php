@@ -44,8 +44,15 @@ class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface
         $this->path = $path;
     }
 
-    public function setValue($key, $value, $expire=0)
-    {   
+    /**
+     * @see Tiqr_StateStorage_StateStorageInterface::setValue()
+     */
+    public function setValue(string $key, $value, int $expire=0): void
+    {
+        if (empty($key)) {
+            throw new InvalidArgumentException('Empty key not allowed');
+        }
+
         $envelope = array("expire"=>$expire,
                           "createdAt"=>time(),
                           "value"=>$value);
@@ -54,16 +61,17 @@ class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface
         if (!file_put_contents($filename, serialize($envelope))) {
             throw new ReadWriteException(sprintf('Unable to store "%s" state to the filesystem', $key));
         }
-        
-        return $key;
     }
 
     /**
-     * (non-PHPdoc)
-     * @see library/tiqr/Tiqr/StateStorage/Tiqr_StateStorage_Abstract::unsetValue()
+     * @see Tiqr_StateStorage_StateStorageInterface::unsetValue()
      */
-    public function unsetValue($key)
+    public function unsetValue(string $key): void
     {
+        if (empty($key)) {
+            throw new InvalidArgumentException('Empty key not allowed');
+        }
+
         $filename = $this->getFilenameByKey($key);
         if (file_exists($filename) && !unlink($filename)) {
             throw new ReadWriteException(
@@ -76,11 +84,14 @@ class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface
     }
     
     /**
-     * (non-PHPdoc)
-     * @see library/tiqr/Tiqr/StateStorage/Tiqr_StateStorage_Abstract::getValue()
+     * @see Tiqr_StateStorage_StateStorageInterface::getValue()
      */
-    public function getValue($key)
+    public function getValue(string $key)
     {
+        if (empty($key)) {
+            throw new InvalidArgumentException('Empty key not allowed');
+        }
+
         $filename = $this->getFilenameByKey($key);
         if (file_exists($filename)) {
             $envelope = unserialize(file_get_contents($filename), ['allowed_classes' => false]);
@@ -116,7 +127,7 @@ class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface
         );
     }
 
-    public function init()
+    public function init(): void
     {
         # Nothing to do here
     }

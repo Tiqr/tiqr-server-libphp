@@ -43,7 +43,8 @@ class Tiqr_UserSecretStorage_OathServiceClientTest extends TestCase
 
         $store->setSecret('user-id-1', 'my-secret');
         // Retrieving of the user secret is not supported
-        $this->assertNull($store->getSecret('user-id-1'));
+        $this->expectExceptionMessage("Calling getUserSecret on the OathServiceClient is not supported");
+        $store->getSecret('user-id-1');
     }
 
     private function buildUserSecretStorage(): Tiqr_UserSecretStorage_OathServiceClient

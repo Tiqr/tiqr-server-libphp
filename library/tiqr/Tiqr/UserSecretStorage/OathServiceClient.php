@@ -45,11 +45,13 @@ class Tiqr_UserSecretStorage_OathServiceClient implements Tiqr_UserSecretStorage
      * @param String $userId
      *
      * @return string The user's secret
+     * @throws Exception
      */
-    public function getSecret($userId)
+    public function getSecret(string $userId): string
     {
-        $this->logger->notice('Calling getUserSecret on the OathServiceClient is not implemented');
-        return null;
+        // By design the keyserver calculates the OCRA response but never revels the secret
+        $this->logger->error('Calling getUserSecret on the OathServiceClient is not supported');
+        throw new RuntimeException('Calling getUserSecret on the OathServiceClient is not supported');
     }
 
     /**
@@ -62,7 +64,7 @@ class Tiqr_UserSecretStorage_OathServiceClient implements Tiqr_UserSecretStorage
      * @param string $secret
      * @throws Exception
      */
-    public function setSecret($userId, $secret)
+    public function setSecret(string $userId, string $secret): void
     {
         $this->logger->info('Storing the user secret on the OathServiceClient (api call)');
         $this->client->call('/secrets/'.urlencode($userId), 'POST', array('secret' => $secret));

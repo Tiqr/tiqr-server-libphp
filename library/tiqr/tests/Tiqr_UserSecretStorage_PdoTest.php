@@ -53,7 +53,9 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
         $selectStatement->shouldReceive('fetchColumn')->andReturn('user1');
 
         $updateStatement = Mockery::mock(PDOStatement::class);
-        $updateStatement->shouldReceive('execute')->andReturn(false);
+        $updateStatement->shouldReceive('execute')->andReturnUsing(
+            function () { throw new ReadWriteException(); }
+        );
 
         $this->pdoInstance
             ->shouldReceive('prepare')
@@ -67,7 +69,6 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
             ->andReturn($updateStatement);
 
         $this->expectException(ReadWriteException::class);
-        $this->expectExceptionMessage('Unable to persist user secret in user secret storage (PDO)');
         $store->setSecret('UserId', 'My Secret');
     }
 

@@ -40,12 +40,12 @@ class Tiqr_UserSecretStorage
      * @throws RuntimeException If an unknown type is requested.
      * @throws RuntimeException When the options configuration array misses a required parameter
      */
-    public static function getSecretStorage(string $type = "file", LoggerInterface $logger, array $options = [])
+    public static function getSecretStorage(string $type = "file", LoggerInterface $logger, array $options = []): Tiqr_UserSecretStorage_Interface
     {
         // If not provided in config, we fall back to dummy (no) encryption
-        $encryptionType = isset($config['encryption']['type']) ? $config['encryption']['type'] : 'dummy';
+        $encryptionType = $config['encryption']['type'] ?? 'dummy';
         // If the encryption configuration is not configured, we fall back to an empty encryption configuration
-        $encryptionOptions = isset($config['encryption']) ? $config['encryption'] : [];
+        $encryptionOptions = $config['encryption'] ?? [];
         $encryption = Tiqr_UserStorage_Encryption::getEncryption($logger, $encryptionType, $encryptionOptions);
 
         switch ($type) {
@@ -68,7 +68,7 @@ class Tiqr_UserSecretStorage
                     throw new RuntimeException('The password is missing in the UserSecretStorage configuration');
                 }
 
-                $tableName = isset($options['table']) ? $options['table'] : 'tiqrusersecret';
+                $tableName = $options['table'] ?? 'tiqrusersecret';
                 $dsn = $options['dsn'];
                 $userName = $options['username'];
                 $password = $options['password'];
@@ -79,6 +79,7 @@ class Tiqr_UserSecretStorage
                     $logger->error(
                         sprintf('Unable to establish a PDO connection. Error message from PDO: %s', $e->getMessage())
                     );
+                    throw ReadWriteException::fromOriginalException($e);
                 }
 
                 require_once("Tiqr/UserSecretStorage/Pdo.php");

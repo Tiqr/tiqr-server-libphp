@@ -18,4 +18,9 @@
 
 class ReadWriteException extends RuntimeException
 {
+    public static function fromOriginalException(Exception $e): ReadWriteException
+    {
+        // $code must be int, otherwise this throws with Error("Wrong parameters for ReadWriteException")
+        return new self($e->getMessage(), (int)$e->getCode(), $e );
+    }
 }

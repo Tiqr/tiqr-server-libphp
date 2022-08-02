@@ -2,6 +2,8 @@
 
 require_once 'tiqr_autoloader.inc';
 
+require_once __DIR__ . '/../Tiqr/OATH/OCRA.php';
+
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -73,8 +75,10 @@ class Tiqr_ServiceTest extends TestCase
         //    authentication secret
         $enrollment_key = $service->startEnrollmentSession('test_user_id', 'Test User Name', $session_id);
         $this->assertIsString($enrollment_key);
+        // Expect a hex encoded key of Tiqr_Service::SESSION_KEY_LENGTH_BYTES * 2 long
         $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $enrollment_key);
-        $this->assertEquals(64, strlen($enrollment_key));
+        $this->assertEquals(Tiqr_Service::SESSION_KEY_LENGTH_BYTES * 2, strlen($enrollment_key));
+        $this->assertTrue( Tiqr_Service::SESSION_KEY_LENGTH_BYTES >= 16, 'SECURITY: Review length of SESSION_KEY_LENGTH_BYTES');
 
         $status = $service->getEnrollmentStatus($session_id);
         $this->assertSame($status, Tiqr_Service::ENROLLMENT_STATUS_INITIALIZED);
@@ -103,7 +107,8 @@ class Tiqr_ServiceTest extends TestCase
         // So we need to generate this enrollment secret first
         $enrollment_secret = $service->getEnrollmentSecret($enrollment_key);
         $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $enrollment_secret);
-        $this->assertEquals(64, strlen($enrollment_secret));
+        $this->assertEquals(Tiqr_Service::SESSION_KEY_LENGTH_BYTES * 2, strlen($enrollment_secret));
+        $this->assertTrue( Tiqr_Service::SESSION_KEY_LENGTH_BYTES >= 16, 'SECURITY: Review length of SESSION_KEY_LENGTH_BYTES');
 
 
         $status = $service->getEnrollmentStatus($session_id);
@@ -117,6 +122,11 @@ class Tiqr_ServiceTest extends TestCase
 
         $status = $service->getEnrollmentStatus($session_id);
         $this->assertSame($status, Tiqr_Service::ENROLLMENT_STATUS_RETRIEVED);
+
+        try {
+            $service->getEnrollmentMetadata($enrollment_key, $authentication_url, $enrollment_url);
+            $this->fail('Expected exception');
+        } catch (Exception $e) {}
 
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -132,8 +142,22 @@ class Tiqr_ServiceTest extends TestCase
         $this->assertSame($status, Tiqr_Service::ENROLLMENT_STATUS_PROCESSED);
 
         // Finalize (clean up)
-        $res = $service->finalizeEnrollment($enrollment_secret);
-        $this->assertTrue($res);
+        // This invalidates the enrollment secret
+        // During a normal enrollment the server would store the userid together with the secret just before or after
+        // calling finalizeEnrollment
+        $this->assertEquals(true, $service->finalizeEnrollment($enrollment_secret));
+
+        $status = $service->getEnrollmentStatus($session_id);
+        $this->assertSame($status, Tiqr_Service::ENROLLMENT_STATUS_FINALIZED);
+
+        // Finalizing enrollment twice fails
+        $this->assertEquals(false, $service->finalizeEnrollment($enrollment_secret));
+
+        // Check that the $enrollment_secret is now invalid
+        try {
+            $service->validateEnrollmentSecret($enrollment_secret);
+            $this->fail('Expected exception');
+        } catch (Exception $e) {}
     }
 
     function testAuthentication() {
@@ -146,15 +170,20 @@ class Tiqr_ServiceTest extends TestCase
 
         $userid = 'test-auth-user'; // The user to authenticate
 
-        $this->assertEquals(NULL, $service->getAuthenticatedUser($session_id));
+        // No authenticated user in a session that does not exist
+        $this->assertNull($service->getAuthenticatedUser($session_id));
 
         // Here we provide the userID, it will be put in the AuthURL. I.e. the stepup scenario
         // For the login scenario, where the server does not know the userid yet userid is left blank
         $session_key = $service->startAuthenticationSession($userid, $session_id );
         $this->assertIsString($session_key);
         $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $session_key);
-        $this->assertEquals(64, strlen($session_key));
-        $this->assertEquals(NULL, $service->getAuthenticatedUser($session_id));
+        $this->assertEquals(Tiqr_Service::SESSION_KEY_LENGTH_BYTES * 2, strlen($session_key));
+        $this->assertTrue( Tiqr_Service::SESSION_KEY_LENGTH_BYTES >= 16, 'SECURITY: Review length of SESSION_KEY_LENGTH_BYTES');
+
+
+        // No authenticated user in new session
+        $this->assertNull($service->getAuthenticatedUser($session_id));
 
         // Generate auth URL for in QR code
         // The generated URL has the format:
@@ -164,7 +193,7 @@ class Tiqr_ServiceTest extends TestCase
         $this->assertIsString($authUrl);
         $this->assertNotEmpty($authUrl);
 
-        // Get info from the auth URL
+        // Get info from the auth URL like a tiqr client would
         $exploded = explode('/', $authUrl);
         $session_key_from_auth_url = $exploded[3]; // hex encoded session
         $challenge_from_auth_url = $exploded[4];   // 10 digit hex challenge
@@ -176,17 +205,40 @@ class Tiqr_ServiceTest extends TestCase
         $userSecret = '3132333435363738393031323334353637383930313233343536373839303132';
 
         // Calculate a response like a tiqr client would do using the information from the auth URL
-        $ocra = new Tiqr_OCRAWrapper('OCRA-1:HOTP-SHA1-6:QH10-S' );
-        $response = $ocra->calculateResponse( $userSecret, $challenge_from_auth_url, $session_key_from_auth_url);
+        $response = OCRA::generateOCRA( 'OCRA-1:HOTP-SHA1-6:QH10-S', $userSecret, '', $challenge_from_auth_url, '', $session_key_from_auth_url, '');
 
         // Test invalid response. 1234567 is always an invalid response, responses are 6 digits.
         $this->assertEquals(Tiqr_Service::AUTH_RESULT_INVALID_RESPONSE, $service->authenticate( 'test-auth-user', $userSecret, $session_key, '1234567' ) );
+        // No authenticated after authentication error
+        $this->assertNull($service->getAuthenticatedUser($session_id));
+
+        // Authentication with an invalid session key fails with AUTH_RESULT_INVALID_CHALLENGE
+        $this->assertEquals(Tiqr_Service::AUTH_RESULT_INVALID_CHALLENGE, $service->authenticate( 'test-auth-user', $userSecret, 'session-key-that-does-not-exist', $response ) );
+        // Not authenticated after authentication error
+        $this->assertNull($service->getAuthenticatedUser($session_id));
 
         // Test invalid user id
         $this->assertEquals(Tiqr_Service::AUTH_RESULT_INVALID_USERID, $service->authenticate( 'invalid-user', $userSecret, $session_key, $response ) );
-
+        // Not authenticated after authentication error
+        $this->assertNull($service->getAuthenticatedUser($session_id));
+        
         // Test correct response
         $this->assertEquals(Tiqr_Service::AUTH_RESULT_AUTHENTICATED, $service->authenticate( 'test-auth-user', $userSecret, $session_key, $response ) );
+        // Authenticated!
+        $this->assertEquals( 'test-auth-user', $service->getAuthenticatedUser($session_id));
+
+        // Second authentication fails because session is deleted
+        $this->assertEquals(Tiqr_Service::AUTH_RESULT_INVALID_CHALLENGE, $service->authenticate( 'test-auth-user', $userSecret, $session_key, $response ) );
+        // Still authenticated
+        $this->assertEquals( 'test-auth-user', $service->getAuthenticatedUser($session_id));
+
+        $service->logout('invalid-session-id');
+        // Still authenticated
+        $this->assertEquals( 'test-auth-user', $service->getAuthenticatedUser($session_id));
+
+        $service->logout($session_id);
+        // Not authenticated after logout
+        $this->assertNull($service->getAuthenticatedUser($session_id));
     }
 
 }
