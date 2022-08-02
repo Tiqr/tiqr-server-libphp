@@ -10,15 +10,15 @@ class Tiqr_DeviceStorageTest extends TestCase
     /**
      * @dataProvider provideValidFactoryTypes
      */
-    public function test_it_can_create_user_sercret_storage($type, $expectedInstanceOf)
+    public function test_it_can_create_device_storage($type, $expectedInstanceOf)
     {
-        $ocraService = Tiqr_DeviceStorage::getStorage(
+        $deviceStorage = Tiqr_DeviceStorage::getStorage(
             $type,
             [],
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing()
         );
-        $this->assertInstanceOf($expectedInstanceOf, $ocraService);
-        $this->assertInstanceOf(Tiqr_DeviceStorage_Abstract::class, $ocraService);
+        $this->assertInstanceOf($expectedInstanceOf, $deviceStorage);
+        $this->assertInstanceOf(Tiqr_DeviceStorage_Abstract::class, $deviceStorage);
     }
 
     public function test_it_can_not_create_storage_by_fqn_storage()
