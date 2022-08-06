@@ -13,12 +13,7 @@ coding_style:
     
 build:
     environment:
-        apt_packages:
-          - libcurl
-        php: 7.2
-        pecl_extensions:
-          - intl
-          - gmp
+        php: 7.2       
     dependencies:
         override:
             - composer install --no-interaction --no-scripts --ignore-platform-req
