@@ -16,7 +16,7 @@ build:
         php: 7.2       
     dependencies:
         override:
-            - composer install --no-interaction --no-scripts --ignore-platform-req
+            - composer install --no-interaction --no-scripts --ignore-platform-reqs
     nodes:
         analysis:
             tests:
