@@ -19,6 +19,9 @@ build:
         pecl_extensions:
           - intl
           - gmp
+    dependencies:
+        override:
+            - composer install --no-interaction --no-scripts --ignore-platform-req
     nodes:
         analysis:
             tests:
