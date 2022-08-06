@@ -223,6 +223,9 @@ class Tiqr_Service
      *                     in PEM format.
      *                     Defaults to ../certificates/cert.pem
      * - apns.environment: Whether to use apple's "sandbox" or "production" apns environment
+     * - apns.version:     Which version of the APNS protocol to use. Default: 1
+     *                     Version 1: The deprecated binary APNS protocol (gateway.push.apple.com)
+     *                     Version 2: The HTTP/2 based protocol (api.push.apple.com)
      * * For sending push notifications to Android devices using Google's firebase cloud messaging (FCM) API
      * - firebase.apikey: String containing the FCM API key
      *
@@ -339,13 +342,17 @@ class Tiqr_Service
             switch ($notificationType) {
                 case 'APNS':
                 case 'APNS_DIRECT':
-                    $message = new Tiqr_Message_APNS($this->_options);
+                    $apns_version = $this->_options['apns.version'] ?? 1;
+                    if ($apns_version ==2 )
+                        $message = new Tiqr_Message_APNS2($this->_options, $this->logger);
+                    else
+                        $message = new Tiqr_Message_APNS($this->_options, $this->logger);
                     break;
 
                 case 'GCM':
                 case 'FCM':
                 case 'FCM_DIRECT':
-                    $message = new Tiqr_Message_FCM($this->_options);
+                    $message = new Tiqr_Message_FCM($this->_options, $this->logger);
                     break;
 
                 default:
