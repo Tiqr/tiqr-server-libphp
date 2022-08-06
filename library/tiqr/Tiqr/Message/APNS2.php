@@ -77,7 +77,7 @@ class Tiqr_Message_APNS2 extends Tiqr_Message_Abstract
         $client->addNotification($notification);
         $responses=$client->push();
         if ( sizeof($responses) != 1) {
-            $this->logger->warning('Unexpected number responses. Expected 1, got %n', sizeof($responses) );
+            $this->logger->warning(sprintf('Unexpected number responses. Expected 1, got %d', sizeof($responses)) );
             if (sizeof($responses) == 0) {
                 $this->logger->warning('Could not determine whether the notification was sent');
                 return;
