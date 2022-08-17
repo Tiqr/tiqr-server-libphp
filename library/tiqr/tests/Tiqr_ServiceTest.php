@@ -29,6 +29,7 @@ class Tiqr_ServiceTest extends TestCase
             'statestorage' => [
                 'type' => 'file',
                 'path' => '/tmp',
+                'salt' => 'dummy-salt'
             ],
             'devicestorage' => [
                 'type' => 'dummy',
