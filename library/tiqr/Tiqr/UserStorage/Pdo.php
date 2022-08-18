@@ -23,13 +23,19 @@ CREATE TABLE IF NOT EXISTS user (
     userid varchar(30) NOT NULL UNIQUE,
     displayname varchar(30) NOT NULL,
     secret varchar(128),        // Optional column, see Tiqr_UserSecretStorage_Pdo
-    loginattempts integer,
-    tmpblocktimestamp BIGINT,   // 8-byte integer
-    tmpblockattempts INT,       // 4-byte integer
-    blocked tinyint(1),
+    loginattempts integer,      // number of failed login attempts counting towards a permanent block
+    tmpblocktimestamp BIGINT,   // 8-byte integer, holds unix timestamp of temporary block. 0=not temporary block
+    tmpblockattempts integer,   // Number of failed login attempts counting towards a temporary block
+    blocked tinyint(1),         // used as boolean: 0=not blocked. 1=blocked
     notificationtype varchar(10),
     notificationaddress varchar(64)
 );
+
+ *
+ * In version 3.0 the format of the tmpblocktimestamp was changed from a datetime format to an integer.
+ * Because it holds a unix timestamp a 64-bit (8-byte) integer. To upgrade the user table to the new format use:
+
+ALTER TABLE user MODIFY tmpblocktimestamp BIGINT;
 
  */
 
@@ -42,6 +48,7 @@ use Psr\Log\LoggerInterface;
  * 
  * @author Patrick Honing <Patrick.Honing@han.nl>
  */
+
 class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
 {
     protected $handle = null;
@@ -165,7 +172,10 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
             $sth = $this->handle->prepare('UPDATE ' . $this->tablename . ' SET ' . $columnName . ' = ? WHERE userid = ?');
             $sth->execute(array($value, $userId));
             if ($sth->rowCount() == 0) {
-                throw new RuntimeException('User not found');
+                // Required for mysql which only returns the number of rows that were actually updated
+                if (!$this->userExists($userId)) {
+                    throw new RuntimeException('User not found');
+                }
             }
         }
         catch (Exception $e) {
@@ -190,7 +200,10 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
             $sth = $this->handle->prepare('UPDATE ' . $this->tablename . ' SET ' . $columnName . ' = ? WHERE userid = ?');
             $sth->execute(array($value, $userId));
             if ($sth->rowCount() == 0) {
-                throw new RuntimeException('User not found');
+                // Required for mysql which only returns the number of rows that were actually updated
+                if (!$this->userExists($userId)) {
+                    throw new RuntimeException('User not found');
+                }
             }
         }
         catch (Exception $e) {
@@ -323,7 +336,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
     /**
      * @see Tiqr_UserStorage_Interface::setTemporaryBlockAttempts()
      */
-    public function setTemporaryBlockAttempts(string$userId, int $amount): void
+    public function setTemporaryBlockAttempts(string $userId, int $amount): void
     {
         $this->_setIntValue('tmpblockattempts', $userId, $amount);
     }
