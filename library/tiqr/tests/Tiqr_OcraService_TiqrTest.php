@@ -2,8 +2,6 @@
 
 require_once 'tiqr_autoloader.inc';
 
-require_once __DIR__ . '/../Tiqr/OATH/OCRA.php';
-
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
