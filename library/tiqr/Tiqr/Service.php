@@ -824,7 +824,7 @@ class Tiqr_Service
      */
     public function translateNotificationAddress(string $notificationType, string $notificationAddress)
     {
-        if ($notificationType == 'APNS' || $notificationType == 'FCM') {
+        if ($notificationType == 'APNS' || $notificationType == 'FCM' || $notificationAddress == 'GCM') {
             return $this->_deviceStorage->getDeviceToken($notificationAddress);
         } else {
             return $notificationAddress;
