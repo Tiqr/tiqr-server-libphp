@@ -62,15 +62,19 @@ class Tiqr_Message_APNS2 extends Tiqr_Message_Abstract
         // Create the push message
         $alert=Alert::create();
         $alert->setBody($this->getText());
-        // TODO: Set title?
+        // Note: It is possible to specify a title and a subtitle: $alert->setTitle() && $alert->setSubtitle()
+        //       The tiqr service currently does not implement this.
         $payload=Payload::create()->setAlert($alert);
         $payload->setSound('default');
-        // TODO: Can we set an expiry time for the message?
         foreach ($this->getCustomProperties() as $name => $value) {
             $payload->setCustomValue($name, $value);
         }
         $this->logger->debug(sprintf('JSON Payload: %s', $payload->toJson()));
         $notification=new Notification($payload, $this->getAddress());
+        // Set expiration to 30 seconds from now, same as Message_APNS
+        $now = new DateTimeImmutable();
+        $expirationInstant=$now->add(new DateInterval('PT30S'));
+        $notification->setExpirationAt($expirationInstant);
 
         // Send the push message
         $client = new Client($authProvider, $options['apns.environment'] == 'production');
