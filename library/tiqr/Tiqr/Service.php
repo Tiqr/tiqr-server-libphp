@@ -64,6 +64,8 @@ class Tiqr_Service
     protected $_deviceStorage;
     /** @var Tiqr_OcraService_Interface */
     protected $_ocraService;
+    /** @var string */
+    protected $_stateStorageSalt; // The salt used for creating stable hashes for use with the StateStorage
 
     /** @var LoggerInterface */
     private $logger;
@@ -215,8 +217,10 @@ class Tiqr_Service
      *
      * - statestorage: An array with the configuration of the storage for temporary data. It has the following sub keys:
      *                 - type: The type of state storage. (default: "file")
+     *                 - salt: The salt is used to hash the keys used the StateStorage
      *                 - parameters depending on the storage. See the classes inside the StateStorage folder for
      *                   supported types and their parameters.
+     *
      *
      *  * For sending push notifications using the Apple push notification service (APNS)
      * - apns.certificate: The location of the file with the Apple push notification client certificate and private key
@@ -260,6 +264,9 @@ class Tiqr_Service
             throw new RuntimeException('No state storage configuration is configured, please provide one');
         }
         $this->_stateStorage = Tiqr_StateStorage::getStorage($options["statestorage"]["type"], $options["statestorage"], $logger);
+        // Set a default salt, with the SESSION_KEY_LENGTH_BYTES (16) length keys we're using a publicly
+        // known salt already gives excellent protection.
+        $this->_stateStorageSalt = $options["statestorage"]['salt'] ?? '8xwk2pFd';
 
         // Create DeviceStorage - required when using Push Notification with a token exchange
         if (isset($options["devicestorage"])) {
@@ -419,7 +426,7 @@ class Tiqr_Service
             $data["userId"] = $userId;
         }
         
-        $this->_stateStorage->setValue(self::PREFIX_CHALLENGE . $sessionKey, $data, self::CHALLENGE_EXPIRE);
+        $this->_setStateValue(self::PREFIX_CHALLENGE, $sessionKey, $data, self::CHALLENGE_EXPIRE);
        
         return $sessionKey;
     }
@@ -450,7 +457,7 @@ class Tiqr_Service
             "displayName" => $displayName,
             "sessionId" => $sessionId
         ];
-        $this->_stateStorage->setValue(self::PREFIX_ENROLLMENT . $enrollmentKey, $data, self::ENROLLMENT_EXPIRE);
+        $this->_setStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey, $data, self::ENROLLMENT_EXPIRE);
         $this->_setEnrollmentStatus($sessionId, self::ENROLLMENT_STATUS_INITIALIZED);
 
         return $enrollmentKey;
@@ -479,13 +486,13 @@ class Tiqr_Service
      */
     public function clearEnrollmentState(string $enrollmentKey): void
     {
-        $value = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT.$enrollmentKey);
+        $value = $this->_getStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey);
         if (is_array($value) && array_key_exists('sessionId', $value)) {
             // Reset the enrollment session (used for polling the status of the enrollment)
             $this->resetEnrollmentSession($value['sessionId']);
         }
         // Remove the enrollment data for a specific enrollment key
-        $this->_stateStorage->unsetValue(self::PREFIX_ENROLLMENT.$enrollmentKey);
+        $this->_unsetStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey);
     }
 
     /**
@@ -503,7 +510,7 @@ class Tiqr_Service
         if ($sessionId=="") {
             $sessionId = session_id(); 
         }
-        $status = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT_STATUS.$sessionId);
+        $status = $this->_getStateValue(self::PREFIX_ENROLLMENT_STATUS, $sessionId);
         if (is_null($status)) return self::ENROLLMENT_STATUS_IDLE;
         return $status;
     }
@@ -557,7 +564,7 @@ class Tiqr_Service
      */
     public function getEnrollmentMetadata(string $enrollmentKey, string $authenticationUrl, string $enrollmentUrl): array
     {
-        $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
+        $data = $this->_getStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey);
         if (!is_array($data)) {
             $this->logger->error('Unable to find enrollment metadata in state storage');
             throw new Exception('Unable to find enrollment metadata in state storage');
@@ -576,7 +583,7 @@ class Tiqr_Service
                                array("identifier" =>$data["userId"],
                                      "displayName"=>$data["displayName"]));
 
-        $this->_stateStorage->unsetValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
+        $this->_unsetStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey);
 
         $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_RETRIEVED);
         return $metadata;
@@ -604,7 +611,7 @@ class Tiqr_Service
      */
     public function getEnrollmentSecret(string $enrollmentKey): string
     {
-         $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
+         $data = $this->_getStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey);
          if (!is_array($data)) {
              $this->logger->error('getEnrollmentSecret: enrollment key not found');
              throw new RuntimeException('enrollment key not found');
@@ -619,8 +626,9 @@ class Tiqr_Service
              "sessionId" => $sessionId
          ];
          $enrollmentSecret = $this->_uniqueSessionKey();
-         $this->_stateStorage->setValue(
-             self::PREFIX_ENROLLMENT_SECRET . $enrollmentSecret,
+         $this->_setStateValue(
+             self::PREFIX_ENROLLMENT_SECRET,
+             $enrollmentSecret,
              $enrollmentData,
              self::ENROLLMENT_EXPIRE
          );
@@ -648,7 +656,7 @@ class Tiqr_Service
     public function validateEnrollmentSecret(string $enrollmentSecret): string
     {
         try {
-            $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT_SECRET . $enrollmentSecret);
+            $data = $this->_getStateValue(self::PREFIX_ENROLLMENT_SECRET, $enrollmentSecret);
             if (NULL === $data) {
                 throw new RuntimeException('Enrollment secret not found');
             }
@@ -682,13 +690,13 @@ class Tiqr_Service
     public function finalizeEnrollment(string $enrollmentSecret): bool
     {
         try {
-            $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT_SECRET . $enrollmentSecret);
+            $data = $this->_getStateValue(self::PREFIX_ENROLLMENT_SECRET, $enrollmentSecret);
             if (NULL === $data) {
                 throw new RuntimeException('Enrollment secret not found');
             }
             if (is_array($data)) {
                 // Enrollment is finalized, destroy our session data.
-                $this->_stateStorage->unsetValue(self::PREFIX_ENROLLMENT_SECRET . $enrollmentSecret);
+                $this->_unsetStateValue(self::PREFIX_ENROLLMENT_SECRET, $enrollmentSecret);
                 $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_FINALIZED);
             } else {
                 $this->logger->error(
@@ -740,7 +748,7 @@ class Tiqr_Service
     public function authenticate(string $userId, string $userSecret, string $sessionKey, string $response): int
     {
         try {
-            $state = $this->_stateStorage->getValue(self::PREFIX_CHALLENGE . $sessionKey);
+            $state = $this->_getStateValue(self::PREFIX_CHALLENGE, $sessionKey);
             if (is_null($state)) {
                 $this->logger->notice('The auth challenge could not be found in the state storage');
                 return self::AUTH_RESULT_INVALID_CHALLENGE;
@@ -778,7 +786,7 @@ class Tiqr_Service
 
         if ($equal) {
             // Set application session as authenticated
-            $this->_stateStorage->setValue(self::PREFIX_AUTHENTICATED . $sessionId, $userId, self::LOGIN_EXPIRE);
+            $this->_setStateValue(self::PREFIX_AUTHENTICATED, $sessionId, $userId, self::LOGIN_EXPIRE);
             $this->logger->notice(sprintf('Authenticated user "%s" in session "%s"', $userId, $sessionId));
 
             // Cleanup challenge
@@ -787,7 +795,7 @@ class Tiqr_Service
             // Cleaning up only after successful authentication enables the user to retry authentication after e.g. an
             // invalid response
             try {
-                $this->_stateStorage->unsetValue(self::PREFIX_CHALLENGE . $sessionKey); // May throw
+                $this->_unsetStateValue(self::PREFIX_CHALLENGE, $sessionKey); // May throw
             } catch (Exception $e) {
                 // Only log error
                 $this->logger->warning('Could not delete authentication session key', array('error' => $e));
@@ -815,7 +823,7 @@ class Tiqr_Service
             $sessionId = session_id(); 
         }
         
-        $this->_stateStorage->unsetValue(self::PREFIX_AUTHENTICATED.$sessionId);
+        $this->_unsetStateValue(self::PREFIX_AUTHENTICATED, $sessionId);
     }
     
     /**
@@ -833,7 +841,7 @@ class Tiqr_Service
      */
     public function translateNotificationAddress(string $notificationType, string $notificationAddress)
     {
-        if ($notificationType == 'APNS' || $notificationType == 'FCM') {
+        if ($notificationType == 'APNS' || $notificationType == 'FCM' || $notificationType == 'GCM') {
             return $this->_deviceStorage->getDeviceToken($notificationAddress);
         } else {
             return $notificationAddress;
@@ -859,7 +867,7 @@ class Tiqr_Service
         }
         
         try {
-            return $this->_stateStorage->getValue("authenticated_".$sessionId);
+            return $this->_getStateValue("authenticated_", $sessionId);
         }
         catch (Exception $e) {
             $this->logger->error('getAuthenticatedUser failed', array('exception'=>$e));
@@ -882,7 +890,7 @@ class Tiqr_Service
         // We probably just generated the challenge and stored it in the StateStorage
         // We can save a roundtrip to the storage backend here by reusing this information
 
-        $state = $this->_stateStorage->getValue(self::PREFIX_CHALLENGE . $sessionKey);
+        $state = $this->_getStateValue(self::PREFIX_CHALLENGE, $sessionKey);
         if (is_null($state)) {
             $this->logger->error(
                 sprintf(
@@ -958,6 +966,63 @@ class Tiqr_Service
             // Must be one of the self::ENROLLMENT_STATUS_* constants
             throw new InvalidArgumentException('Invalid enrollment status');
         }
-        $this->_stateStorage->setValue(self::PREFIX_ENROLLMENT_STATUS.$sessionId, $status, self::ENROLLMENT_EXPIRE);
+        $this->_setStateValue(self::PREFIX_ENROLLMENT_STATUS, $sessionId, $status, self::ENROLLMENT_EXPIRE);
+    }
+
+    /** Store a value in StateStorage
+     * @param string $key_prefix
+     * @param string $key
+     * @param mixed $value
+     * @param int $expire
+     * @return void
+     * @throws Exception
+     *
+     * @see Tiqr_StateStorage_StateStorageInterface::setValue()
+     */
+    protected function _setStateValue(string $key_prefix, string $key, $value, int $expire): void {
+        $this->_stateStorage->setValue(
+            $key_prefix . $this->_hashKey($key),
+            $value,
+            $expire
+        );
+    }
+
+    /** Get a value from StateStorage
+     * @param string $key_prefix
+     * @param string $key
+     * @return mixed
+     * @throws Exception
+     *
+     * @see Tiqr_StateStorage_StateStorageInterface::getValue()
+     */
+
+    protected function _getStateValue(string $key_prefix, string $key) {
+        return $this->_stateStorage->getValue(
+            $key_prefix . $this->_hashKey($key)
+        );
+    }
+
+    /** Remove a key and its value from StateStorage
+     * @param string $key_prefix
+     * @param string $key
+     * @return void
+     * @throws Exception
+     *
+     * @see Tiqr_StateStorage_StateStorageInterface::unsetValue()
+     */
+    protected function _unsetStateValue(string $key_prefix, string $key): void {
+        $this->_stateStorage->unsetValue(
+            $key_prefix . $this->_hashKey($key)
+        );
+    }
+
+    /**
+     * Create a stable hash of a $key. Used to improve the security of stored keys
+     * @param string $key
+     * @return string hashed $key
+     */
+    protected function _hashKey(string $key): string
+    {
+        return hash_hmac('sha256', $key, $this->_stateStorageSalt);
     }
 }

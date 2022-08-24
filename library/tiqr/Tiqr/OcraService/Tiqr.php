@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../OATH/OCRA.php';
+
 /**
  * This file is part of the tiqr project.
  *
