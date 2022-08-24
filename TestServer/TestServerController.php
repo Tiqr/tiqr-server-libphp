@@ -121,6 +121,7 @@ class TestServerController
                 // APNS
                 'apns.certificate' => $apns_cert_filename,
                 'apns.environment' => $apns_environment,
+                'apns.version' => 2,    // Use the new HTTP/2 based protocol
 
                 // FCM
                 'firebase.apikey' => $firebase_apikey,

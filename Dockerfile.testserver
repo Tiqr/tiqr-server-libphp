@@ -20,17 +20,21 @@ RUN mv /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini
 # Disable openssl seclevel to allow md5, required for the ssl connection to the APNS gateway
 RUN sed -i -e 's/SECLEVEL=2/SECLEVEL=0/g' /etc/ssl/openssl.cnf
 
-# install php gd (for tiqr) and zip (for composer) extensions
+# install php gd (for tiqr), zip (for composer) and gmp and intl (for APNS HTTP/2)
 RUN apt-get update && apt-get install -y \
 		libfreetype6-dev \
 		libjpeg62-turbo-dev \
 		libpng-dev \
-        zlib1g-dev \
-        libzip-dev \
-        unzip \
+    zlib1g-dev \
+    libzip-dev \
+    unzip \
+    libgmp-dev \
+    libicu-dev \
 	&& docker-php-ext-configure gd --with-freetype --with-jpeg \
 	&& docker-php-ext-install -j$(nproc) gd \
-    && docker-php-ext-install zip
+  && docker-php-ext-install zip \
+  && docker-php-ext-install gmp \
+  && docker-php-ext-install intl
 
 # install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer 
