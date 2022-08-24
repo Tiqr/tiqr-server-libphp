@@ -17,6 +17,7 @@
  * @copyright (C) 2010-2011 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
 
 /**
  * Abstract base class for notification messages.
@@ -28,15 +29,18 @@ abstract class Tiqr_Message_Abstract
     private $_address;
     private $_text;
     private $_properties = array();
+    /** @var LoggerInterface */
+    protected $logger;
     
     /**
      * Construct a new message.
      *
      * @param array $options configuration options
      */
-    public function __construct($options)
+    public function __construct($options, LoggerInterface $logger)
     {
         $this->_options = $options;
+        $this->logger = $logger;
     }
     
     /**
