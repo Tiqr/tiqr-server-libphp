@@ -37,7 +37,7 @@ abstract class Tiqr_Message_Abstract
      *
      * @param array $options configuration options
      */
-    public function __construct($options, LoggerInterface $logger)
+    public function __construct(array $options, LoggerInterface $logger)
     {
         $this->_options = $options;
         $this->logger = $logger;
