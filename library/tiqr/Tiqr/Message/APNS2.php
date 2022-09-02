@@ -19,9 +19,21 @@ class Tiqr_Message_APNS2 extends Tiqr_Message_Abstract
      */
     public function send()
     {
-        $version_info = curl_version();
-        if ($version_info['features'] & CURL_VERSION_HTTP2 == 0) {
-            throw new RuntimeException('APNS2 requires HTTP/2 support in curl');
+        $curl_options = array();
+        $options = $this->getOptions();
+        if (isset($options['apns.proxy_host_url'])) {
+            // Override CURL options to connect to a HTTP/1.1 to HTTP/2 proxy
+            $curl_options[CURLOPT_URL] = $options['apns.proxy_host_url'] . '/3/device/' . $this->getAddress();
+            $curl_options[CURLOPT_PORT] = $options['apns.proxy_host_port'] ?? 443;
+            // Use HTTP/1.1 instead of HTTP/2
+            $curl_options[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_1;
+            $this->logger->notice(sprintf('Using HTTP/1.1 CURL Proxy URL: "%s" and port "%s"',  $curl_options[CURLOPT_URL], $curl_options[CURLOPT_URL]));
+        }
+        else {
+            $version_info = curl_version();
+            if ($version_info['features'] & CURL_VERSION_HTTP2 == 0) {
+                throw new RuntimeException('APNS2 requires HTTP/2 support in curl');
+            }
         }
 
         // Get the UID from the client certificate we use for authentication, this
@@ -77,7 +89,7 @@ class Tiqr_Message_APNS2 extends Tiqr_Message_Abstract
         $notification->setExpirationAt($expirationInstant);
 
         // Send the push message
-        $client = new Client($authProvider, $options['apns.environment'] == 'production');
+        $client = new Client($authProvider, $options['apns.environment'] == 'production', $curl_options);
         $client->addNotification($notification);
         $responses=$client->push();
         if ( sizeof($responses) != 1) {

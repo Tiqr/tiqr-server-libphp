@@ -230,6 +230,12 @@ class Tiqr_Service
      * - apns.version:     Which version of the APNS protocol to use. Default: 1
      *                     Version 1: The deprecated binary APNS protocol (gateway.push.apple.com)
      *                     Version 2: The HTTP/2 based protocol (api.push.apple.com)
+     * - apns.proxy_host_url: Use a HTTP/1.1 to HTTP/2 proxy to send the apns.version 2 push notification.
+     *                        Note: The proxy must take care of the TLS Client authentication to the APNS server
+     *                        Note: The apns.environment will have no effect, configure this in the proxy
+     *                        Specify the host URL as scheme + hostname. E.g.: "http://localhost"
+     * - apns.proxy_host_port: Set the proxy port to use with proxy_host_url. Optional. Defaults to 443.
+     *
      * * For sending push notifications to Android devices using Google's firebase cloud messaging (FCM) API
      * - firebase.apikey: String containing the FCM API key
      *
