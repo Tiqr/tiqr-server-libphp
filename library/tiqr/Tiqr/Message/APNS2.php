@@ -72,7 +72,7 @@ class Tiqr_Message_APNS2 extends Tiqr_Message_Abstract
         $this->logger->debug(sprintf('JSON Payload: %s', $payload->toJson()));
         $notification=new Notification($payload, $this->getAddress());
         // Set expiration to 30 seconds from now, same as Message_APNS
-        $now = new DateTimeImmutable();
+        $now = new DateTime();
         $expirationInstant=$now->add(new DateInterval('PT30S'));
         $notification->setExpirationAt($expirationInstant);
 
