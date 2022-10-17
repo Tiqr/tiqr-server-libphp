@@ -18,6 +18,9 @@ interfaces:
 StateStorage:
 - Empty key is now explicitly disallowed
 - Check Tiqr_StateStorage_Interface for interface changes
+- The key's in the statestorage are salted to harden against information leaking from the 
+  statestorage. A default salt is used which can be changed in the statestorage 
+  configuration of the Tiqr_Service.
 
 UserStorage:
 - Several interface changes, see Tiqr_UserStorage_Interface 
@@ -47,6 +50,11 @@ OcraService:
 - Note that the Tiqr_OcraService_OathServiceClient was updated, but that it was not tested
 
 As of release 2.0.0 we started keeping the CHANGELOG.md file. The older entries are copy pasted from the Github release page.
+
+* Add support for the new Apple HTTP/2 based Push Notification protocol. Set apns.version 
+  in the Tiqr_Service configuration to select which implementation to use.
+* Add support for a new enrollment and authentication link format that uses Universal links 
+  instead of a custom URL schemes. See Tiqr_Service configuration for details.
 
 ## 2.0.0
 A release with several backward compatibility breaking changes. Most notable are:
