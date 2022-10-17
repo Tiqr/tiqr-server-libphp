@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../OATH/OCRA.php';
+
 /**
  * This file is part of the tiqr project.
  *
@@ -18,11 +20,6 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
-use Psr\Log\LoggerInterface;
-
-require_once("Tiqr/OATH/OCRAWrapper.php");
-require_once("Tiqr/OATH/OCRAWrapper_v1.php");
-
 /**
  * The implementation for the tiqr ocra service class.
  *
@@ -31,69 +28,26 @@ require_once("Tiqr/OATH/OCRAWrapper_v1.php");
  */
 class Tiqr_OcraService_Tiqr extends Tiqr_OcraService_Abstract
 {
-    protected $_ocraSuite;
-    protected $_ocraWrapper;
-    protected $_ocraWrapper_v1;
-    protected $_protocolVersion;
 
     /**
-     * @var LoggerInterface
+     *  @see Tiqr_OcraService_Interface::verifyResponse()
      */
-    private $logger;
-
-    /**
-     * Construct a ocra service class
-     *
-     * @param array $config The configuration that a specific user class may use.
-     */
-    public function __construct($config, LoggerInterface $logger)
+    public function verifyResponse(String $response, String $userId, String $userSecret, String $challenge, String $sessionInformation): bool
     {
-        $this->_ocraSuite = $config['ocra.suite'];
-        $this->_protocolVersion = $config['protocolVersion'];
-        $this->_ocraWrapper_v1 = new Tiqr_OCRAWrapper_v1($this->_ocraSuite);
-        $this->_ocraWrapper = new Tiqr_OCRAWrapper($this->_ocraSuite);
-        $this->logger = $logger;
-    }
-
-    /**
-     * Get the correct protocol specific ocra wrapper
-     *
-     * @return Tiqr_OCRAWrapper|Tiqr_OCRAWrapper_v1
-     */
-    protected function _getProtocolSpecificOCRAWrapper()
-    {
-        if ($this->_protocolVersion < 2) {
-            $this->logger->info('Using Tiqr_OCRAWrapper_v1 as protocol');
-            return $this->_ocraWrapper_v1;
-        } else {
-            $this->logger->info('Using Tiqr_OCRAWrapper as protocol');
-            return $this->_ocraWrapper;
+        // Calculate the response. Because we have the same information as the client this should result in the same
+        // response as the client calculated.
+        try {
+            $expected = OCRA::generateOCRA($this->_ocraSuite, $userSecret, "", $challenge, "", $sessionInformation, "");
         }
-    }
+        catch (Exception $e) {
+            $this->logger->warning(sprintf('Error calculating OCRA response for user "%s"', $userId), array('exception'=>$e));
+            return false;
+        }
 
-    /**
-     * Get the ocra challenge
-     *
-     * @return String The challenge
-     */
-    public function generateChallenge()
-    {
-        return $this->_ocraWrapper->generateChallenge();
-    }
-
-    /**
-     * Verify the response
-     *
-     * @param string $response
-     * @param string $userSecret
-     * @param string $challenge
-     * @param string $sessionKey
-     *
-     * @return boolean True if response matches, false otherwise
-     */
-    public function verifyResponseWithSecret($response, $userSecret, $challenge, $sessionKey)
-    {
-        $this->logger->info('Verify the response is correct');
-        return $this->_getProtocolSpecificOCRAWrapper()->verifyResponse($response, $userSecret, $challenge, $sessionKey);
+        if (strlen($expected) != strlen($response)) {
+            $this->logger->warning('verifyResponse: calculated and expected response have different lengths');
+        }
+        // Use constant time compare
+        return $this->_ocraParser->constEqual($expected, $response);
     }
 }

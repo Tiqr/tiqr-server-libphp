@@ -1,0 +1,63 @@
+FROM php:7.4-apache AS tiqr-testserver
+
+ENV APACHE_DOCUMENT_ROOT /var/www/TestServer
+
+ENV SERVERNAME localhost
+
+# Enable mod-rewrite
+RUN a2enmod rewrite
+
+# Replace container default docker-php.conf with our own.
+COPY ./TestServer/docker-php.conf /etc/apache2/conf-available/docker-php.conf
+
+# Update /var/www and /var/www/html in the apache config with our document root from ENV APACHE_DOCUMENT_ROOT
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# Enable default production php.ini
+RUN mv /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini
+
+# Disable openssl seclevel to allow md5, required for the ssl connection to the APNS gateway
+RUN sed -i -e 's/SECLEVEL=2/SECLEVEL=0/g' /etc/ssl/openssl.cnf
+
+# install php gd (for tiqr), zip (for composer) and gmp and intl (for APNS HTTP/2)
+RUN apt-get update && apt-get install -y \
+		libfreetype6-dev \
+		libjpeg62-turbo-dev \
+		libpng-dev \
+    zlib1g-dev \
+    libzip-dev \
+    unzip \
+    libgmp-dev \
+    libicu-dev \
+	&& docker-php-ext-configure gd --with-freetype --with-jpeg \
+	&& docker-php-ext-install -j$(nproc) gd \
+  && docker-php-ext-install zip \
+  && docker-php-ext-install gmp \
+  && docker-php-ext-install intl
+
+# install composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer 
+
+# copy tiqr server library and TestSever into the container
+COPY ./library /var/www/library
+COPY ./TestServer /var/www/TestServer
+
+WORKDIR /var/www
+
+# Remove config and storage directories from image, they are not used
+# Instead:
+# config is in /config (mount)
+# storage is in /storage (mount)
+RUN rm -rf /var/www/TestServer/config && rm -rf /var/www/TestServer/storage
+
+# copy composer files
+COPY ./composer.json /var/www/
+
+# composer install
+RUN export COMPOSER_ALLOW_SUPERUSER=1; php /usr/local/bin/composer install --no-dev
+
+EXPOSE 80
+
+# Run the TestServer using the PHP buildin webserver
+CMD ["/var/www/TestServer/start.sh"]

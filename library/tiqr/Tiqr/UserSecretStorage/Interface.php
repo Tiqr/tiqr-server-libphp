@@ -39,14 +39,15 @@ interface Tiqr_UserSecretStorage_Interface
      * Get the user's secret
      * @param String $userId
      * @return String The user's secret
+     * @throws Exception
      */
-    public function getSecret($userId);
+    public function getSecret(string $userId): string;
 
     /**
      * Store a secret for a user.
      * @param String $userId
      * @param String $secret
-     * @throws ReadWriteException
+     * @throws Exception
      */
-    public function setSecret($userId, $secret);
+    public function setSecret(string $userId, string $secret): void;
 }

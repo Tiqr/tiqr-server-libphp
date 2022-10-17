@@ -32,7 +32,7 @@ abstract class Tiqr_UserStorage_Abstract implements Tiqr_UserStorage_Interface
 {
     protected $logger;
 
-    public function __construct($config, LoggerInterface $logger)
+    public function __construct(array $config, LoggerInterface $logger)
     {
         $this->logger = $logger;
     }
@@ -41,10 +41,9 @@ abstract class Tiqr_UserStorage_Abstract implements Tiqr_UserStorage_Interface
      * Returns additional attributes for the user.
      *
      * @param string $userId User identifier.
-     *
      * @return array additional user attributes
      */
-    public function getAdditionalAttributes($userId) 
+    public function getAdditionalAttributes(string $userId): array
     {
         return array();
     }

@@ -14,7 +14,6 @@ class Tiqr_OcraServiceTest extends TestCase
     {
         $allOptions = [
             'ocra.suite' => 'OCRA-1:HOTP-SHA1-6:QH10-S',
-            'protocolVersion' => '',
             'apiURL' => '',
             'consumerKey' => '',
         ];
@@ -37,6 +36,31 @@ class Tiqr_OcraServiceTest extends TestCase
             Mockery::mock(LoggerInterface::class)
         );
     }
+
+    /**
+     * @dataProvider provideOcraServices
+     */
+    public function test_session_and_challenge_generation($ocraService) {
+        $challenge = $ocraService->generateChallenge();    // 10 hex digits - 5 bytes
+        self::assertEquals(10, strlen($challenge));
+    }
+
+    public function provideOcraServices()
+    {
+        yield [ Tiqr_OcraService::getOcraService(
+            'tiqr',
+            array(),
+            Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing()
+        ) ];
+        yield [ Tiqr_OcraService::getOcraService(
+            'oathserviceclient',
+            array(
+                'apiURL' => '',
+                'consumerKey' => ''),
+            Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing() )
+        ];
+    }
+
 
     public function provideValidFactoryTypes()
     {

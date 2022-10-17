@@ -34,10 +34,9 @@
 class Tiqr_DeviceStorage_TokenExchange extends Tiqr_DeviceStorage_Abstract
 {  
     /**
-     * (non-PHPdoc)
-     * @see library/tiqr/Tiqr/DeviceStorage/Tiqr_DeviceStorage_Abstract::getDeviceToken()
+     * @see Tiqr_DeviceStorage_Abstract::getDeviceToken()
      */ 
-    public function getDeviceToken($notificationToken)
+    public function getDeviceToken(string $notificationToken)
     {
         $url = $this->_options["url"]."?appId=".$this->_options["appid"];
         

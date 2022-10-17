@@ -39,7 +39,7 @@ class Tiqr_OcraService
      * @return Tiqr_OcraService_Interface
      * @throws Exception An exception if an unknown orca service type is requested.
      */
-    public static function getOcraService($type="tiqr", $options=array(), LoggerInterface $logger)
+    public static function getOcraService(string $type="tiqr", array $options=array(), LoggerInterface $logger)
     {
         switch ($type) {
             case "tiqr":

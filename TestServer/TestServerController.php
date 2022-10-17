@@ -14,6 +14,8 @@ use Tiqr_OCRAWrapper;
 use Tiqr_Service;
 use Tiqr_UserStorage;
 
+require_once __DIR__ . '/../library/tiqr/Tiqr/OATH/OCRA.php'; // For calculating OCRA responses
+
 class TestServerController
 {
     private $tiqrService;
@@ -23,6 +25,8 @@ class TestServerController
     private $apns_certificate_filename;
     private $apns_environment;
     private $logger;
+    private $storageDir;
+
     private $supportedNotificationTypes = array(
         'GCM',
         'APNS',
@@ -45,15 +49,17 @@ class TestServerController
      * @param string $apns_certificate_filename The filename of the file with PEM APNS signing certificate and private key
      * @param string $apns_environment The APNS environment to use. 'production' or 'sandbox'
      * @param string $firebase_apikey The Google firebase API key. Required for sending FCM push notifications
+     * @param string $storage_dir Directory to use for tiqr state storage, user storage and user sercret storage
      */
-    function __construct(LoggerInterface $logger, string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_apikey)
+    function __construct(LoggerInterface $logger, string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_apikey, string $storage_dir)
     {
+        $this->storageDir = $storage_dir;
         $this->logger = $logger;
         $this->host_url = $host_url;
         $this->initTiqrLibrary();
         $this->tiqrService = $this->createTiqrService($host_url, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_apikey);
         $this->userStorage = $this->createUserStorage();
-        $this->userSecretStorage = $this->createUserSecretStorage();
+        $this->userSecretStorage = $this->createUserSecretStorage();        
     }
 
     /** Initialize the tiqr-server-libphp's autoloader
@@ -80,7 +86,7 @@ class TestServerController
      */
     private function getStorageDir(): string
     {
-        $storage_dir = __DIR__ . '/storage';
+        $storage_dir = $this->storageDir;
         if (!is_dir($storage_dir)) {
             if (false == mkdir($storage_dir)) {
                 TestServerApp::error_exit(500, "Error creating storage directory: $storage_dir");
@@ -115,6 +121,7 @@ class TestServerController
                 // APNS
                 'apns.certificate' => $apns_cert_filename,
                 'apns.environment' => $apns_environment,
+                'apns.version' => 2,    // Use the new HTTP/2 based protocol
 
                 // FCM
                 'firebase.apikey' => $firebase_apikey,
@@ -178,54 +185,61 @@ class TestServerController
     {
         $view = new TestServerView();
 
-        $app::log_info("host_url=$this->host_url");
-        switch ($path) {
-            case "/":   // Test server home page
-                $view->ShowRoot();
-                break;
+        try {
+            $app::log_info("host_url=$this->host_url");
+            switch ($path) {
+                case "/":   // Test server home page
+                    $view->ShowRoot();
+                    break;
 
-            case "/list-users": // page showing currently enrolled user accounts
-                $this->list_users($app, $view);
-                break;
+                case "/list-users": // page showing currently enrolled user accounts
+                    $this->list_users($app, $view);
+                    break;
 
-            // Enrollment
-            case "/start-enrollment": // Show enroll page to user
-                $this->start_enrollment($app, $view);
-                break;
-            case "/metadata":   // tiqr client gets metadata
-                $this->metadata($app);
-                break;
-            case "/finish-enrollment": // tiqr client posts secret
-                $this->finish_enrollment($app);
-                break;
+                // Enrollment
+                case "/start-enrollment": // Show enroll page to user
+                    $this->start_enrollment($app, $view);
+                    break;
+                case "/metadata":   // tiqr client gets metadata
+                    $this->metadata($app);
+                    break;
+                case "/finish-enrollment": // tiqr client posts secret
+                    $this->finish_enrollment($app);
+                    break;
 
-            // Render a QR code
-            case "/qr": // used from start-enrollment and start_authenticate views
-                $this->qr($app);
-                break;
+                // Render a QR code
+                case "/qr": // used from start-enrollment and start_authenticate views
+                    $this->qr($app);
+                    break;
 
-            // Serve test logo
-            case "/logoUrl": // used by tiqr client to download logo, included in metadata
-                $this->logo($app);
-                break;
-            // case "infoUrl": // user in metadata
+                // Serve test logo
+                case "/logoUrl": // used by tiqr client to download logo, included in metadata
+                    $this->logo($app);
+                    break;
+                // case "infoUrl": // used in metadata
 
-            // Authentication
-            case "/start-authenticate": // Show authenticate page to user
-                $this->start_authenticate($app, $view);
-                break;
+                // Authentication
+                case "/start-authenticate": // Show authenticate page to user
+                    $this->start_authenticate($app, $view);
+                    break;
 
-            // Send push notification
-            case "/send-push-notification":
-                $this->send_push_notification($app, $view);
-                break;
+                // Send push notification
+                case "/send-push-notification":
+                    $this->send_push_notification($app, $view);
+                    break;
 
-            case "/authentication": // tiqr client posts back response
-                $this->authentication($app);
-                break;
+                case "/authentication": // tiqr client posts back response
+                    $this->authentication($app);
+                    break;
 
-            default:
-                TestServerApp::error_exit(404, "Unknown route '$path'");
+                default:
+                    TestServerApp::error_exit(404, "Unknown route '$path'");
+            }
+        }
+        catch (\Exception $e) {
+            $app::log_error("Exception: " . $e->getMessage());
+            $app::log_error($e);
+            $view->Exception($path, $e);
         }
     }
 
@@ -253,7 +267,7 @@ class TestServerController
         $enrollment_key = $this->tiqrService->startEnrollmentSession($user_id, $user_display_name, $session_id);
         $app::log_info("Started enrollment session $enrollment_key");
         $metadataUrl = $this->host_url . "/metadata";
-        $enroll_string = $this->tiqrService->generateEnrollString($metadataUrl) . "?enrollment_key=$enrollment_key";
+        $enroll_string = $this->tiqrService->generateEnrollString("$metadataUrl?enrollment_key=$enrollment_key");
         $encoded_enroll_string = htmlentities(urlencode($enroll_string));
         $image_url = "/qr?code=" . $encoded_enroll_string;
 
@@ -485,12 +499,20 @@ class TestServerController
             $app::log_info("Calculating response for $user_id");
             $secret = $this->userSecretStorage->getSecret($user_id);
             $app::log_info("secret=$secret");
-            $exploded = explode('/', $authentication_URL);
-            $session_key = $exploded[3]; // hex encoded session
-            $challenge = $exploded[4];   // 10 digit hex challenge
+
+            $challenge='';
+            // Parse the authentication URL to get the challenge question
+            if ( (strpos($authentication_URL, 'https://') === 0) || (strpos($authentication_URL, 'http://')) ) {
+                // New style URL, get the value of the "q" query parameter
+                parse_str(parse_url($authentication_URL, PHP_URL_QUERY), $result);
+                $challenge=$result['q'];
+            }
+            else {  // Old style URL, parameters are separated by slashes
+                $exploded = explode('/', $authentication_URL);
+                $challenge = $exploded[4];   // 10 digit hex challenge
+            }
             $app::log_info("challenge=$challenge");
-            $ocra = new Tiqr_OCRAWrapper('OCRA-1:HOTP-SHA1-6:QH10-S');
-            $response = $ocra->calculateResponse($secret, $challenge, $session_key);
+            $response=\OCRA::generateOCRA('OCRA-1:HOTP-SHA1-6:QH10-S', $secret, '', $challenge, '', $session_key, '');
             $app::log_info("response=$response");
         }
 
@@ -534,23 +556,10 @@ class TestServerController
         // sendAuthNotification() accepts GCM, FCM_DIRECT and knows to use Tiqr_Message_FCM instead. For both APNS and
         // APNS_DIRECT Tiqr_Message_APNS will be used.
         $app->log_info("Sending push notification using $notificationType to $deviceNotificationAddress");
-        $res = $this->tiqrService->sendAuthNotification($session_key, $notificationType, $deviceNotificationAddress);
-        $notificationError=array();
-        if (!$res) {
-            $app::log_error("sendAuthNotification() failed");
-            $notificationError=$this->tiqrService->getNotificationError();
-            if ($notificationError) {
-                $app::log_info("code = ${notificationError['code']}");
-                $app::log_info("file = ${notificationError['file']}");
-                $app::log_info("line = ${notificationError['line']}");
-                $app::log_info("message = ${notificationError['message']}");
-                $app::log_info("trace = ${notificationError['trace']}");
-            }
-        } else {
-            $app->log_info("Push notification sent");
-        }
+        $this->tiqrService->sendAuthNotification($session_key, $notificationType, $deviceNotificationAddress);
+        $app->log_info("Push notification sent");
 
-        $view->PushResult($notificationError);
+        $view->PushResult("Sent $notificationType to $deviceNotificationAddress");
     }
 
 
@@ -668,6 +677,23 @@ class TestServerController
             case Tiqr_Service::AUTH_RESULT_INVALID_USERID:
                 $resultStr = "INVALID_USER";
                 break;
+        }
+
+        if ($result === Tiqr_Service::AUTH_RESULT_AUTHENTICATED) {
+            try {
+                if ($notificationAddress != $notificationAddress_from_userStorage) {
+                    $this->userStorage->setNotificationAddress($userId, $notificationAddress);
+                    log_info("Updated notification address");
+                }
+                if ($notificationType != $notificationType_from_userStorage) {
+                    $this->userStorage->setNotificationType($userId, $notificationType);
+                    log_info("Updated notification type");
+                }
+            }
+            catch (\Exception $e) {
+                $app::log_warning('Updating push notification information failed');
+                $app::log_warning($e);
+            }
         }
 
         $app::log_info("Returning authentication result '$resultStr'");

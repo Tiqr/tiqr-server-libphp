@@ -62,7 +62,11 @@ class Tiqr_StateStorageTest extends TestCase
     {
         $stateStorage = $this->createStateStorage();
         $this->logger->shouldReceive('info')->once();
-        $stateStorage->unsetValue('i-do-not-exist');
+        try {
+            $stateStorage->unsetValue('i-do-not-exist');
+            $this->fail('Expected Exception');
+        }
+        catch (Exception $e) {}
     }
 
     /**
@@ -90,21 +94,12 @@ class Tiqr_StateStorageTest extends TestCase
 
     private function stateTests(Tiqr_StateStorage_StateStorageInterface $ss)
     {
-        // Gettng nonexistent value returns NULL
+        // Getting nonexistent value returns NULL
         $this->assertEquals(NULL,  $ss->getValue("nonexistent_key"));
 
-        // Empty key allowed in Pdo and File, but Pdo fails silently
-        $this->assertEquals('', $ss->setValue('', 'empty', 0));
-        // Test it was written
-        if ($ss instanceof Tiqr_StateStorage_File) {
-            $this->assertEquals('empty', $ss->getValue(''));
-        }
-        elseif ($ss instanceof Tiqr_StateStorage_Pdo) {
-            $this->assertEquals(NULL, $ss->getValue(''));   // PDO won't return empty key
-        }
-        else {
-            throw new LogicException("Don't know how to test this type");
-        }
+        // Empty key not allowed
+        $this->expectExceptionMessage('Empty key not allowed');
+        $ss->setValue('', 'empty key', 0);
 
         // Test update
         $ss->setValue('update_key', 'first-value', 2);

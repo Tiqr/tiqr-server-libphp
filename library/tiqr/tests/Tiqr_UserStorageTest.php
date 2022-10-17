@@ -19,7 +19,7 @@ class Tiqr_UserStorageTest extends TestCase
         $this->assertFalse( $userStorage->userExists( 'user1' ) );
 
         // Create a user in the storage
-        $this->assertTrue( false ==! $userStorage->createUser('user1', 'User1 display name') );
+        $userStorage->createUser('user1', 'User1 display name');
         // Read back displayname
         $this->assertEquals( 'User1 display name', $userStorage->getDisplayName('user1') );
 
@@ -27,10 +27,18 @@ class Tiqr_UserStorageTest extends TestCase
         $this->assertTrue( false ==! $userStorage->userExists( 'user1' ) );
         $this->assertEquals( 0, $userStorage->getLoginAttempts( 'user1' ) );
         $this->assertEquals( 0, $userStorage->getTemporaryBlockAttempts( 'user1' ) );
-        $this->assertFalse( $userStorage->isBlocked( 'user1', false ) );
-        $this->assertFalse($userStorage->getTemporaryBlockTimestamp('user1') );
+        $this->assertFalse( $userStorage->isBlocked( 'user1', 0 ) );
+        $this->assertFalse( $userStorage->isBlocked( 'user1', 60 ) );   // Check with temp block duration of 60 minutes
+        $this->assertEquals( 0, $userStorage->getTemporaryBlockTimestamp('user1') );
         $this->assertEquals( '', $userStorage->getNotificationType( 'user1' ) );
         $this->assertEquals( '', $userStorage->getNotificationAddress( 'user1' ) );
+
+        // Creating a user that already exists is an error
+        try {
+            $userStorage->createUser('user1', 'User1 display name');
+            $this->fail('Expected exception');
+        }
+        catch (Exception $e) {}
 
         // notification type
         $userStorage->setNotificationType('user1', 'NOTIFICATION_TYPE');
@@ -50,17 +58,26 @@ class Tiqr_UserStorageTest extends TestCase
 
         // Block user
         $userStorage->setBlocked('user1', true );
-        $this->assertTrue( $userStorage->isBlocked('user1', false ) );
+        $this->assertTrue( $userStorage->isBlocked('user1', 0 ) ); // 0 means: do not take temp block status into account
 
-        // Temporary block
+        // Unblock user
+        $userStorage->setBlocked('user1', false );
+
+        // Temporary block user
         $now_min_5_minutes = time() - 5*60;
-        $five_minutes_ago = date("Y-m-d H:i:s", $now_min_5_minutes);
-        $userStorage->setTemporaryBlockTimestamp( 'user1', $five_minutes_ago);
-        $this->assertEquals( $five_minutes_ago, $userStorage->getTemporaryBlockTimestamp( 'user1' ) );
+        $userStorage->setTemporaryBlockTimestamp( 'user1', $now_min_5_minutes);
+        $this->assertEquals( $now_min_5_minutes, $userStorage->getTemporaryBlockTimestamp( 'user1' ) );
 
         // duration is in minutes
-        $this->assertFalse( $userStorage->isBlocked('user1', 4) );  // 5 min ago, so block expired
+        $this->assertFalse( $userStorage->isBlocked('user1', 4) );  // 5 min ago, so temp block expired
         $this->assertTrue( $userStorage->isBlocked('user1', 10) );  // Block did not expire yet
+
+        // Test ignoring temp block
+        $this->assertFalse( $userStorage->isBlocked('user1', 0 ) ); // 0 means: do not take temp block status into account
+
+        // Block user and assert user is still block, even when temp block expired
+        $userStorage->setBlocked('user1', true );
+        $this->assertTrue( $userStorage->isBlocked('user1', 4 ) );  // 5 min ago, so temp block expired
     }
 
     function testUserStorage_File() {

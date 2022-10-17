@@ -24,226 +24,289 @@ require_once("Tiqr/StateStorage.php");
 require_once("Tiqr/DeviceStorage.php");
 require_once("Tiqr/Random.php");
 
-require_once("Tiqr/OATH/OCRAWrapper.php");
 require_once("Tiqr/OcraService.php");
 
 use Psr\Log\LoggerInterface;
 
 /** 
  * The main Tiqr Service class.
- * This is the class that an application interacts with to provide mobile 
- * authentication
- * @author ivo
- *
+ * This is the class that an application interacts with to implement authentication and enrollment using the tiqr
+ * protocol, used with the tiqr.org mobile authentication apps
+ * See https://tiqr.org/technical/protocol/ for a specification of the protocol
  */
 class Tiqr_Service
 {
     /**
      * @internal Various variables internal to the service class
      */
+    /** @var array  */
     protected $_options;
-    
-    protected $_protocolAuth = "tiqr";
-    protected $_protocolEnroll = "tiqrenroll";
-    
-    protected $_identifier = "";
-    protected $_ocraSuite = "";
-    protected $_name = "";
-    protected $_logoUrl = "";
-    protected $_infoUrl = "";
-    protected $_protocolVersion = 0;
-    
-    protected $_stateStorage = NULL;
-    protected $_deviceStorage = NULL;
 
-    protected $_ocraWrapper;
+    /** @var string */
+    protected $_protocolAuth;
+    /** @var string */
+    protected $_protocolEnroll;
+    /** @var string */
+    protected $_identifier;
+    /** @var string */
+    protected $_ocraSuite;
+    /** @var string */
+    protected $_name;
+    /** @var string */
+    protected $_logoUrl;
+    /** @var string */
+    protected $_infoUrl;
+    /** @var int */
+    protected $_protocolVersion;
+    /** @var Tiqr_StateStorage_StateStorageInterface */
+    protected $_stateStorage;
+    /** @var Tiqr_DeviceStorage_Abstract */
+    protected $_deviceStorage;
+    /** @var Tiqr_OcraService_Interface */
     protected $_ocraService;
+    /** @var string */
+    protected $_stateStorageSalt; // The salt used for creating stable hashes for use with the StateStorage
 
-    /**
-     * The notification exception
-     *
-     * @var Exception
-     */
-    protected $_notificationError = NULL;
-
-    /**
-     * @var LoggerInterface
-     */
+    /** @var LoggerInterface */
     private $logger;
 
     /**
      * Enrollment status codes
      */
-    const ENROLLMENT_STATUS_IDLE = 1;        // Nothing happens
-    const ENROLLMENT_STATUS_INITIALIZED = 2; // An enrollment session has begun
-    const ENROLLMENT_STATUS_RETRIEVED = 3;   // The device has retrieved the metadata
-    const ENROLLMENT_STATUS_PROCESSED = 4;   // The device has snet back a secret
-    const ENROLLMENT_STATUS_FINALIZED = 5;   // The application has stored the secret
-    const ENROLLMENT_STATUS_VALIDATED = 6;   // A first succesful authentication was performed
+    // IDLE: There is no enrollment going on in this session, or there was an error getting the enrollment status
+    const ENROLLMENT_STATUS_IDLE = 1;
+    // INITIALIZED: The enrollment session was started but the tiqr client has not retrieved the metadata yet
+    const ENROLLMENT_STATUS_INITIALIZED = 2;
+    // RETRIEVED: The tiqr client has retrieved the metadata
+    const ENROLLMENT_STATUS_RETRIEVED = 3;
+    // PROCESSED: The tiqr client has sent back the tiqr authentication secret
+    const ENROLLMENT_STATUS_PROCESSED = 4;
+    // FINALIZED: The server has stored the authentication secret
+    const ENROLLMENT_STATUS_FINALIZED = 5;
+    // VALIDATED: A first successful authentication was performed
+    // Note: Not currently used
+    const ENROLLMENT_STATUS_VALIDATED = 6;
 
+    /**
+     * Prefixes for StateStorage keys
+     */
     const PREFIX_ENROLLMENT_SECRET = 'enrollsecret';
     const PREFIX_ENROLLMENT = 'enroll';
     const PREFIX_CHALLENGE = 'challenge';
+    const PREFIX_ENROLLMENT_STATUS = 'enrollstatus';
+    const PREFIX_AUTHENTICATED = 'authenticated_';
 
     /**
      * Default timeout values
      */
-    const ENROLLMENT_EXPIRE = 300; // If enrollment isn't cmpleted within 120 seconds, we discard data
     const LOGIN_EXPIRE      = 3600; // Logins timeout after an hour
+    const ENROLLMENT_EXPIRE = 300; // If enrollment isn't completed within 5 minutes, we discard data
     const CHALLENGE_EXPIRE  = 180; // If login is not performed within 3 minutes, we discard the challenge
 
     /**
      * Authentication result codes
      */
+    // INVALID_REQUEST: Not currently used by the Tiqr_service
     const AUTH_RESULT_INVALID_REQUEST   = 1;
+    // AUTHENTICATED: The user was successfully authenticated
     const AUTH_RESULT_AUTHENTICATED     = 2;
+    // INVALID_RESPONSE: The response that was returned by the client was not correct
     const AUTH_RESULT_INVALID_RESPONSE  = 3;
+    // INVALID_CHALLENGE: The server could find the challenge in its state storage. It may have been expired or the
+    // client could have sent an invalid sessionKey
     const AUTH_RESULT_INVALID_CHALLENGE = 4;
+    // INVALID_USERID: The client authenticated a different user than the server expected. This error is returned when
+    // the application stated an authentication session specifying the userId and later during the authentication
+    // provides a different userId
     const AUTH_RESULT_INVALID_USERID    = 5;
     
     /**
-     * The default OCRA Suite to use for authentication
+     * The default OCRA Suite (RFC 6287) to use for authentication in Tiqr
+     * This basically calculates the HMAC-SHA1 over a buffer with:
+     * - A 10 hex digit long challenge
+     * - authentication session ID (32 hex digits)
+     * - client secret key (64 hex digits)
+     * and then from the calculated HMAC-SHA1 calculates a 6 decimal digit long response
+     * This means that a client has a 1 in 10^6 chance of guessing the right response.
+     * This is a tradeoff between having responses that a user can easily copy during offline authentication
+     * and resistance against guessing.
+     * The application must implement anti-guessing counter measures, e.g. locking an account after N-tries when using
+     * the default of 6.
+     * Chances of correctly guessing a 6 digit response code ofter N tries (calculated by multiplying N floats, YMMV):
+     * N=1: 1/10^6 = 0.0001%; N=2: 0.0003%; N=3: 0.0006%; N=4: 0,0010%; N=5: 0,0015%; N=6: 0,0021%; N=7: 0,0028%;
+     * N=8: 0,0036%; N=9: 0,0045%; N=10: 0,0055%l N=20: 0,0210; N=50: 0,1274%; N=100: 0,5037%; N=200: 1,708%
      */
     const DEFAULT_OCRA_SUITE = "OCRA-1:HOTP-SHA1-6:QH10-S";
-      
+
+    /**
+     * session keys are used in multiple places during authentication and enrollment
+     * and are generated by _uniqueSessionKey() using a secure pseudo-random number generator
+     * SESSION_KEY_LENGTH_BYTES specifies the number of bytes of entropy in these keys.
+     * Session keys are HEX encoded, so a 16 byte key (128 bits) will be 32 characters long
+     *
+     * We guarantee uniqueness by using a sufficiently number of bytes
+     * By using 16 bytes (128 bits) we can expect a collision after having
+     * generated 2^64 IDs. This more than enough for our purposes, the session
+     * keys in the tiqr protocol are not persisted and have a lifetime of no
+     * more than a few minutes
+     *
+     * It must be infeasible for an attacker to predict or guess session keys during enrollment
+     * 128 bits should be sufficiently long for this purpose because of the short
+     * lifetime of these keys
+     *
+     * A session key is used as session information in the OCRA authentication. Even if the session keys, challenges
+     * and the correct responses of many authentications are known to an attacker it should be infeasible to
+     * get the user secret as that is equivalent to reversing a hmac sha1 of a string the length of the secret
+     * (32 bytes - 2^256 possibilities for a typical tiqr client implementation)
+     *
+     * When using the tiqr v1 protocol, with the v1 version of the OCRAWrapper, the library used
+     * 16 bytes keys (i.e. 32 hex digits long). When using the v2 algorithm 32 byte keys (64 hex digits long) were
+     * used.
+     * 16 bytes should be more than enough. Using 32 bytes makes the QR codes bigger, because both for
+     * authentication and enrollment a session key is embedded in the uri that is encoded in the QR code.
+     */
+    const SESSION_KEY_LENGTH_BYTES = 16;
+
     /**
      * Construct an instance of the Tiqr_Service. 
      * The server is configured using an array of options. All options have
      * reasonable defaults but it's recommended to at least specify a custom 
      * name and identifier and a randomly generated sessions secret.
      * If you use the Tiqr Service with your own apps, you must also specify
-     * a custom auto.protocol and enroll.protocol specifier.
+     * a custom auth.protocol and enroll.protocol specifier.
      * 
      * The options are:
-     * - auth.protocol: The protocol specifier (e.g. tiqr://) that the 
-     *                  server uses to communicate challenge urls to the phone. 
-     *                  This must match the url handler specified in the 
-     *                  iPhone app's build settings. You do not have to add the
-     *                  '://', just the protocolname.
-     *                  Default: tiqr
-     * - enroll.protocol: The protocol specifier for enrollment urls.
-     *                    Default: tiqrenroll
-     * - ocra.suite: The OCRA suite to use. Defaults to OCRA-1:HOTP-SHA1-6:QN10-S.
-     * - identifier: A short ASCII identifier for your service.
-     *               Defaults to the SERVER_NAME of the server.
-     * - name: A longer description of your service.
-     *         Defaults to the SERVER_NAME of the server.              
+     * - auth.protocol: The protocol specifier that the server uses to communicate challenge urls to the
+     *                  iOS/Android tiqr app. This must match the url handler configuration in the app's build
+     *                  settings.
+     *                  Default: "tiqr".
+     *                  Two formats are supported:
+     *                  1. Custom URL scheme: Set the scheme's name. E.g. "tiqrauth". Do not add '://'.
+     *                     This will generate authentication URLs of the form:
+     *                     tiqrauth://<userId>@<idp_identifier>/<session_key>/<challenge>/<sp_idenitfier>/<version>
+     *                  2. Universal link: Set the http or https URL. E.g. "https://tiqr.org/tiqrauth/"
+     *                     This will generate authentication URLs of the form:
+     *                     https://tiqr.org/tiqrauth/?u=<userid>&s=<session_key>&q=<challenge/question>&i=<idp_identifier>&v=<version>
+     *
+     * - enroll.protocol: The protocol specifier that the server uses to start the enrollment of a new account in the
+     *                    iOS/Android tiqr app. This must match the url handler configuration in the app's build
+     *                    settings.
+     *                    Default: "tiqrenroll"
+     *                    Two formats are supported:
+     *                    1. Custom URL scheme: Set the protocol name. E.g. "tiqrenroll". Do not add '://'.
+     *                       This will generate enrollment URLs of the form:
+     *                       tiqrenroll://<metadata URL>
+     *                    2. Universal link: Set the http or https URL. "https://tiqr.org/tiqrenroll/"
+     *                       This will generate enrollment URLs of the form:
+     *                       https://eduid.nl/tiqrenroll/?metadata=<URL encoded metadata URL>
+     *
+     * - ocra.suite: The OCRA suite to use. Defaults to DEFAULT_OCRA_SUITE.
+     *
+     * - identifier: A short ASCII identifier for your service. Defaults to the SERVER_NAME of the server. This is what
+     *               a tiqr client will use to identify the server.
+     * - name: A longer description of your service. Defaults to the SERVER_NAME of the server. A descriptive name for
+     *         display purposes
+     *
      * - logoUrl: A full http url pointing to a logo for your service.
      * - infoUrl: An http url pointing to an info page of your service
-     * - phpqrcode.path: The location of the phpqrcode library.
-     *                   Defaults to ../phpqrcode
-     * - apns.path: The location of the ApnsPHP library.
-     *              Defaults to ../apns-php
-     * - apns.certificate: The location of your Apple push notification
-     *                     certificate.
+     *
+     * - ocraservice: Configuration for the OcraService to use.
+     *                - type: The ocra service type. (default: "tiqr")
+     *                - parameters depending on the ocra service. See classes inside to OcraService directory for
+     *                  supported types and their parameters.
+     *
+     * - statestorage: An array with the configuration of the storage for temporary data. It has the following sub keys:
+     *                 - type: The type of state storage. (default: "file")
+     *                 - salt: The salt is used to hash the keys used the StateStorage
+     *                 - parameters depending on the storage. See the classes inside the StateStorage folder for
+     *                   supported types and their parameters.
+     *
+     *
+     *  * For sending push notifications using the Apple push notification service (APNS)
+     * - apns.certificate: The location of the file with the Apple push notification client certificate and private key
+     *                     in PEM format.
      *                     Defaults to ../certificates/cert.pem
-     * - apns.environment: Whether to use apple's "sandbox" or "production" 
-     *                     apns environment
-     * - statestorage: An array with the configuration of the storage for 
-     *                 temporary data. It has the following sub keys:
-     *                 - type: The type of state storage. (default: file) 
-     *                 - parameters depending on the storage.
-     *                 See the classes inside the StateStorage folder for 
-     *                 supported types and their parameters.
-     * - devicestorage: An array with the configruation of the storage for
-     *                  device push notification tokens. Only necessary if 
-     *                  you use the Tiqr Service as step-up authentication
-     *                  for an already existing user. It has the following 
+     * - apns.environment: Whether to use apple's "sandbox" or "production" apns environment
+     * - apns.version:     Which version of the APNS protocol to use. Default: 1
+     *                     Version 1: The deprecated binary APNS protocol (gateway.push.apple.com)
+     *                     Version 2: The HTTP/2 based protocol (api.push.apple.com)
+     * - apns.proxy_host_url: Use a HTTP/1.1 to HTTP/2 proxy to send the apns.version 2 push notification.
+     *                        Note: The proxy must take care of the TLS Client authentication to the APNS server
+     *                        Note: The apns.environment will have no effect, configure this in the proxy
+     *                        Specify the host URL as scheme + hostname. E.g.: "http://localhost"
+     * - apns.proxy_host_port: Set the proxy port to use with proxy_host_url. Optional. Defaults to 443.
+     *
+     * * For sending push notifications to Android devices using Google's firebase cloud messaging (FCM) API
+     * - firebase.apikey: String containing the FCM API key
+     *
+     * - devicestorage: An array with the configuration of the storage for device push notification tokens. Only
+     *                  necessary if you use the Tiqr Service to authenticate an already known userId (e.g. when using
+     *                  tiqr a second authentication factor AND are using a tiqr client that uses the token exchange.
+     *                  It has the following
      *                  keys:
-     *                  - type: The type of  storage. (default: dummy) 
-     *                  - parameters depending on the storage.
-     *                 See the classes inside the DeviceStorage folder for 
-     *                 supported types and their parameters.
-     *  
+     *                  - type: The type of  storage. (default: "dummy")
+     *                  - parameters depending on the storage. See the classes inside the DeviceStorage folder for
+     *                    supported types and their parameters.
+     **
+     * @param LoggerInterface $logger
      * @param array $options
-     * @param int $version The protocol version to use (defaults to the latest)
+     * @param int $version The tiqr protocol version to use (defaults to the latest)
+     * @throws Exception
      */
-    public function __construct(LoggerInterface $logger, $options=array(), $version = 2)
+    public function __construct(LoggerInterface $logger, array $options=array(), int $version = 2)
     {
-        $this->_options = $options;
+        $this->_options = $options; // Used to later get settings for Tiqr_Message_*
         $this->logger = $logger;
-        
-        if (isset($options["auth.protocol"])) {
-            $this->_protocolAuth = $options["auth.protocol"];
-        }
-        
-        if (isset($options["enroll.protocol"])) {
-            $this->_protocolEnroll = $options["enroll.protocol"];
-        }
-        
-        if (isset($options["ocra.suite"])) {
-            $this->_ocraSuite = $options["ocra.suite"];
-        } else {
-            $this->_ocraSuite = self::DEFAULT_OCRA_SUITE;
-        }
-        
-        if (isset($options["identifier"])) { 
-            $this->_identifier = $options["identifier"];
-        } else {
-            $this->_identifier = $_SERVER["SERVER_NAME"];
-        }
-        
-        if (isset($options["name"])) {
-            $this->_name = $options["name"];
-        } else {
-            $this->_name = $_SERVER["SERVER_NAME"];
-        }
+        $this->_protocolAuth = $options["auth.protocol"] ?? 'tiqr';
+        $this->_protocolEnroll = $options["enroll.protocol"] ?? 'tiqrenroll';
+        $this->_ocraSuite = $options["ocra.suite"] ?? self::DEFAULT_OCRA_SUITE;
+        $this->_identifier = $options["identifier"] ?? $_SERVER["SERVER_NAME"];
+        $this->_name = $options["name"] ?? $_SERVER["SERVER_NAME"];
+        $this->_logoUrl = $options["logoUrl"] ?? '';
+        $this->_infoUrl = $options["infoUrl"] ?? '';
 
-        if (isset($options["logoUrl"])) { 
-            $this->_logoUrl = $options["logoUrl"];
-        }
+        // An idea is to create getStateStorage, getDeviceStorage and getOcraService functions to create these functions
+        // at the point that we actually need them.
 
-        if (isset($options["infoUrl"])) {
-            $this->_infoUrl = $options["infoUrl"];
-        }
-        
-        if (isset($options["statestorage"])) {
-            $type = $options["statestorage"]["type"];
-            $storageOptions = $options["statestorage"];
-        } else {
+        // Create StateStorage
+        if (!isset($options["statestorage"])) {
             throw new RuntimeException('No state storage configuration is configured, please provide one');
         }
+        $this->_stateStorage = Tiqr_StateStorage::getStorage($options["statestorage"]["type"], $options["statestorage"], $logger);
+        // Set a default salt, with the SESSION_KEY_LENGTH_BYTES (16) length keys we're using a publicly
+        // known salt already gives excellent protection.
+        $this->_stateStorageSalt = $options["statestorage"]['salt'] ?? '8xwk2pFd';
 
-        $this->logger->info(sprintf('Creating a %s state storage', $type));
-        $this->_stateStorage = Tiqr_StateStorage::getStorage($type, $storageOptions, $logger);
-        
+        // Create DeviceStorage - required when using Push Notification with a token exchange
         if (isset($options["devicestorage"])) {
-            $type = $options["devicestorage"]["type"];
-            $storageOptions = $options["devicestorage"];
+            $this->_deviceStorage = Tiqr_DeviceStorage::getStorage($options["devicestorage"]["type"], $options["devicestorage"], $logger);
         } else {
-            $this->logger->info('Falling back to dummy device storage');
-            $type = "dummy";
-            $storageOptions = array();
+            $this->_deviceStorage = Tiqr_DeviceStorage::getStorage('dummy', array(), $logger);
         }
-        $this->logger->info(sprintf('Creating a %s device storage', $type));
-        $this->_deviceStorage = Tiqr_DeviceStorage::getStorage($type, $storageOptions, $logger);
-        
-        $this->_protocolVersion = $version;
-        $this->_ocraWrapper = new Tiqr_OCRAWrapper($this->_ocraSuite);
 
-        $type = 'tiqr';
-        if (isset($options['usersecretstorage']) && $options['usersecretstorage']['type'] == 'oathserviceclient') {
-            $type = 'oathserviceclient';
+        // Set Tiqr protocol version, only version 2 is currently supported
+        if ($version !== 2) {
+            throw new Exception("Unsupported protocol version '${version}'");
         }
-        $ocraConfig = array();
-        switch ($type) {
-            case 'tiqr':
-                $ocraConfig['ocra.suite'] = $this->_ocraSuite;
-                $ocraConfig['protocolVersion'] = $version;
-                break;
-            case 'oathserviceclient':
-                $ocraConfig = $options['usersecretstorage'];
-                break;
+        $this->_protocolVersion = $version;
+
+        // Create OcraService
+        // Library versions before 3.0 (confusingly) used the usersecretstorage key for this configuration
+        // and used 'tiqr' as type when no type explicitly set to oathserviceclient was configured
+        if (isset($options['ocraservice']) && $options['ocraservice']['type'] != 'tiqr') {
+            $options['ocraservice']['ocra.suite'] = $this->_ocraSuite;
+            $this->_ocraService = Tiqr_OcraService::getOcraService($options['ocraservice']['type'], $options['ocraservice'], $logger);
         }
-        $this->logger->info(sprintf('Creating a %s ocra service', $type));
-        $this->_ocraService = Tiqr_OcraService::getOcraService($type, $ocraConfig, $logger);
+        else { // Create default ocraservice
+            $this->_ocraService = Tiqr_OcraService::getOcraService('tiqr', array('ocra.suite' => $this->_ocraSuite), $logger);
+        }
     }
     
     /**
      * Get the identifier of the service.
      * @return String identifier
      */
-    public function getIdentifier()
+    public function getIdentifier(): string
     {
         return $this->_identifier;
     }
@@ -257,10 +320,10 @@ class Tiqr_Service
      * different mechanism, pass the userId of the authenticated user to this 
      * function. 
      * @param String $sessionKey The sessionKey identifying this auth session (typically returned by startAuthenticationSession)
+     * @throws Exception
      */
-    public function generateAuthQR($sessionKey)
+    public function generateAuthQR(string $sessionKey): void
     {
-        // TODO
         $challengeUrl = $this->_getChallengeUrl($sessionKey);
 
         $this->generateQR($challengeUrl);
@@ -272,7 +335,7 @@ class Tiqr_Service
      *
      * @param String $s The string to be encoded in the QR image
      */
-    public function generateQR($s)
+    public function generateQR(string $s): void
     {
         QRcode::png($s, false, 4, 5);
     }
@@ -282,27 +345,27 @@ class Tiqr_Service
      * @param String $sessionKey          The session key identifying this authentication session
      * @param String $notificationType    Notification type returned by the tiqr client: APNS, GCM, FCM, APNS_DIRECT or FCM_DIRECT
      * @param String $notificationAddress Notification address, e.g. device token, phone number etc.
-     *
-     * @return boolean True if the notification was sent successfully, false if not.
-     *
-     * @todo Use exceptions in case of errors
+     **
+     * @throws Exception
      */
-    public function sendAuthNotification(string $sessionKey, string $notificationType, string $notificationAddress) : bool
+    public function sendAuthNotification(string $sessionKey, string $notificationType, string $notificationAddress): void
     {
         $message = NULL;
         try {
-            $this->_notificationError = null;
-
             switch ($notificationType) {
                 case 'APNS':
                 case 'APNS_DIRECT':
-                    $message = new Tiqr_Message_APNS($this->_options);
+                    $apns_version = $this->_options['apns.version'] ?? 1;
+                    if ($apns_version ==2 )
+                        $message = new Tiqr_Message_APNS2($this->_options, $this->logger);
+                    else
+                        $message = new Tiqr_Message_APNS($this->_options, $this->logger);
                     break;
 
                 case 'GCM':
                 case 'FCM':
                 case 'FCM_DIRECT':
-                    $message = new Tiqr_Message_FCM($this->_options);
+                    $message = new Tiqr_Message_FCM($this->_options, $this->logger);
                     break;
 
                 default:
@@ -315,39 +378,13 @@ class Tiqr_Service
             $message->setAddress($notificationAddress);
             $message->setCustomProperty('challenge', $this->_getChallengeUrl($sessionKey));
             $message->send();
-
-            return true;
-        } catch (Exception $ex) {
-            $this->setNotificationError($ex);
-            $this->logger->error(sprintf('Sending push notification failed with message "%s"', $ex->getMessage()));
-            return false;
+        } catch (Exception $e) {
+            $this->logger->error(
+                sprintf('Sending "%s" push notification to address "%s" failed', $notificationType, $notificationAddress),
+                array('exception' =>$e)
+            );
+            throw $e;
         }
-    }
-
-    /**
-     * Set the notification exception
-     *
-     * @param Exception $ex
-     */
-    protected function setNotificationError(Exception $ex)
-    {
-        $this->_notificationError = $ex;
-    }
-
-    /**
-     * Get the notification error that occurred
-     *
-     * @return array
-     */
-    public function getNotificationError()
-    {
-        return array(
-            'code' => $this->_notificationError->getCode(),
-            'file' => $this->_notificationError->getFile(),
-            'line' => $this->_notificationError->getLine(),
-            'message' => $this->_notificationError->getMessage(),
-            'trace' => $this->_notificationError->getTraceAsString()
-        );
     }
 
     /** 
@@ -356,31 +393,34 @@ class Tiqr_Service
      * application, for example to create a link in a mobile website on the
      * same device as where the application is installed
      * @param String $sessionKey The session key identifying this authentication session
-     * @param String $userId The userId of a pre-authenticated user, if in  
-     *                       step-up mode. NULL in other scenario's.
-     * @param String $sessionId The application's session identifier. 
-     *                          (defaults to php session)
+     *
+     * @return string Authentication URL for the tiqr client
+     * @throws Exception
      */
-    public function generateAuthURL($sessionKey)
+    public function generateAuthURL(string $sessionKey): string
     {
         $challengeUrl = $this->_getChallengeUrl($sessionKey);  
         
         return $challengeUrl;
-        
     }
 
     /**
-     * Start an authentication session. This generates a challenge for this 
+     * Start an authentication session. This generates a challenge for this
      * session and stores it in memory. The returned sessionKey should be used
      * throughout the authentication process.
-     * @param String $userId The userId of a pre-authenticated user (optional)
-     * @param String $sessionId The session id the application uses to 
-     *                          identify its user sessions; (optional, 
-     *                          defaults to the php session id).
+     *
+     * @param String $userId The userId of the user to authenticate (optional), if this is left empty the
+     *                       the client decides
+     * @param String $sessionId The session id the application uses to identify its user sessions;
+     *                          (optional defaults to the php session id).
+     *                          This sessionId can later be used to get the authenticated user from the application
+     *                          using getAuthenticatedUser(), or to clear the authentication state using logout()
      * @param String $spIdentifier If SP and IDP are 2 different things, pass the url/identifier of the SP the user is logging into.
      *                             For setups where IDP==SP, just leave this blank.
+     * @return string The authentication sessionKey
+     * @throws Exception when starting the authentication session failed
      */
-    public function startAuthenticationSession($userId="", $sessionId="", $spIdentifier="")
+    public function startAuthenticationSession(string $userId="", string $sessionId="", string $spIdentifier=""): string
     {
         if ($sessionId=="") {
             $sessionId = session_id();
@@ -390,8 +430,7 @@ class Tiqr_Service
             $spIdentifier = $this->_identifier;
         }
 
-        $sessionKey = $this->_uniqueSessionKey(self::PREFIX_CHALLENGE);
-    
+        $sessionKey = $this->_uniqueSessionKey();
         $challenge = $this->_ocraService->generateChallenge();
         
         $data = array("sessionId"=>$sessionId, "challenge"=>$challenge, "spIdentifier" => $spIdentifier);
@@ -400,7 +439,7 @@ class Tiqr_Service
             $data["userId"] = $userId;
         }
         
-        $this->_stateStorage->setValue(self::PREFIX_CHALLENGE . $sessionKey, $data, self::CHALLENGE_EXPIRE);
+        $this->_setStateValue(self::PREFIX_CHALLENGE, $sessionKey, $data, self::CHALLENGE_EXPIRE);
        
         return $sessionKey;
     }
@@ -416,22 +455,22 @@ class Tiqr_Service
      * 
      * @param String $userId The user's id
      * @param String $displayName The user's full name
-     * @param String $sessionId The application's session identifier (defaults 
-     *                           to php session)
+     * @param String $sessionId The application's session identifier (defaults to php session)
      * @return String The enrollment key
+     * @throws Exception when start the enrollement session failed
      */
-    public function startEnrollmentSession($userId, $displayName, $sessionId="")
+    public function startEnrollmentSession(string $userId, string $displayName, string $sessionId=""): string
     {
         if ($sessionId=="") {
             $sessionId = session_id();
         }
-        $enrollmentKey = $this->_uniqueSessionKey(self::PREFIX_ENROLLMENT);
+        $enrollmentKey = $this->_uniqueSessionKey();
         $data = [
             "userId" => $userId,
             "displayName" => $displayName,
             "sessionId" => $sessionId
         ];
-        $this->_stateStorage->setValue(self::PREFIX_ENROLLMENT . $enrollmentKey, $data, self::ENROLLMENT_EXPIRE);
+        $this->_setStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey, $data, self::ENROLLMENT_EXPIRE);
         $this->_setEnrollmentStatus($sessionId, self::ENROLLMENT_STATUS_INITIALIZED);
 
         return $enrollmentKey;
@@ -439,10 +478,10 @@ class Tiqr_Service
 
     /**
      * Reset an existing enrollment session. (start over)
-     * @param $sessionId The application's session identifier (defaults
-     *                   to php session)
+     * @param string $sessionId The application's session identifier (defaults to php session)
+     * @throws Exception when resetting the session failed
      */
-    public function resetEnrollmentSession($sessionId="")
+    public function resetEnrollmentSession(string $sessionId=""): void
     {
         if ($sessionId=="") {
             $sessionId = session_id();
@@ -453,19 +492,20 @@ class Tiqr_Service
 
     /**
      * Remove enrollment data based on the enrollment key (which is
-     * encoded in the QR code). This removes both the session data used
-     * in the polling mechanism and the long term state in the state
-     * storage (FS/Pdo/Memcache)
+     * encoded in the enrollment QR code).
+     *
+     * @param string $enrollmentKey returned by startEnrollmentSession
+     * @throws Exception when clearing the enrollment state failed
      */
-    public function clearEnrollmentState(string $key)
+    public function clearEnrollmentState(string $enrollmentKey): void
     {
-        $value = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT.$key);
+        $value = $this->_getStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey);
         if (is_array($value) && array_key_exists('sessionId', $value)) {
             // Reset the enrollment session (used for polling the status of the enrollment)
             $this->resetEnrollmentSession($value['sessionId']);
         }
         // Remove the enrollment data for a specific enrollment key
-        $this->_stateStorage->unsetValue(self::PREFIX_ENROLLMENT.$key);
+        $this->_unsetStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey);
     }
 
     /**
@@ -473,28 +513,17 @@ class Tiqr_Service
      * 
      * @param String $sessionId the application's session identifier 
      *                          (defaults to php session)
-     * @return int Enrollment status. Can be any one of these values:
-     *             - Tiqr_Server::ENROLLMENT_STATUS_IDLE 
-     *               There is no enrollment going on in this session
-     *             - Tiqr_Server::ENROLLMENT_STATUS_INITIALIZED
-     *               An enrollment session was started but the phone has not
-     *               yet taken action. 
-     *             - Tiqr_Server::ENROLLMENT_STATUS_RETRIEVED
-     *               The device has retrieved the metadata
-     *             - Tiqr_Server::ENROLLMENT_STATUS_PROCESSED
-     *               The device has sent back a secret for the user
-     *             - Tiqr_Server::ENROLLMENT_STATUS_FINALIZED
-     *               The application has stored the secret
-     *             - Tiqr_Server::ENROLLMENT_STATUS_VALIDATED
-     *               A first successful authentication was performed 
-     *               (todo: currently not used)
+     * @return int Enrollment status.
+     * @see Tiqr_Service for a definitation of the enrollment status codes
+     *
+     * @throws Exception when an error communicating with the state storage backend was detected
      */
-    public function getEnrollmentStatus($sessionId="")
+    public function getEnrollmentStatus(string $sessionId=""): int
     { 
         if ($sessionId=="") {
             $sessionId = session_id(); 
         }
-        $status = $this->_stateStorage->getValue("enrollstatus".$sessionId);
+        $status = $this->_getStateValue(self::PREFIX_ENROLLMENT_STATUS, $sessionId);
         if (is_null($status)) return self::ENROLLMENT_STATUS_IDLE;
         return $status;
     }
@@ -508,7 +537,7 @@ class Tiqr_Service
      *                            for retrieving this from the request and passing it
      *                            on to the Tiqr server.
      */
-    public function generateEnrollmentQR($metadataUrl) 
+    public function generateEnrollmentQR(string $metadataUrl): void
     { 
         $enrollmentString = $this->_getEnrollString($metadataUrl);
         
@@ -516,10 +545,10 @@ class Tiqr_Service
     }
 
     /**
-     * Generate an enrol string
+     * Generate an enroll string
      * This string can be used to feed to a QR code generator
      */
-    public function generateEnrollString($metadataUrl)
+    public function generateEnrollString(string $metadataUrl): string
     {
         return $this->_getEnrollString($metadataUrl);
     }
@@ -527,33 +556,31 @@ class Tiqr_Service
     /**
      * Retrieve the metadata for an enrollment session.
      * 
-     * When the phone calls the url that you have passed to 
+     * When the phone calls the url that you have passed to
      * generateEnrollmentQR, you must provide it with the output
      * of this function. (Don't forget to json_encode the output.)
      * 
      * Note, you can call this function only once, as the enrollment session
      * data will be destroyed as soon as it is retrieved.
-     * 
-     * @param String $enrollmentKey The enrollmentKey that the phone has
-     *                              posted along with its request.
-     * @param String $authenticationUrl The url you provide to the phone to
-     *                                  post authentication responses
-     * @param String $enrollmentUrl The url you provide to the phone to post
-     *                              the generated user secret. You must include
-     *                              a temporary enrollment secret in this URL
-     *                              to make this process secure. This secret
-     *                              can be generated with the 
-     *                              getEnrollmentSecret call.
+     *
+     * When successful the enrollment status will be set to ENROLLMENT_STATUS_RETRIEVED
+     *
+     * @param String $enrollmentKey The enrollmentKey that the phone has posted along with its request.
+     * @param String $authenticationUrl The url you provide to the phone to post authentication responses
+     * @param String $enrollmentUrl The url you provide to the phone to post the generated user secret. You must include
+     *                              a temporary enrollment secret in this URL to make this process secure.
+     *                              Use getEnrollmentSecret() to get this secret
      * @return array An array of metadata that the phone needs to complete
      *               enrollment. You must encode it in JSON before you send
      *               it to the phone.
+     * @throws Exception when generating the metadata failed
      */
-    public function getEnrollmentMetadata($enrollmentKey, $authenticationUrl, $enrollmentUrl)
+    public function getEnrollmentMetadata(string $enrollmentKey, string $authenticationUrl, string $enrollmentUrl): array
     {
-        $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
+        $data = $this->_getStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey);
         if (!is_array($data)) {
             $this->logger->error('Unable to find enrollment metadata in state storage');
-            return false;
+            throw new Exception('Unable to find enrollment metadata in state storage');
         }
 
         $metadata = array("service"=>
@@ -569,7 +596,7 @@ class Tiqr_Service
                                array("identifier" =>$data["userId"],
                                      "displayName"=>$data["displayName"]));
 
-        $this->_stateStorage->unsetValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
+        $this->_unsetStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey);
 
         $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_RETRIEVED);
         return $metadata;
@@ -579,156 +606,237 @@ class Tiqr_Service
      * Get a temporary enrollment secret to be able to securely post a user 
      * secret.
      *
-     * As part of the enrollment process the phone will send a user secret. 
-     * This shared secret is used in the authentication process. To make sure
-     * user secrets can not be posted by malicious hackers, a secret is 
-     * required. This secret should be included in the enrollmentUrl that is 
-     * passed to the getMetadata function.
-     * @param String $enrollmentKey The enrollmentKey generated at the start
-     *                              of the enrollment process.
+     * In the last step of the enrollment process the phone will send the OCRA user secret.
+     * This is the shared secret is used in the authentication process. To prevent an
+     * attacker from impersonating a user during enrollment and post a user secret that is known to the attacker,
+     * a temporary enrollment secret is added to the metadata. This secret must be included in the enrollmentUrl that is
+     * passed to the getMetadata function so that when the client sends the OCRA user secret to the server this
+     * enrollment secret is included. The server uses the enrollment secret to authenticate the client, and will
+     * allow only one submission of a user secret for one enrollment secret.
+     *
+     * You MUST use validateEnrollmentSecret() to validate enrollment secret that the client sends before accepting
+     * the associated OCRA client secret
+     *
+     * @param String $enrollmentKey The enrollmentKey generated by startEnrollmentSession() at the start of the
+     *                              enrollment process.
      * @return String The enrollment secret
+     * @throws Exception when generating the enrollment secret failed
      */
-    public function getEnrollmentSecret($enrollmentKey)
+    public function getEnrollmentSecret(string $enrollmentKey): string
     {
-         $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT . $enrollmentKey);
-         $secret = $this->_uniqueSessionKey(self::PREFIX_ENROLLMENT_SECRET);
+         $data = $this->_getStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey);
+         if (!is_array($data)) {
+             $this->logger->error('getEnrollmentSecret: enrollment key not found');
+             throw new RuntimeException('enrollment key not found');
+         }
+         $userId = $data["userId"] ?? NULL;
+         $sessionId = $data["sessionId"] ?? NULL;
+         if (!is_string($userId) || !(is_string($sessionId))) {
+             throw new RuntimeException('getEnrollmentSecret: invalid enrollment data');
+         }
          $enrollmentData = [
-             "userId" => $data["userId"],
-             "sessionId" => $data["sessionId"]
+             "userId" => $userId,
+             "sessionId" => $sessionId
          ];
-         $this->_stateStorage->setValue(
-             self::PREFIX_ENROLLMENT_SECRET . $secret,
+         $enrollmentSecret = $this->_uniqueSessionKey();
+         $this->_setStateValue(
+             self::PREFIX_ENROLLMENT_SECRET,
+             $enrollmentSecret,
              $enrollmentData,
              self::ENROLLMENT_EXPIRE
          );
-         return $secret;
-    } 
+         return $enrollmentSecret;
+    }
 
     /**
      * Validate if an enrollmentSecret that was passed from the phone is valid.
-     * @param $enrollmentSecret The secret that the phone posted; it must match
-     *                          the secret that was generated using 
-     *                          getEnrollmentSecret earlier in the process.
-     * @return mixed The userid of the user that was being enrolled if the 
-     *               secret is valid. This userid should be used to store the 
-     *               user secret that the phone posted.
-     *               If the enrollmentSecret is invalid, false is returned.
+     *
+     * Note: After validating the enrollmentSecret you must call finalizeEnrollment() to
+     *       invalidate the enrollment secret.
+     *
+     * When successful the enrollment state will be set to ENROLLMENT_STATUS_PROCESSED
+     *
+     * @param string $enrollmentSecret The enrollmentSecret that the phone posted; it must match
+     *                                 the enrollmentSecret that was generated using
+     *                                 getEnrollmentSecret earlier in the process and that the phone
+     *                                 received as part of the metadata.
+     *                                 Note that this is not the OCRA user secret that the Phone posts to the server
+     * @return string The userid of the user that was being enrolled if the enrollment secret is valid. The application
+     *                should use this userid to store the OCRA user secret that the phone posted.
+     *
+     * @throws Exception when the validation failed
      */
-    public function validateEnrollmentSecret($enrollmentSecret)
+    public function validateEnrollmentSecret(string $enrollmentSecret): string
     {
-        $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT_SECRET.$enrollmentSecret);
-        if (is_array($data)) {
+        try {
+            $data = $this->_getStateValue(self::PREFIX_ENROLLMENT_SECRET, $enrollmentSecret);
+            if (NULL === $data) {
+                throw new RuntimeException('Enrollment secret not found');
+            }
+            if ( !is_array($data) || !is_string($data["userId"] ?? NULL)) {
+                throw new RuntimeException('Invalid enrollment data');
+            }
+
             // Secret is valid, application may accept the user secret.
             $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_PROCESSED);
             return $data["userId"];
+        } catch (Exception $e) {
+            $this->logger->error('Validation of enrollment secret failed', array('exception' => $e));
+            throw $e;
         }
-        $this->logger->info('Validation of enrollment secret failed');
-        return false;
     }
-    
+
     /**
      * Finalize the enrollment process.
-     * If the user secret was posted by the phone, was validated using 
-     * validateEnrollmentSecret AND if the secret was stored securely on the 
-     * server, you should call finalizeEnrollment. This clears some enrollment
-     * temporary pieces of data, and sets the status of the enrollment to 
-     * finalized.
-     * @param String The enrollment secret that was posted by the phone. This 
-     *               is the same secret used in the call to 
-     *               validateEnrollmentSecret.
-     * @return boolean True if succesful 
+     *
+     * Invalidates $enrollmentSecret
+     *
+     * Call this after validateEnrollmentSecret
+     * When successfull the enrollment state will be set to ENROLLMENT_STATUS_FINALIZED
+     *
+     * @param String The enrollment secret that was posted by the phone. This is the same secret used in the call to
+     *               validateEnrollmentSecret()
+     * @return bool true when finalize was successful, false otherwise
+     *
+     * Does not throw
      */
-    public function finalizeEnrollment($enrollmentSecret) 
+    public function finalizeEnrollment(string $enrollmentSecret): bool
     {
-         $data = $this->_stateStorage->getValue(self::PREFIX_ENROLLMENT_SECRET.$enrollmentSecret);
-         if (is_array($data)) {
-             // Enrollment is finalized, destroy our session data.
-             $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_FINALIZED);
-             $this->_stateStorage->unsetValue(self::PREFIX_ENROLLMENT_SECRET.$enrollmentSecret);
-         } else {
-             $this->logger->error(
-                 'Enrollment status is not finalized, enrollmentsecret was not found in state storage. ' .
-                 'Warning! the method will still return "true" as a result.'
-             );
-         }
-         return true;
+        try {
+            $data = $this->_getStateValue(self::PREFIX_ENROLLMENT_SECRET, $enrollmentSecret);
+            if (NULL === $data) {
+                throw new RuntimeException('Enrollment secret not found');
+            }
+            if (is_array($data)) {
+                // Enrollment is finalized, destroy our session data.
+                $this->_unsetStateValue(self::PREFIX_ENROLLMENT_SECRET, $enrollmentSecret);
+                $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_FINALIZED);
+            } else {
+                $this->logger->error(
+                    'Enrollment status is not finalized, enrollmentsecret was not found in state storage. ' .
+                    'Warning! the method will still return "true" as a result.'
+                );
+            }
+            return true;
+        } catch (Exception $e) {
+            // Cleanup failed
+            $this->logger->warning('finalizeEnrollment failed', array('exception' => $e));
+        }
+        return false;
     }
 
     /**
      * Authenticate a user.
-     * This method should be called when the phone posts a response to an
-     * authentication challenge. The method will validate the response and
-     * mark the user's session as authenticated. This essentially logs the
-     * user in.
-     * @param String $userId The userid of the user that should be 
-     *                       authenticated
-     * @param String $userSecret The user's secret. This should be the 
-     *                           secret stored in a secure storage. 
-     * @param String $sessionKey The phone will post a session key, this 
-     *                           should be passed to this method in order
-     *                           for the server to unlock the user's browser
-     *                           session.
-     * @param String $response   The response to the challenge that the phone
-     *                           has posted.
-     * @return String The result of the authentication. This is one of the
-     *                AUTH_RESULT_* constants of the Tiqr_Server class.
-     *                (do not make assumptions on the values of these 
-     *                constants.)
+     * This method should be called when the phone (tiqr client) posts a response to an
+     * authentication challenge to the server. This method will validate the response and
+     * returns one of the self::AUTH_RESULT_* codes to indicate success or error
+     *
+     * When the authentication was successful the user's session is marked as authenticated.
+     * This essentially logs the user in. Use getauthenticateduser() and logout() with the
+     * application's session sessionID to respectively get the authenticated user and clear
+     * the authentication state.
+     *
+     * The default OCRA suite uses 6 digit response codes this makes the authentication vulnerable to a guessing attack
+     * when the client has an unlimited amount of tries. It is important to limit the amount of times to allow a
+     * AUTH_RESULT_INVALID_RESPONSE response. AUTH_RESULT_INVALID_RESPONSE counts as failed authentication attempt
+     * (i.e. a wrong guess by the client). The other error results and exceptions mean that the response could
+     * not be validated on the server and should therefore not reveal anything useful to the client.
+     * The UserStorage class supports (temporarily) locking a user account. It is the responsibility of the application
+     * to implement these measures
+     *
+     * @param String $userId The userid of the user that should be authenticated, as sent in the POST back by the tiqr
+     *                       client. If $userId does not match the optional userId in startAuthenticationSession()
+     *                       AUTH_RESULT_INVALID_USERID is returned
+     * @param String $userSecret The OCRA user secret that the application previously stored for $userId using
+     *                           e.g. a Tiqr_UserSecretStorage
+     *                           Leave empty when using a OcraService that does not require a user secret
+     * @param String $sessionKey The authentication session key that was returned by startAuthenticationSession()
+     *                           If the session key cannot be found in the StateStorage AUTH_RESULT_INVALID_CHALLENGE
+     *                           is returned
+     * @param String $response   The response to the challenge that the tiqr client posted back to the server
+     *
+     * @return Int The result of the authentication. This is one of the AUTH_RESULT_* constants of the Tiqr_Server class.
+     * @throws Exception when there was an error during the authentication process
      */
-    public function authenticate($userId, $userSecret, $sessionKey, $response)
+    public function authenticate(string $userId, string $userSecret, string $sessionKey, string $response): int
     {
-        $state = $this->_stateStorage->getValue(self::PREFIX_CHALLENGE . $sessionKey);
-        if (is_null($state)) {
-            $this->logger->info('The auth challenge could not be found in the state storage');
-            return self::AUTH_RESULT_INVALID_CHALLENGE;
+        try {
+            $state = $this->_getStateValue(self::PREFIX_CHALLENGE, $sessionKey);
+            if (is_null($state)) {
+                $this->logger->notice('The auth challenge could not be found in the state storage');
+                return self::AUTH_RESULT_INVALID_CHALLENGE;
+            }
+        } catch (Exception $e) {
+            $this->logger->error('Error looking up challenge in state storage', array('exception' => $e));
+            throw $e;
         }
-        
-        $sessionId       = $state["sessionId"];
-        $challenge       = $state["challenge"];
 
-        $challengeUserId = NULL;
-        if (isset($state["userId"])) {
-          $challengeUserId = $state["userId"];
+        $sessionId = $state["sessionId"] ?? NULL;   // Application's sessionId
+        $challenge = $state["challenge"] ?? NULL;   // The challenge we sent to the Tiqr client
+        if (!is_string($sessionId) || (!is_string($challenge)) ) {
+            throw new RuntimeException('Invalid state for state storage');
         }
-        // Check if we're dealing with a second factor
-        if ($challengeUserId!=NULL && ($userId != $challengeUserId)) {
+
+        // The user ID is optional, it is set when the application requested authentication of a specific userId
+        // instead of letting the client decide
+        $challengeUserId = $state["userId"] ?? NULL;
+
+        // If the application requested a specific userId, verify that that is that userId that we're now authenticating
+        if ($challengeUserId!==NULL && ($userId !== $challengeUserId)) {
             $this->logger->error(
-                'Authentication failed: the first factor user id does not match with that of the second factor'
+                sprintf('Authentication failed: the requested userId "%s" does not match userId "%s" that is being authenticated',
+                $challengeUserId, $userId)
             );
-            return self::AUTH_RESULT_INVALID_USERID; // only allowed to authenticate against the user that's authenticated in the first factor
+            return self::AUTH_RESULT_INVALID_USERID; // requested and actual userId do not match
         }
 
-        $method = $this->_ocraService->getVerificationMethodName();
-        if ($method == 'verifyResponseWithUserId') {
-            $equal = $this->_ocraService->$method($response, $userId, $challenge, $sessionKey);
-        } else {
-            $equal = $this->_ocraService->$method($response, $userSecret, $challenge, $sessionKey);
+        try {
+            $equal = $this->_ocraService->verifyResponse($response, $userId, $userSecret, $challenge, $sessionKey);
+        } catch (Exception $e) {
+            $this->logger->error(sprintf('Error verifying OCRA response for user "%s"', $userId), array('exception' => $e));
+            throw $e;
         }
 
         if ($equal) {
-            $this->_stateStorage->setValue("authenticated_".$sessionId, $userId, self::LOGIN_EXPIRE);
-            
-            // Clean up the challenge.
-            $this->_stateStorage->unsetValue(self::PREFIX_CHALLENGE . $sessionKey);
-            $this->logger->info('Authentication succeeded');
+            // Set application session as authenticated
+            $this->_setStateValue(self::PREFIX_AUTHENTICATED, $sessionId, $userId, self::LOGIN_EXPIRE);
+            $this->logger->notice(sprintf('Authenticated user "%s" in session "%s"', $userId, $sessionId));
+
+            // Cleanup challenge
+            // Future authentication attempts with this sessionKey will get a AUTH_RESULT_INVALID_CHALLENGE
+            // This QR code / push notification cannot be used again
+            // Cleaning up only after successful authentication enables the user to retry authentication after e.g. an
+            // invalid response
+            try {
+                $this->_unsetStateValue(self::PREFIX_CHALLENGE, $sessionKey); // May throw
+            } catch (Exception $e) {
+                // Only log error
+                $this->logger->warning('Could not delete authentication session key', array('error' => $e));
+            }
+
             return self::AUTH_RESULT_AUTHENTICATED;
         }
-        $this->logger->error('Authentication failed: verification failed');
+        $this->logger->error('Authentication failed: invalid response');
         return self::AUTH_RESULT_INVALID_RESPONSE;
     }
 
     /**
      * Log the user out.
+     * It is not an error is the $sessionId does not exists, or when the $sessionId has expired
+     *
      * @param String $sessionId The application's session identifier (defaults
      *                          to the php session).
+     *                          This is the application's sessionId that was provided to startAuthenticationSession()
+     *
+     * @throws Exception when there was an error communicating with the storage backed
      */
-    public function logout($sessionId="")
+    public function logout(string $sessionId=""): void
     {
         if ($sessionId=="") {
             $sessionId = session_id(); 
         }
         
-        return $this->_stateStorage->unsetValue("authenticated_".$sessionId);
+        $this->_unsetStateValue(self::PREFIX_AUTHENTICATED, $sessionId);
     }
     
     /**
@@ -741,11 +849,12 @@ class Tiqr_Service
      * @param String $notificationType    The notification type.
      * @param String $notificationAddress The address that was stored during enrollment.
      *
-     * @return String The device address that can be used to send a notification.
+     * @return String|bool The device address that can be used to send a notification.
+     *                     false on error
      */
-    public function translateNotificationAddress($notificationType, $notificationAddress)
+    public function translateNotificationAddress(string $notificationType, string $notificationAddress)
     {
-        if ($notificationType == 'APNS' || $notificationType == 'FCM') {
+        if ($notificationType == 'APNS' || $notificationType == 'FCM' || $notificationType == 'GCM') {
             return $this->_deviceStorage->getDeviceToken($notificationAddress);
         } else {
             return $notificationAddress;
@@ -756,45 +865,73 @@ class Tiqr_Service
      * Retrieve the currently logged in user.
      * @param String $sessionId The application's session identifier (defaults
      *                          to the php session).
-     * @return mixed An array with user data if a user was logged in or NULL if
-     *               no user is logged in.
+     *                          This is the application's sessionId that was provided to startAuthenticationSession()
+     * @return string|NULL The userId of the authenticated user,
+     *                     NULL if no user is logged in
+     *                     NULL if the user's login state could not be determined
+     *
+     * Does not throw
      */
-    public function getAuthenticatedUser($sessionId="")
+    public function getAuthenticatedUser(string $sessionId=""): ?string
     {
         if ($sessionId=="") {
             $this->logger->debug('Using the PHP session id, as no session id was provided');
             $sessionId = session_id(); 
         }
         
-        // Todo, we should return false, not null, to be more consistent
-        return $this->_stateStorage->getValue("authenticated_".$sessionId);
+        try {
+            return $this->_getStateValue("authenticated_", $sessionId);
+        }
+        catch (Exception $e) {
+            $this->logger->error('getAuthenticatedUser failed', array('exception'=>$e));
+            return NULL;
+        }
     }
     
     /**
-     * Generate a challenge URL
-     * @param String $sessionKey The key that identifies the session.
-     * @param String $challenge The authentication challenge
-     * @param String $userId The userid to embed in the challenge url (only
-     *                       if a user was pre-authenticated)
+     * Generate a authentication challenge URL
+     * @param String $sessionKey The authentication sessionKey
      *
+     * @return string AuthenticationURL
+     * @throws Exception
      */
-    protected function _getChallengeUrl($sessionKey)
-    {                
-        $state = $this->_stateStorage->getValue(self::PREFIX_CHALLENGE . $sessionKey);
+    protected function _getChallengeUrl(string $sessionKey): string
+    {
+        // Lookup the authentication session data and use this to generate the application specific
+        // authentication URL
+        // The are two formats see: https://tiqr.org/technical/protocol/
+        // We probably just generated the challenge and stored it in the StateStorage
+        // We can save a roundtrip to the storage backend here by reusing this information
+
+        $state = $this->_getStateValue(self::PREFIX_CHALLENGE, $sessionKey);
         if (is_null($state)) {
             $this->logger->error(
-                'Unable find an existing challenge url in the state storage based on the existing session key'
+                sprintf(
+                'Cannot get session key "%s"',
+                    $sessionKey
+                )
             );
-            return false;
+            throw new Exception('Cannot find sessionkey');
         }
-        
-        $userId   = NULL;
-        $challenge = $state["challenge"];
-        if (isset($state["userId"])) {
-            $userId = $state["userId"];
+
+        $userId = $state["userId"] ?? NULL;
+        $challenge = $state["challenge"] ?? '';
+        $spIdentifier = $state["spIdentifier"] ?? '';
+
+        if ( (strpos($this->_protocolAuth, 'https://') === 0) || (strpos($this->_protocolAuth, 'http://') === 0) ) {
+            // Create universal Link
+            $parameters=array();
+            if (!is_null($userId)) {
+                $parameters[]='u='.urlencode($userId);
+            }
+            $parameters[]='s='.urlencode($sessionKey);
+            $parameters[]='q='.urlencode($challenge);
+            $parameters[]='i='.urlencode($this->getIdentifier());
+            $parameters[]='v='.urlencode($this->_protocolVersion);
+            return $this->_protocolAuth.'?'.implode('&', $parameters);
         }
-        $spIdentifier = $state["spIdentifier"];
-        
+
+        // Create custom URL scheme
         // Last bit is the spIdentifier
         return $this->_protocolAuth."://".(!is_null($userId)?urlencode($userId).'@':'').$this->getIdentifier()."/".$sessionKey."/".$challenge."/".urlencode($spIdentifier)."/".$this->_protocolVersion;
     }
@@ -803,28 +940,30 @@ class Tiqr_Service
      * Generate an enrollment string
      * @param String $metadataUrl The URL you provide to the phone to retrieve metadata.
      */
-    protected function _getEnrollString($metadataUrl)
+    protected function _getEnrollString(string $metadataUrl): string
     {
+        // The are two formats see: https://tiqr.org/technical/protocol/
+
+        if ( (strpos($this->_protocolEnroll, 'https://') === 0) || (strpos($this->_protocolEnroll, 'http://') === 0) ) {
+            // Create universal Link
+            return $this->_protocolEnroll.'?metadata='.urlencode($metadataUrl);
+        }
+
+        // Create custom URL scheme
         return $this->_protocolEnroll."://".$metadataUrl;
     }
 
     /**
-     * Generate a unique random key to be used to store temporary session
-     * data.
-     * @param String $prefix A prefix for the key (different prefixes should
-     *                       be used to store different pieces of data).
-     *                       The function guarantees that the same key is nog
-     *                       generated for the same prefix.
-     * @return String The unique session key. (without the prefix!)
+     * Generate a unique secure pseudo-random value to be used as session key in the
+     * tiqr protocol. These keys are sent to the tiqr client during enrollment and authentication
+     * And are used in the server as part of key for data in StateStorage
+     * @return String The session key as HEX encoded string
+     * @throws Exception When the key could not be generated
      */
-    protected function _uniqueSessionKey($prefix)
-    {      
-        $value = 1;
-        while ($value!=NULL) {
-            $sessionKey = $this->_ocraWrapper->generateSessionKey();
-            $value = $this->_stateStorage->getValue($prefix.$sessionKey);
-        }
-        return $sessionKey;
+    protected function _uniqueSessionKey(): string
+    {
+
+        return bin2hex( Tiqr_Random::randomBytes(self::SESSION_KEY_LENGTH_BYTES) );
     }
     
     /**
@@ -832,9 +971,71 @@ class Tiqr_Service
      * @param String $sessionId The sessionId to set the status for
      * @param int $status The new enrollment status (one of the 
      *                    self::ENROLLMENT_STATUS_* constants)
+     * @throws Exception when updating the status fails
      */
-    protected function _setEnrollmentStatus($sessionId, $status)
+    protected function _setEnrollmentStatus(string $sessionId, int $status): void
     {
-       $this->_stateStorage->setValue("enrollstatus".$sessionId, $status, self::ENROLLMENT_EXPIRE);
+        if (($status < 1) || ($status > 6)) {
+            // Must be one of the self::ENROLLMENT_STATUS_* constants
+            throw new InvalidArgumentException('Invalid enrollment status');
+        }
+        $this->_setStateValue(self::PREFIX_ENROLLMENT_STATUS, $sessionId, $status, self::ENROLLMENT_EXPIRE);
+    }
+
+    /** Store a value in StateStorage
+     * @param string $key_prefix
+     * @param string $key
+     * @param mixed $value
+     * @param int $expire
+     * @return void
+     * @throws Exception
+     *
+     * @see Tiqr_StateStorage_StateStorageInterface::setValue()
+     */
+    protected function _setStateValue(string $key_prefix, string $key, $value, int $expire): void {
+        $this->_stateStorage->setValue(
+            $key_prefix . $this->_hashKey($key),
+            $value,
+            $expire
+        );
+    }
+
+    /** Get a value from StateStorage
+     * @param string $key_prefix
+     * @param string $key
+     * @return mixed
+     * @throws Exception
+     *
+     * @see Tiqr_StateStorage_StateStorageInterface::getValue()
+     */
+
+    protected function _getStateValue(string $key_prefix, string $key) {
+        return $this->_stateStorage->getValue(
+            $key_prefix . $this->_hashKey($key)
+        );
+    }
+
+    /** Remove a key and its value from StateStorage
+     * @param string $key_prefix
+     * @param string $key
+     * @return void
+     * @throws Exception
+     *
+     * @see Tiqr_StateStorage_StateStorageInterface::unsetValue()
+     */
+    protected function _unsetStateValue(string $key_prefix, string $key): void {
+        $this->_stateStorage->unsetValue(
+            $key_prefix . $this->_hashKey($key)
+        );
+    }
+
+    /**
+     * Create a stable hash of a $key. Used to improve the security of stored keys
+     * @param string $key
+     * @return string hashed $key
+     */
+    protected function _hashKey(string $key): string
+    {
+        return hash_hmac('sha256', $key, $this->_stateStorageSalt);
     }
 }

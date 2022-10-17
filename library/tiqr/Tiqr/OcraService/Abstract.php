@@ -17,55 +17,39 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
-require_once("Tiqr/OcraService/Interface.php");
+use Psr\Log\LoggerInterface;
 
-/**
- * The abstract class that defines what a ocra service class should implement.
- *
- * @author lineke
- *
- */
+require_once(__DIR__ . '/../OATH/OCRAParser.php');
+
 abstract class Tiqr_OcraService_Abstract implements Tiqr_OcraService_Interface
 {
-    /**
-     * Verify the response
-     * Override in child class to implement this method if this is the verification method to use
-     *
-     * @param string $response
-     * @param string $userSecret
-     * @param string $challenge
-     * @param string $sessionKey
-     *
-     * @return boolean True if response matches, false otherwise
-     */
-    public function verifyResponseWithSecret($response, $userSecret, $challenge, $sessionKey)
-    {
+    /** @var OATH_OCRAParser */
+    protected $_ocraParser;
+    /** @var String */
+    protected $_ocraSuite;
+    /** @var LoggerInterface  */
+    protected $logger;
 
+    /**
+     * @throws Exception
+     */
+    public function __construct(array $config, LoggerInterface $logger) {
+        $this->logger = $logger;
+
+        // Set the OCRA suite
+        $this->_ocraSuite = $config['ocra.suite'] ?? 'OCRA-1:HOTP-SHA1-6:QH10-S';   // Use tiqr server default suite
+        $this->_ocraParser = new OATH_OCRAParser($this->_ocraSuite);
     }
 
     /**
-     * Verify the response
-     * Override in child class to implement this method if this is the verification method to use
-     *
-     * @param string $response
-     * @param string $userId
-     * @param string $challenge
-     * @param string $sessionKey
-     *
-     * @return boolean True if response matches, false otherwise
+     * Generate a challenge string based on an ocraSuite
+     * @return String An OCRA challenge that matches the specification of
+     *         the ocraSuite.
+     * @throws Exception
      */
-    public function verifyResponseWithUserId($response, $userId, $challenge, $sessionKey)
+    public function generateChallenge(): string
     {
-
+        return $this->_ocraParser->generateChallenge();
     }
 
-    /**
-     * Returns which method name to use to verify the response (verifyResponseWithSecret or verifyResponseWithUserId)
-     *
-     * @return string
-     */
-    public function getVerificationMethodName()
-    {
-        return 'verifyResponseWithSecret';
-    }
 }

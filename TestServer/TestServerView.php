@@ -122,23 +122,42 @@ HTML;
     }
 
 
-    function PushResult(array $notificationError) {
+    function PushResult(string $notificationresult) {
         $this->begin();
-        if (count($notificationError) == 0) {
-            echo "<p>Push notification sent successfully</p>";
-        }
-        else {
+        $text = htmlentities($notificationresult);
             echo <<<HTML
-<p>Error sending push notification</p>
-<code>
-Code: ${notificationError['code']}<br />
-File: ${notificationError['file']}<br />
-Line: ${notificationError['line']}<br />
-Message: ${notificationError['message']}<br />
-Trace: ${notificationError['trace']}<br />
-<br />
-</code>
+<p>$text</p>
 HTML;
+        $this->end();
+    }
+
+    public function Exception(string $path, \Exception $e)
+    {
+        http_response_code(500);
+        $this->begin();
+        $pathHTML=htmlentities($path);
+        echo("<p>Exception while processing $pathHTML</p>");
+
+        while ($e) {
+            $message = htmlentities($e->getMessage());
+            $code = htmlentities($e->getCode());
+            $file = htmlentities($e->getFile());
+            $line = htmlentities($e->getLine());
+            $trace = htmlentities($e->getTraceAsString());
+            echo <<<HTML
+<p>
+<table>
+<tr><td>Message:</td><td><code>$message</code></td></tr>
+<tr><td>Code:</td><td><code>$code</code></td></tr>
+<tr><td>File:</td><td><code>$file</code></td></tr>
+<tr><td>Line:</td><td><code>$line</code></td></tr>
+</table>
+<pre>$trace</pre><br />
+</p>
+HTML;
+            if ($e=$e->getPrevious()) {
+                echo "<p>Previous exception</p>";
+            }
         }
         $this->end();
     }

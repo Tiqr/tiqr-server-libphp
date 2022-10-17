@@ -30,62 +30,42 @@ require_once('Tiqr/API/Client.php');
  */
 class Tiqr_OcraService_OathServiceClient extends Tiqr_OcraService_Abstract
 {
+    /** @var Tiqr_API_Client */
     protected $_apiClient;
 
     /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
-    /**
-     * Construct a ocra service class
+     * Construct a OCRA service that uses the Tiqr_API_Client to use an OCRA KeyServer
      *
      * @param array $config The configuration that a specific user class may use.
+     * @throws Exception
      */
-    public function __construct($config, LoggerInterface $logger)
+    public function __construct(array $config, LoggerInterface $logger)
     {
+        parent::__construct($config, $logger);
+
+        if (!isset($config['apiURL'])) {
+            throw new RuntimeException('Missing apiURL in config for oathserviceclient');
+        }
+        if (!isset($config['consumerKey'])) {
+            throw new RuntimeException('Missing consumerKey in config for oathserviceclient');
+        }
+
         $this->_apiClient = new Tiqr_API_Client();
         $this->_apiClient->setBaseURL($config['apiURL']);
         $this->_apiClient->setConsumerKey($config['consumerKey']);
-        $this->logger = $logger;
     }
 
-    /**
-     * Get the ocra challenge
-     *
-     * @return string|null The challenge or null when no challenge was returned form the Oath service
-     */
-    public function generateChallenge()
-    {
-        $result = $this->_apiClient->call('/oath/challenge/ocra');
-        if ($result->code == '200') {
-            $this->logger->notice(
-                sprintf(
-                    'Challenge api call returned status code %s and response body: %s.',
-                    $result->code,
-                    $result->body
-                )
-            );
-            return $result->body;
-        }
-        $this->logger->error('The call to /oath/challenge/ocra did not yield a challenge.');
-        return null;
-    }
+    // Use the implementation in the abstract class to generate the challenge locally
+    // public function generateChallenge(): string
 
-    /**
-     * Verify the response
-     *
-     * @param string $response
-     * @param string $userId
-     * @param string $challenge
-     * @param string $sessionKey
-     *
-     * @return boolean True if response matches, false otherwise
-     */
-    public function verifyResponseWithUserId($response, $userId, $challenge, $sessionKey)
+    // Use the implementation in the abstract class to generate the session key (i.e. session information) locally
+    // public function generateSessionKey(): string
+
+    // Use a remote server to verify the response
+    public function verifyResponse(string $response, string $userId, string $userSecret, string $challenge, string $sessionInformation): bool
     {
         try {
-            $result = $this->_apiClient->call('/oath/validate/ocra?response='.urlencode($response).'&challenge='.urlencode($challenge).'&userId='.urlencode($userId).'&sessionKey='.urlencode($sessionKey));
+            $result = $this->_apiClient->call('/oath/validate/ocra?response='.urlencode($response).'&challenge='.urlencode($challenge).'&userId='.urlencode($userId).'&sessionKey='.urlencode($sessionInformation));
             $this->logger->notice(
                 sprintf(
                     'Verify response api call returned status code %s and response body: %s.',
@@ -93,25 +73,18 @@ class Tiqr_OcraService_OathServiceClient extends Tiqr_OcraService_Abstract
                     $result->body
                 )
             );
+            // Tiqr_API_Client::call throws when it gets a non HTTP 2xx response
             return true;
         } catch (Exception $e) {
             $this->logger->error(
                 sprintf(
-                    'Calling of verifyResponseWithUserId failed with message: "%s"',
-                    $e->getMessage()
-                )
+                    'verifyResponse for user "%s" failed',
+                    $userId
+                ),
+                array( 'exception' => $e)
             );
             return false;
         }
     }
 
-    /**
-     * Returns which method name to use to verify the response (verifyResponseWithSecret or verifyResponseWithUserId)
-     *
-     * @return string
-     */
-    public function getVerificationMethodName()
-    {
-        return 'verifyResponseWithUserId';
-    }
 }

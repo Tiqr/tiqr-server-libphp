@@ -13,7 +13,10 @@ coding_style:
     
 build:
     environment:
-        php: 7.2
+        php: 7.2       
+    dependencies:
+        override:
+            - composer install --no-interaction --no-scripts --ignore-platform-reqs
     nodes:
         analysis:
             tests:

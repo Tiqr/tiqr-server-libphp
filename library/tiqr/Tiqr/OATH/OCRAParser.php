@@ -1,10 +1,8 @@
 <?php
 
-require_once ( __DIR__ . "/../Tiqr/Random.php");
+require_once(__DIR__ . "/../Random.php");
 
 class OATH_OCRAParser {
-
-	private $key = NULL;
 
 	private $OCRASuite = NULL;
 
@@ -34,12 +32,18 @@ class OATH_OCRAParser {
 	private $supportedHashFunctions = array('SHA1' => 20, 'SHA256' => 32, 'SHA512' => 64);
 
 
-	public function __construct($ocraSuite) {
+    /**
+     * @param String $ocraSuite The RFC 6287 OCRA suite to parse. E.g. "OCRA-1:HOTP-SHA1-6:QH10-S"
+     * @throws Exception
+     */
+    public function __construct(String $ocraSuite) {
 		$this->parseOCRASuite($ocraSuite);
 	}
 
 	/**
 	 * Inspired by https://github.com/bdauvergne/python-oath
+     *
+     * @throws Exception
 	 */
 	private function parseOCRASuite($ocraSuite) {
 		if (!is_string($ocraSuite)) {
@@ -177,7 +181,18 @@ class OATH_OCRAParser {
 		}
 	}
 
-	public function generateChallenge() {
+    /** Generate an OCRA challenge question according to the ocra suite specified in the constructor
+     * @return The randomly generated OCRA question
+     * @throws Exception
+     *
+     * The required format and length of the challenge question are specified in the "Q" part OCRA suite:
+     * OCRA-1:...:QH10-... means 10 hex digits
+     * OCRA-1:...:QN08-... means 8 decimal digits
+     * OCRA-1:...:QA06-... means 6 ASCII digits
+     * Note that the question string is the exact question string a specified in the OCRA strandard (RFC 6287)
+     * The challenge is not yet hex encoded as expected by OCRA::generateOCRA()
+     */
+	public function generateChallenge() : String {
 		$q_length = $this->QLength;
 		$q_type = $this->QType;
 
@@ -206,28 +221,10 @@ class OATH_OCRAParser {
 	}
 
 
-	public function generateSessionInformation() {
-		if (!$this->S) {
-			throw new Exception('Session information not defined in OCRASuite: ' . var_export($this->OCRASuite, TRUE));
-		}
-
-		$s_length = $this->SLength;
-        $bytes = Tiqr_Random::randomBytes($s_length);
-
-		// The OCRA spec doesn't specify that the session data should be hexadecimal.
-		// However the reference implementation in the RFC does treat it as hex.
-		$session = bin2hex($bytes);
-		
-		$session = substr($session, 0, $s_length);
-		
-		return $session;
-	}
-
-
 	/**
 	 * Constant time string comparison, see http://codahale.com/a-lesson-in-timing-attacks/
 	 */
-	public static function constEqual($s1, $s2) {
+	public static function constEqual(string $s1, string $s2): bool {
 		if (strlen($s1) != strlen($s2)) {
 			return FALSE;
 		}
