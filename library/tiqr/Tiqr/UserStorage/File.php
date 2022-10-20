@@ -28,7 +28,14 @@ require_once 'Tiqr/UserStorage/GenericStore.php';
  * please supply your own implementation that hosts the data in your user database OR
  * in a secure (e.g. hardware encrypted) storage.
  * @author ivo
+ *
+ * @see Tiqr_UserStorage::getStorage()
+ * @see Tiqr_UserStorage_Interface
+ *
+ * Supported options:
+ * path : Path to the directory where the user data is stored
  */
+
 class Tiqr_UserStorage_File extends Tiqr_UserStorage_GenericStore
 {
     use FileTrait;
