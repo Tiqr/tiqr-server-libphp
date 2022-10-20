@@ -64,8 +64,6 @@ CREATE INDEX IF NOT EXISTS index_tiqrstate_expire ON tiqrstate (expire);
  * @see Tiqr_StateStorage_StateStorageInterface
  *
  * Supported options:
- * path : Path to the directory where the user data is stored
- * Supported options:
  * table               : The name of the table in the database
  * dsn                 : The dsn, see the PDO interface documentation
  * username            : The database username
