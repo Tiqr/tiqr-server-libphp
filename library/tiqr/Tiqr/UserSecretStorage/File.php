@@ -28,6 +28,14 @@ require_once 'Tiqr/UserSecretStorage/UserSecretStorageTrait.php';
  * please supply your own implementation that hosts the data in your user database OR
  * in a secure (e.g. hardware encrypted) storage.
  * @author ivo
+ *
+ * @see Tiqr_UserSecretStorage::getSecretStorage()
+ * @see Tiqr_UserSecretStorage_Interface
+ *
+ * Supported options:
+ * path : Path to the directory where the user data is stored
+ *
+
  */
 class Tiqr_UserSecretStorage_File implements Tiqr_UserSecretStorage_Interface
 {
