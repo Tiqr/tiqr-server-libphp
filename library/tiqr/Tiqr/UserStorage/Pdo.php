@@ -47,6 +47,15 @@ use Psr\Log\LoggerInterface;
  * It is usable for any database with a PDO driver
  * 
  * @author Patrick Honing <Patrick.Honing@han.nl>
+ *
+ * @see Tiqr_UserStorage::getStorage()
+ * @see Tiqr_UserStorage_Interface
+ *
+ * Supported options:
+ * table    : The name of the user table in the database. Optional. Defaults to "tiqruser".
+ * dsn      : The dsn, see the PDO interface documentation
+ * username : The database username
+ * password : The database password
  */
 
 class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract

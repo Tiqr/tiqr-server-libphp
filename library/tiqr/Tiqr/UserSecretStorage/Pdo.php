@@ -42,6 +42,17 @@ CREATE TABLE IF NOT EXISTS usersecret (
     userid varchar(30) NOT NULL UNIQUE,
     secret varchar(128),
 );
+
+ * @see Tiqr_UserSecretStorage::getSecretStorage()
+ * @see Tiqr_UserSecretStorage_Interface
+ *
+ * Supported options:
+ * path : Path to the directory where the user data is stored
+ * Supported options:
+ * table    : The name of the user table in the database. Optional. Defaults to "tiqrusersecret".
+ * dsn      : The dsn, see the PDO interface documentation
+ * username : The database username
+ * password : The database password
  *
  */
 

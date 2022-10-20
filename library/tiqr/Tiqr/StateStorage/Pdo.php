@@ -20,13 +20,57 @@ use Psr\Log\LoggerInterface;
  * @copyright (C) 2010-2012 SURFnet BV
  * 
  * 
+ *
+ *
+ * Use a database table for storing the tiqr state (session) information
+ * There is a cleanup query that runs with a default probability of 10% each time
+ * Tiqr_StateStorage_StateStorageInterface::setValue() is used to cleanup expired keys and prevent the table
+ * from growing indefinitely.
+ * The default 10% probability is good for test setups, but is unnecessary high for production use. For production use,
+ * with high number of authentications and registrations, a much lower value should be used to prevent unnecessary
+ * loading the database with DELETE queries. Note that the cleanup is only there to prevent indefinite growth of the
+ * table, expired keys are never returned, whether they exist in the database or not.
+ *
+ * The goal is to prevent on the one hand running the cleanup to often with the chance of running multiple queries at
+ * the same time, while on the other hand hardly ever running the cleanup leading to an unnecessary large table and query
+ * execution time when it does run.
+ *
+ * The following information can be used for choosing a suitable cleanup_probability:
+ * - A successful authentication creates two keys, i.e. two calls to setValue()
+ * - A successful enrollment creates three keys, i.e. three calls to setValue()
+ * Add to that the keys created by the application that uses the library (e.g. Stepup-Tiqr creates one key).
+ *
+ * A good starting point is using the typical peak number of authentications per hour and setting the cleanup_probability
+ * so that it would on average run once during such an hour. Since the number of authentications >> number of enrollments
+ * A good starting value for cleanup_probability would be:
+ *
+ *  1 / ( [number of authentications per hour] * ( 2 + [ keys used by application] ) )
+ *
+ * E.g. for 10000 authentications per hour, with one key created by the application:
+ *      cleanup_probability = 1 / (10000 (2 + 1)) = 0.00003
+ *
+ *
  * Create SQL table (MySQL):
 
- * CREATE TABLE IF NOT EXISTS tiqrstate (
-    key varchar(255) PRIMARY KEY,
+ CREATE TABLE IF NOT EXISTS tiqrstate (
+    `key` varchar(255) PRIMARY KEY,
     expire BIGINT,
-    value text
+    `value` text
 );
+
+CREATE INDEX IF NOT EXISTS index_tiqrstate_expire ON tiqrstate (expire);
+
+ * @see Tiqr_StateStorage::getStorage()
+ * @see Tiqr_StateStorage_StateStorageInterface
+ *
+ * Supported options:
+ * table               : The name of the table in the database
+ * dsn                 : The dsn, see the PDO interface documentation
+ * username            : The database username
+ * password            : The database password
+ * cleanup_probability : The probability that the cleanup of expired keys is executed. Optional, defaults to 0.1
+ *                       Specify the desired probability as a float. E.g. 0.01 = 1%; 0.001 = 0.1%
+ *
  */
 
 
@@ -130,7 +174,7 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         }
         // $expire == 0 means never expire
         if ($expire != 0) {
-            $expire+=time();    // Store unix timestamp after which the expires
+            $expire+=time();    // Store unix timestamp after which the key expires
         }
         try {
             $sth->execute(array(serialize($value), $expire, $key));
