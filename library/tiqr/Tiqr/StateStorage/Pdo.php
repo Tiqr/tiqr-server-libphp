@@ -101,7 +101,7 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
             $sth->execute(array(time()));
             $deletedRows=$sth->rowCount();
             $this->logger->notice(
-                sprintf("Deleted %i expired keys", $deletedRows)
+                sprintf("Deleted %d expired keys", $deletedRows)
             );
         }
         catch (Exception $e) {
