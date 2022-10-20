@@ -1,4 +1,9 @@
 # Changelog
+
+## 3.0.1
+* Fix PDO state-storage log message (#44)
+* Document state-, user- and usersecret storage options (#45) 
+
 ## 3.0.0
 Increase the major version because of significant changes in the UserStorage, UserSecretStorage and StateStorage
 
