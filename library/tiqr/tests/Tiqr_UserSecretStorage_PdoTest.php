@@ -80,6 +80,24 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
         $this->assertEquals('my-secret', $secret);
     }
 
+    public function test_error_reading_and_writing_user_secret()
+    {
+        $store = Tiqr_UserSecretStorage::getSecretStorage(
+            'pdo',
+            $this->logger,
+            array(
+                'dsn' => $this->dsn,
+                'username' => 'root',
+                'password' => 'secret',
+                'table' => 'tiqrusersecret_xxx'
+            )
+        );
+        $this->expectException(ReadWriteException::class);
+        $store->setSecret('user-id-1', 'my-secret');
+        $this->expectException(ReadWriteException::class);
+        $store->getSecret('user-id-1');
+    }
+
     public function test_deprecated_getSecret_method_is_not_available()
     {
         $store = $this->buildUserSecretStorage();
@@ -115,8 +133,12 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
 
     private function setUpDatabase(string $dsn)
     {
-        // Create test database
+        // Create test databases
         $pdo = new PDO($dsn, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        // Correct schema
         $pdo->exec("CREATE TABLE tiqrusersecret (userid varchar(255) PRIMARY KEY, secret varchar(255));");
+
+        // Incorrect schema
+        $pdo->exec("CREATE TABLE tiqrusersecret_xxx (userid varchar(255) PRIMARY KEY, secret_xxx varchar(255));");
     }
 }
