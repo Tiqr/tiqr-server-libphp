@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.0.2
+* Fix usersecretstorage not throwing on PDO error (#47)
+
 ## 3.0.1
 * Fix PDO state-storage log message (#44)
 * Document state-, user- and usersecret storage options (#45) 
