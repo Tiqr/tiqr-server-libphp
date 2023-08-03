@@ -106,6 +106,29 @@ $options = [
 ]
 ```
 
+### Autoloading and composer
+If you have a composer project, you can add the tiqr library as a dependency, and it will be installed in the vendor directory
+
+```
+$ composer require tiqr/tiqr-server-libphp
+```
+
+Note that tiqr-server-libphp has it's own autoloader that you must initialse manually, it is not integrated with composer (yet)
+
+```php
+# Include the composer autoloader
+require_once 'vendor/autoload.php';
+
+# Include the tiqr-server-libphp autoloader
+require_once 'vendor/tiqr/tiqr-server-libphp/library/tiqr/Tiqr/AutoLoader.php';
+$autoloader = \Tiqr_AutoLoader::getInstance([
+    'tiqr.path' => 'vendor/tiqr/tiqr-server-libphp/library/tiqr',
+    'zend.path' => 'vendor/zendframework/zendframework1/library',
+    'phpqrcode.path' => 'vendor/kairos/phpqrcode',
+]);
+$autoloader->setIncludePath();
+```
+
 ### Creation
 Creating the Tiqr_Service is now as simple as creating a new instance with the configuration
 
