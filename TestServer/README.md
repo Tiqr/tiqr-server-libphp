@@ -1,13 +1,9 @@
 # TiqrTestServer
 
-This is a testserver with minimal dependencies that is intended for testing
-enrollement and authentication with a tiqr client.
+This is a testserver with minimal dependencies that is intended for testing enrollement and authentication with a tiqr client.
 
 ## Requirements
-The TestSever uses the PHP cli build-in webserver. It can be run directly from the command
-line if you have PHP installed. Supported PHP versions are 7.2 and 7.4. Alternatively a 
-Dockerfile.testserver is included to run the TestServer from a container. To enroll and authenticate with the TestServer 
-you need a tiqr client (e.g. one of the clients from https://tiqr.org), the TestServer does not include a tiqr client. 
+The TestSever uses the PHP cli build-in webserver. It can be run directly from the command line if you have PHP installed. Supported PHP versions are 7.2 and 7.4. Alternatively a  Dockerfile.testserver is included to run the TestServer from a container. To enroll and authenticate with the TestServer  you need a tiqr client (e.g. one of the clients from https://tiqr.org), the TestServer does not include a tiqr client. 
 
 ## Configuration
 The first step is configuring the TestServer for the Tiqr clients that you want to test.

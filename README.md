@@ -10,12 +10,14 @@ A PHP library for implementing a Tiqr authentication server
 The library includes a test server, see its [README](TestServer/README.md) for details.
 
 # Introduction
-This project is a PHP implementation of a library to implement a Tiqr server. This library is not a server by itself, instead it contains functionality that help Tiqr server implementations with several tasks. These tasks include:
+This project is a PHP implementation of a library to implement a Tiqr server. This library is not a server by itself, instead it contains functionality that help Tiqr server implementations with several tasks. You need to write the code to provide the HTTP API for the Tiqr client, and to create the web interface that the user interacts with for enrolling and authentication. This library helps with a large part of this, including:
 
 1. Handling of authentications and registration flows of the Tiqr protocol (OCRA)
 2. Storing of user authentication and user secret data
 3. Sending of push notification (Firebase Cloud Messaging, Apple Push Notifications)
 4. Storing of application state (for state persistency during registration and authentication workflows)
+
+When implementing Tiqr you will need to understand the Tiqr protocol. This is documented in the [Tiqr protocol documentation](https://tiqr.org/protocol/).
 
 # Who should use this library?
 Basically anyone who wants to implement a Tiqr server for their Tiqr client Apps (Android & iOS).
@@ -33,9 +35,7 @@ A brief overview of notable points in time of this project
 - 2022: Major refactoring of UserStorage and UserSecretStorage classes, addition of PSR Logging, removal of deprecated functionality
 
 # Ecosystem
-The tiqr-server-libphp uses external libraries sparingly. The most notable external dependency is the Zend Framework 1.
-This framework is not used for any infrastructural support work like routing, command handling, logging, and so forth. 
-The framework is currently only used to implement sending push notifications using the APNS protocol.
+The tiqr-server-libphp uses external libraries sparingly. The most notable external dependency is the Zend Framework 1. This framework is not used for any infrastructural support work like routing, command handling, logging, and so forth. The framework is currently only used to implement sending push notifications using the old (HTTP) APNS protocol.
 
 For creating QR codes, another external library is used. This is the Kairos PHPQRcode library. 
 
@@ -45,8 +45,7 @@ For testing purposes we use additional dev-dependencies. They include well know 
 
 # Future strategy
 - Having a robust test coverage on the code should have a high priority on every new feature created or bug fixed.
-- Moving away from the long past Zend Framework is a long term goal, but is not a high priority now. Keeping the library working and increasing its 
-  predictability is far more important. 
+- Moving away from the long past Zend Framework is a long term goal, but is not a high priority now. Keeping the library working and increasing its predictability is far more important. 
 - New code must not depend on the Zend Framework 1
 
 # Using the library
@@ -54,10 +53,9 @@ If you seek to implement a Tiqr server yourself, you can look at how this librar
 
 Another example for using this library is the [Tiqr TestServer](TestServer) that is included with the library
 
-The API of the tiqr-server-libphp can be found in the `Tiqr` 'namespace' (`library/tiqr/Tiqr`). Notable classes found 
-here are:
+The API of the tiqr-server-libphp can be found in the `Tiqr` 'namespace' (`library/tiqr/Tiqr`). Notable classes found here are:
 
-- `Tiqr_Autoloader` the homemade autoloader, used to load the external dependencies and the following services and storage backends 
+- `Tiqr_Autoloader` the homemade autoloader, used to load the external dependencies and the following services and storage backends.
 - `Tiqr_Service` the main service class implementing the utility functions to handle user enrollement and authentication from a Tiqr Server.
 - Factories for creating Tiqr_UserStorage and Tiqr_UserSecretStorage for different storage backends.
 
@@ -65,9 +63,11 @@ here are:
 An example on how to configure, create and work with the `Service`.
 
 ### Config
-To create the Tiqr Service you need to provide it with configuration options for the Tiqr_Service as well as the configuration for the Tiqr_StateStorage. The Tiqr_StateStorage is used to link the API calls from the tiqr client with the API calls from your tiqr server webinterface. You must select and configure the type you want to use – (e.g. pdo) corresponds with the class (e.g. type pdo will use Tiqr_StateStorage_PDO). 
+To create the Tiqr Service you need to provide it with configuration options for the `Tiqr_Service` as well as the configuration for the `Tiqr_StateStorage`. The `Tiqr_StateStorage` is used to link the API calls from the tiqr client with the API calls from your tiqr server webinterface. You must select and configure the type you want to use – (e.g. pdo) corresponds with the class (e.g. type pdo will use `Tiqr_StateStorage_PDO`).
 
-The APNS and FCM configuration and the Token exchange configuration is required for sending Push Notifications to iOS and Android clients. These push notifications are an optional alternative way to start an authentication for a know user. When not using push notifications the user must always scan a QR code.
+The documentation of all the configuration options can be found in the [Tiqr_Service](library/tiqr/Tiqr/Service.php) class.
+
+The APNS and FCM configuration and the Token exchange configuration is only required for sending Push Notifications to iOS and Android clients. These push notifications are an optional alternative way to start an authentication for a know user and require you to release your own app, under your own name. When not using push notifications the user must always scan a QR code.
 
 ```php
 // Options for Tiqr_Service
@@ -81,11 +81,11 @@ $options = [
     'logoUrl' => "https://tiqr.example.com/logoUrl",
     'infoUrl' => "https://tiqr.example.com/infoUrl",
 
-    // APNS
+    // APNS configuration, required for sending push notifications to iOS devices
     'apns.certificate' => 'files/apns.pem',
     'apns.environment' => 'production',
 
-    // FCM
+    // FCM configuration, required for sending push notifications to Android devices
     'firebase.apikey' => 'your-secret-firebase-api-key',
 
     // Session storage
@@ -97,7 +97,7 @@ $options = [
         'cleanup_probability' => 0.75
     ],
 
-    // Token exchange configuration
+    // Token exchange configuration (deprecated)
     'devicestorage' => [
         'type' => 'tokenexchange',
         'url' => 'tx://tiqr.example.com',
@@ -138,11 +138,9 @@ $service = new Tiqr_Service($options)
 ```
 
 ### Example Usage
-The service has 22 public methods that are used to enroll a new user, but also to run authentications. The purpose of 
-this section is not to be an API documentation. But an example is shown on how the service methods behave.
+The service has 22 public methods that are used to enroll a new user, but also to run authentications. The purpose of this section is not to be an API documentation. But an example is shown on how the service methods behave.
 
-The Tiqr servers purpose is to facilitate Tiqr authentications. In doing so communicating with the Tiqr app. Details
-about this communication flow can be found in the Stepup-Tiqr documentation. Here you will find a communication diagram
+The Tiqr servers purpose is to facilitate Tiqr authentications. In doing so communicating with the Tiqr app. Details about this communication flow can be found in the Stepup-Tiqr documentation. Here you will find a communication diagram
 for enrollment and authentication.
 
 The following code examples show some of the concepts that are used during authentication.
@@ -212,19 +210,12 @@ if ($otherErrorConddition) {
 }
 ```
 
-For more comprehensible examples on how to work with the Tiqr library, have a look at the Tiqr TestServer 
-implementation. It can be found [here](./TestServer/README.md). Or have a look at a real world implementation on our
-[Stepup-tiqr](https://github.com/OpenConext/Stepup-tiqr) project. A good entrypoint is the [TiqrServer](https://github.com/OpenConext/Stepup-tiqr/blob/develop/src/Tiqr/Legacy/TiqrService.php) 
-and the [TiqrFactory](https://github.com/OpenConext/Stepup-tiqr/blob/develop/src/Tiqr/TiqrFactory.php).
+For more comprehensible examples on how to work with the Tiqr library, have a look at the Tiqr TestServer implementation. It can be found [here](./TestServer/README.md). Or have a look at a real world implementation on our [Stepup-tiqr](https://github.com/OpenConext/Stepup-tiqr) project. A good entrypoint is the [TiqrServer](https://github.com/OpenConext/Stepup-tiqr/blob/develop/src/Tiqr/Legacy/TiqrService.php) and the [TiqrFactory](https://github.com/OpenConext/Stepup-tiqr/blob/develop/src/Tiqr/TiqrFactory.php).
 
 # Logging
-An effort was put into providing relevant logging to the library. Logging adheres to the PSR-3 logging standard.
-Services, Repositories and other helper classes are configured with a LoggerInterface instance when they are 
-instantiated. Your application should have a logging solution that can fit into that. Otherwise we suggest looking at
-Monolog as a logging solution that is very flexible, and adheres to the PSR-3 standard.
+We put a lot of effort adding relevant logging to the library. Logging adheres to the PSR-3 logging standard. Services, Repositories and other helper classes in the library are configured with a LoggerInterface instance when they are instantiated. Your application should have a logging solution that can fit into that. Otherwise we suggest looking at Monolog as a logging solution that is very flexible, and adheres to the PSR-3 standard.
 
-In practice, when creating the Tiqr_Service, you need to inject your Logger in the constructor. The factory classes
-also ask for a logger instance, for example: when creating a user secret storage.  
+In practice, when creating the Tiqr_Service, you need to inject your Logger in the constructor. The factory classes also ask for a logger instance, for example: when creating a user secret storage.  
 
 An example using Monolog (your framework will allow you to DI the logger into your own tiqr service implementation):
 
@@ -232,9 +223,9 @@ An example using Monolog (your framework will allow you to DI the logger into yo
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 
-// Create a log channel
+// Create a log channel that logs alle messages of level DEBUG and above to a file
 $logger = new Logger('name');
-$logger->pushHandler(new StreamHandler('path/to/your.log', Logger::WARNING));
+$logger->pushHandler(new StreamHandler('path/to/your.log', Logger::DEBUG));
 
 $this->tiqrService = new Tiqr_Service($logger, $options);
 ```
