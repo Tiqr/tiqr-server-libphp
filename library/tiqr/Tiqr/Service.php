@@ -218,8 +218,8 @@ class Tiqr_Service
      *                     in PEM format.
      *                     Defaults to ../certificates/cert.pem
      * - apns.environment: Whether to use apple's "sandbox" or "production" apns environment
-     * - apns.version:     Which version of the APNS protocol to use. Default: 1
-     *                     Version 1: The deprecated binary APNS protocol (gateway.push.apple.com)
+     * - apns.version:     Which version of the APNS protocol to use. Default: 2
+     *                     Version 1 is the deprecated binary APNS protocol and is no longer supported
      *                     Version 2: The HTTP/2 based protocol (api.push.apple.com)
      * - apns.proxy_host_url: Use a HTTP/1.1 to HTTP/2 proxy to send the apns.version 2 push notification.
      *                        Note: The proxy must take care of the TLS Client authentication to the APNS server
@@ -346,11 +346,10 @@ class Tiqr_Service
             switch ($notificationType) {
                 case 'APNS':
                 case 'APNS_DIRECT':
-                    $apns_version = $this->_options['apns.version'] ?? 1;
-                    if ($apns_version ==2 )
-                        $message = new Tiqr_Message_APNS2($this->_options, $this->logger);
-                    else
-                        $message = new Tiqr_Message_APNS($this->_options, $this->logger);
+                    $apns_version = $this->_options['apns.version'] ?? 2;
+                    if ($apns_version !=2)
+                        throw new InvalidArgumentException("Unsupported APNS version '$apns_version'");
+                    $message = new Tiqr_Message_APNS2($this->_options, $this->logger);
                     break;
 
                 case 'GCM':
