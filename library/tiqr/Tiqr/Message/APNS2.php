@@ -6,9 +6,6 @@ use Pushok\Notification;
 use Pushok\Payload;
 use Pushok\Payload\Alert;
 
-/** @internal includes */
-require_once('Tiqr/Message/Abstract.php');
-
 /**
  * Apple Push Notification Service message class for the HTTP/2 api.push.apple.com APNs API.
  */

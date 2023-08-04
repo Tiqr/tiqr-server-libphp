@@ -1,7 +1,5 @@
 <?php
 
-require_once('Tiqr/API/Entity/APIResult.php');
-
 class Tiqr_API_Client
 {
     /**

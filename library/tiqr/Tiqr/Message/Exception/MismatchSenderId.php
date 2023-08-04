@@ -18,9 +18,6 @@
  */
 
 
-/** @internal includes */
-require_once('Tiqr/Message/Exception.php');
-
 /**
  * Exception in case of a message that cannot be send.
  */

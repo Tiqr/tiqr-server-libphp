@@ -19,8 +19,6 @@
 
 use Psr\Log\LoggerInterface;
 
-require_once 'Tiqr/UserStorage/Interface.php';
-
 /**
  * Abstract base implementation for user storage. 
  *

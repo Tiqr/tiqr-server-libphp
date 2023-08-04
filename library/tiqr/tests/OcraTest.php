@@ -18,7 +18,7 @@
  */
 use PHPUnit\Framework\TestCase;
 
-require_once __DIR__ . '/../Tiqr/OATH/OCRA.php';
+require_once 'tiqr_autoloader.inc';
 
 class OcraTest extends TestCase
 {

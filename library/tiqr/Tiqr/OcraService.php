@@ -17,8 +17,6 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
-require_once("Tiqr/OcraService/Abstract.php");
-
 use Psr\Log\LoggerInterface;
 
 /**
@@ -46,10 +44,8 @@ class Tiqr_OcraService
 
         switch ($type) {
             case "tiqr":
-                require_once("Tiqr/OcraService/Tiqr.php");
                 return new Tiqr_OcraService_Tiqr($options, $logger);
             case "oathserviceclient":
-                require_once("Tiqr/OcraService/OathServiceClient.php");
                 return new Tiqr_OcraService_OathServiceClient($options, $logger);
         }
         throw new RuntimeException(sprintf('Unable to create a OcraService instance of type: %s', $type));

@@ -1,7 +1,5 @@
 <?php
 
-require_once(__DIR__ . "/../Random.php");
-
 class OATH_OCRAParser {
 
 	private $OCRASuite = NULL;

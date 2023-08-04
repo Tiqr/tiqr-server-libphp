@@ -45,10 +45,8 @@ class Tiqr_UserStorage
     {
         switch ($type) {
             case "file":
-                require_once("Tiqr/UserStorage/File.php");
                 return new Tiqr_UserStorage_File($options, $logger);
             case "pdo":
-                require_once("Tiqr/UserStorage/Pdo.php");
                 return new Tiqr_UserStorage_Pdo($options, $logger);
         }
 

@@ -17,8 +17,6 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
-require_once 'Tiqr/UserStorage/Abstract.php';
-
 /**
  * This user storage implementation implements a simple user storage using json files.
  * This is mostly for demonstration and development purposes. In a production environment

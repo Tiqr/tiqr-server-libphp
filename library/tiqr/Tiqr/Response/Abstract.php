@@ -1,7 +1,5 @@
 <?php
 
-require_once 'Tiqr/Response/Interface.php';
-
 /**
  * This file is part of the tiqr project.
  *
@@ -35,7 +33,6 @@ abstract class Tiqr_Response_Abstract implements Tiqr_Response_Interface
      */
     public function createResponse() 
     {
-        require_once("Tiqr/Response/V1.php");
         $instance = new Tiqr_Response_V1();
         return $instance;
     }

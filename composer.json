@@ -31,5 +31,8 @@
         "static-analysis": "./ci/qa/static-analysis",
         "phpunit": "./ci/qa/phpunit",
         "security-tests": "./ci/qa/security-tests"
+    },
+    "autoload": {
+        "classmap": [ "library/tiqr/Tiqr" ]
     }
 }

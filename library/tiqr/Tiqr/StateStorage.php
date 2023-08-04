@@ -18,12 +18,6 @@
  * @copyright (C) 2010-2011 SURFnet BV
  */
 
-
-/**
- * @internal includes
- */
-require_once("Tiqr/StateStorage/Abstract.php");
-
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,7 +45,6 @@ class Tiqr_StateStorage
     {
         switch ($type) {
             case "file":
-                require_once("Tiqr/StateStorage/File.php");
                 if (!array_key_exists('path', $options)) {
                     throw new RuntimeException('The path is missing in the StateStorage configuration');
                 }
@@ -59,13 +52,10 @@ class Tiqr_StateStorage
                 $instance->init();
                 return $instance;
             case "memcache":
-                require_once("Tiqr/StateStorage/Memcache.php");
                 $instance = new Tiqr_StateStorage_Memcache($options, $logger);
                 $instance->init();
                 return $instance;
             case "pdo":
-                require_once("Tiqr/StateStorage/Pdo.php");
-
                 $requiredOptions = ['table', 'dsn', 'username', 'password'];
                 foreach ($requiredOptions as $requirement) {
                     if (!array_key_exists($requirement, $options)) {

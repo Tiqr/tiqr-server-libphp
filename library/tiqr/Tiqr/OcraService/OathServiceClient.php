@@ -20,8 +20,6 @@
 
 use Psr\Log\LoggerInterface;
 
-require_once('Tiqr/API/Client.php');
-
 /**
  * The implementation for the oathservice ocra service class.
  *

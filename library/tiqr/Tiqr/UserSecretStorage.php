@@ -50,7 +50,6 @@ class Tiqr_UserSecretStorage
 
         switch ($type) {
             case "file":
-                require_once("Tiqr/UserSecretStorage/File.php");
                 if (!array_key_exists('path', $options)) {
                     throw new RuntimeException('The path is missing in the UserSecretStorage configuration');
                 }
@@ -81,11 +80,9 @@ class Tiqr_UserSecretStorage
                     );
                     throw ReadWriteException::fromOriginalException($e);
                 }
-
-                require_once("Tiqr/UserSecretStorage/Pdo.php");
                 return new Tiqr_UserSecretStorage_Pdo($encryption, $logger, $handle, $tableName);
+
             case "oathserviceclient":
-                require_once("Tiqr/UserSecretStorage/OathServiceClient.php");
                 if (!array_key_exists('apiURL', $options)) {
                     throw new RuntimeException('The apiURL is missing in the UserSecretStorage configuration');
                 }

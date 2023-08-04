@@ -17,15 +17,6 @@
  * @copyright (C) 2010-2011 SURFnet BV
  */
 
-/** 
- * @internal includes of utility classes
- */
-require_once("Tiqr/StateStorage.php");
-require_once("Tiqr/DeviceStorage.php");
-require_once("Tiqr/Random.php");
-
-require_once("Tiqr/OcraService.php");
-
 use Psr\Log\LoggerInterface;
 
 /** 

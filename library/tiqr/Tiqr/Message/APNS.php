@@ -17,13 +17,6 @@
  * @copyright (C) 2010-2011 SURFnet BV
  */
 
-
-/** @internal includes */
-require_once('Tiqr/Message/Abstract.php');
-
-require_once('Zend/Mobile/Push/Apns.php');
-require_once('Zend/Mobile/Push/Message/Apns.php');
-
 /**
  * Apple Push Notification Service message class.
  * @author peter

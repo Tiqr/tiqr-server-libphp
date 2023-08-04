@@ -19,9 +19,6 @@
 
 use Psr\Log\LoggerInterface;
 
-require_once 'Tiqr/UserStorage/FileTrait.php';
-require_once 'Tiqr/UserStorage/GenericStore.php';
-
 /**
  * This user storage implementation implements a simple user storage using json files.
  * This is mostly for demonstration and development purposes. In a production environment
