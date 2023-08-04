@@ -167,11 +167,14 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         if (((float) rand() /(float) getrandmax()) < $this->cleanupProbability) {
             $this->cleanExpired();
         }
-        if ($this->keyExists($key)) {
-            $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET `value` = ?, `expire` = ? WHERE `key` = ?");
-        } else {
-            $sth = $this->handle->prepare("INSERT INTO ".$this->tablename." (`value`,`expire`,`key`) VALUES (?,?,?)");
-        }
+        // REPLACE INTO is mysql dialect. Supported by sqlite as well.
+        // This does:
+        // INSERT INTO tablename (`value`,`expire`,`key`) VALUES (?,?,?)
+        //   ON CONFLICT UPDATE tablename SET `value`=?, `expire`=? WHERE `key`=?
+        // in pgsql "ON CONFLICT" is "ON DUPLICATE KEY"
+
+        $sth = $this->handle->prepare("REPLACE INTO ".$this->tablename." (`value`,`expire`,`key`) VALUES (?,?,?)");
+
         // $expire == 0 means never expire
         if ($expire != 0) {
             $expire+=time();    // Store unix timestamp after which the key expires
