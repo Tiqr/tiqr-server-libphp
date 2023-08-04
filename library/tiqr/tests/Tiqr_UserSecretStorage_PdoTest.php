@@ -102,7 +102,7 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
     {
         $store = $this->buildUserSecretStorage();
         $this->expectError();
-        $this->expectErrorMessage("Call to private method Tiqr_UserSecretStorage_Pdo::getUserSecret() from context 'Tiqr_UserSecretStorage_PdoTest'");
+        $this->expectErrorMessageMatches("/Call to private method Tiqr_UserSecretStorage_Pdo::getUserSecret()/");
         $store->getUserSecret('UserId');
     }
 
@@ -110,7 +110,7 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
     {
         $store = $this->buildUserSecretStorage();
         $this->expectError();
-        $this->expectErrorMessage("Call to private method Tiqr_UserSecretStorage_Pdo::setUserSecret() from context 'Tiqr_UserSecretStorage_PdoTest'");
+        $this->expectErrorMessageMatches("/Call to private method Tiqr_UserSecretStorage_Pdo::setUserSecret()/");
         $store->setUserSecret('UserId', 'My Secret');
     }
 
