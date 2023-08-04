@@ -286,7 +286,7 @@ class Tiqr_Service
 
         // Set Tiqr protocol version, only version 2 is currently supported
         if ($version !== 2) {
-            throw new Exception("Unsupported protocol version '${version}'");
+            throw new Exception("Unsupported protocol version '$version'");
         }
         $this->_protocolVersion = $version;
 
