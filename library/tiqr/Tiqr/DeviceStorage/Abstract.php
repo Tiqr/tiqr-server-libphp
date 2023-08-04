@@ -59,7 +59,7 @@ abstract class Tiqr_DeviceStorage_Abstract
      * @param array $options The options
      * @param LoggerInterface $logger
      */
-    public function __construct(array $options=array(), LoggerInterface $logger)
+    public function __construct(array $options, LoggerInterface $logger)
     {
         $this->_options = $options;
         $this->logger = $logger;

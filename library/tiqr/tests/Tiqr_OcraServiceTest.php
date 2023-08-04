@@ -10,7 +10,7 @@ class Tiqr_OcraServiceTest extends TestCase
     /**
      * @dataProvider provideValidFactoryTypes
      */
-    public function test_it_can_create_user_sercret_storage($type, $expectedInstanceOf)
+    public function test_it_can_create_ocra_service($type, $expectedInstanceOf)
     {
         $allOptions = [
             'ocra.suite' => 'OCRA-1:HOTP-SHA1-6:QH10-S',
@@ -23,6 +23,19 @@ class Tiqr_OcraServiceTest extends TestCase
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing()
         );
         $this->assertInstanceOf($expectedInstanceOf, $ocraService);
+        $this->assertInstanceOf(Tiqr_OcraService_Interface::class, $ocraService);
+    }
+
+    public function test_it_can_create_ocra_service_with_defaults()
+    {
+        $allOptions = [
+            'ocra.suite' => 'OCRA-1:HOTP-SHA1-6:QH10-S',
+            'apiURL' => '',
+            'consumerKey' => '',
+        ];
+        $ocraService = Tiqr_OcraService::getOcraService();
+        $this->assertEquals(false, $ocraService->verifyResponse('', '', '', '', ''));   // Tests null logger
+        $this->assertInstanceOf(Tiqr_OcraService_Tiqr::class, $ocraService);
         $this->assertInstanceOf(Tiqr_OcraService_Interface::class, $ocraService);
     }
 

@@ -27,7 +27,7 @@ use Psr\Log\LoggerInterface;
 class Tiqr_UserSecretStorage
 {
     /**
-     * Get a secret storage of a certain type (default: 'file')
+     * Get a secret storage of a certain type
      *
      * @param String $type The type of storage to create. Supported
      *                     types are 'file', 'pdo' or 'oathservice'.
@@ -40,7 +40,7 @@ class Tiqr_UserSecretStorage
      * @throws RuntimeException If an unknown type is requested.
      * @throws RuntimeException When the options configuration array misses a required parameter
      */
-    public static function getSecretStorage(string $type = "file", LoggerInterface $logger, array $options = []): Tiqr_UserSecretStorage_Interface
+    public static function getSecretStorage(string $type, LoggerInterface $logger, array $options): Tiqr_UserSecretStorage_Interface
     {
         // If not provided in config, we fall back to dummy (no) encryption
         $encryptionType = $config['encryption']['type'] ?? 'dummy';
