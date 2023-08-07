@@ -265,6 +265,8 @@ class TestServerController
     // Generate a png image QR code with whatever string is given in the code HTTP request parameter.
     private function qr(App $app): void
     {
+        header('Content-type: image/png');
+
         $code = $app->getGET()['code'] ?? '';
         if (strlen($code) == 0) {
             // http://<server>/qr?code=<the string to encode>
@@ -279,7 +281,7 @@ class TestServerController
     //   <host_url>/metadata?enrollment_key=<enrollment_key>
     private function metadata(App $app)
     {
-        // The enrollment key must be there, it binds the user's browser session to the request comming from
+        // The enrollment key must be there, it binds the user's browser session to the request coming from
         // the user's tiqr client
         $enrollment_key = $app->getGET()['enrollment_key'] ?? '';
         if (strlen($enrollment_key) == 0) {
@@ -290,13 +292,9 @@ class TestServerController
         $enrollment_secret = $this->tiqrService->getEnrollmentSecret($enrollment_key);
         $app::log_info("Created enrollment secret $enrollment_secret for enrollment key $enrollment_key");
 
-        // -----BEGIN NOTE-----
-        // The enrollment_secret must be added manually to the enrollment URL.
-        // I do not see why getEnrollmentMetadata cannot handle this for us en return the enrollment_secret
-        // to the tiqr client as part of the $enrollment_metadata. That would make the call to getEnrollmentSecret()
-        // redundant en the gereration of the metadata simpler. The Tiqr client could then return the enrollment_secret
-        // in it's POST back to the $enrollment_url.
-        // -----END NOTE-----
+        // Note: The enrollment_secret must be added manually to the enrollment URL.
+        // This makes the process of generating the enrollment URL more complex, but gives
+        // the application full control over how the URL is formatted
 
         // Add enrollment_secret to the $enrollment_url
         $enrollment_url = $this->host_url . "/finish-enrollment?enrollment_secret=$enrollment_secret";
@@ -319,7 +317,7 @@ class TestServerController
             }
         }
         // The enrollment metadata must be returned to the client as JSON
-        $enrollment_metadata_json = json_encode($enrollment_metadata);
+        $enrollment_metadata_json = json_encode($enrollment_metadata, JSON_UNESCAPED_SLASHES);
         $app::log_info("Return: $enrollment_metadata_json");
         header("content-type: application/json");
         echo $enrollment_metadata_json;
