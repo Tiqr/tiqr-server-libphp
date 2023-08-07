@@ -303,15 +303,17 @@ class Tiqr_Service
     }
     
     /**
-     * Generate an authentication challenge QR image and send it directly to 
-     * the browser.
-     * 
-     * In normal authentication mode, you would not specify a userId - however
-     * in step up mode, where a user is already authenticated using a
-     * different mechanism, pass the userId of the authenticated user to this 
-     * function. 
+     * Generate an authentication challenge QR image in PNG format and send it directly to
+     * the PHP output buffer
+     *
+     * You are responsible for sending the "Content-type: image/png" HTTP header when sending this output to a
+     * webbrowser, e.g.: header('Content-type: image/png')
+     *
      * @param String $sessionKey The sessionKey identifying this auth session (typically returned by startAuthenticationSession)
      * @throws Exception
+     *
+     * @see generateAuthURL
+     *
      */
     public function generateAuthQR(string $sessionKey): void
     {
@@ -321,14 +323,31 @@ class Tiqr_Service
     }
 
     /**
-     * Generate a QR image and send it directly to
-     * the browser.
+     * Generate a QR image in PNG format and send it directly to
+     * the PHP output buffer
+     *
+     * You are responsible for sending the "Content-type: image/png" HTTP header when sending this output to a
+     * webbrowser, e.g.: header('Content-type: image/png')
      *
      * @param String $s The string to be encoded in the QR image
      */
     public function generateQR(string $s): void
     {
-        QRcode::png($s, false, 4, 5);
+        try {
+            $options = new \chillerlan\QRCode\QROptions;
+            $options->imageBase64 = false; // output raw image instead of base64 data URI
+            $options->eccLevel = \chillerlan\QRCode\QRCode::ECC_L;
+            $options->outputType = \chillerlan\QRCode\QRCode::OUTPUT_IMAGE_PNG;
+            $options->scale = 5;
+
+            echo (new \chillerlan\QRCode\QRCode($options))->render($s);
+        } catch (Exception $e) {
+            $this->logger->error(
+                "Error generating QR code",
+                array('exception' =>$e)
+            );
+            throw $e;
+        }
     }
 
     /**
@@ -382,10 +401,20 @@ class Tiqr_Service
      * This URL can be used to link directly to the authentication
      * application, for example to create a link in a mobile website on the
      * same device as where the application is installed
+     *
+     * Opening the URL in the authentication application start the authentication
+     * of a previously enrolled account.
+     *
+     * You can encode this URL in a QR code to scan it in the Tiqr app using you own
+     * QR code library, or use generateQR()
+     *
+     *
      * @param String $sessionKey The session key identifying this authentication session
      *
      * @return string Authentication URL for the tiqr client
      * @throws Exception
+     *
+     * @see Tiqr_Service::generateQR()
      */
     public function generateAuthURL(string $sessionKey): string
     {
@@ -519,24 +548,45 @@ class Tiqr_Service
     }
         
     /**
-     * Generate an enrollment QR code and send it to the browser.
+     * Generate an enrollment QR code in PNG format and send it to the PHP
+     * output buffer
+     *
+     * You are responsible for sending the "Content-type: image/png" HTTP header, e.g.:
+     *       header('Content-type: image/png')
+     *
      * @param String $metadataUrl The URL you provide to the phone to retrieve
      *                            metadata. This URL must contain the enrollmentKey
      *                            provided by startEnrollmentSession (you can choose
      *                            the variable name as you are responsible yourself
      *                            for retrieving this from the request and passing it
      *                            on to the Tiqr server.
+     * @throws Exception
+     * @see Tiqr_Service::generateEnrollString()
+     *
      */
     public function generateEnrollmentQR(string $metadataUrl): void
     { 
         $enrollmentString = $this->_getEnrollString($metadataUrl);
-        
-        QRcode::png($enrollmentString, false, 4, 5);
+
+        $this->generateQR($enrollmentString);
     }
 
     /**
-     * Generate an enroll string
-     * This string can be used to feed to a QR code generator
+     * Generate an enrollment URL
+     *
+     * This URL can be used to link directly to the authentication
+     * application, for example to create a link in a mobile website on the
+     * same device as where the application is installed
+     *
+     * Opening an enrollment url starts the enrollment process in the
+     * authentication application (e.g. the Tiqr client)
+     *
+     * You can encode this URL in a QR code to scan it in the Tiqr app using you own
+     * QR code library, or use generateQR()
+     *
+     * @return The enrollment URL
+     *
+     * @see Tiqr_Service::generateQR()
      */
     public function generateEnrollString(string $metadataUrl): string
     {
