@@ -557,7 +557,7 @@ class Tiqr_Service
      * You can encode this URL in a QR code to scan it in the Tiqr app using you own
      * QR code library, or use generateQR()
      *
-     * @return The enrollment URL
+     * @return string: The enrollment URL
      *
      * @see Tiqr_Service::generateQR()
      */
