@@ -18,11 +18,8 @@
  */
 
 
-/** @internal includes */
-require_once('Tiqr/Message/Exception.php');
-
 /**
- * Exception in case of a message that cannot be send.
+ * Exception in case of a message that cannot be sent.
  */
 class Tiqr_Message_Exception_SendFailure extends Tiqr_Message_Exception
 {

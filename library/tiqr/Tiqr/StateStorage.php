@@ -18,12 +18,6 @@
  * @copyright (C) 2010-2011 SURFnet BV
  */
 
-
-/**
- * @internal includes
- */
-require_once("Tiqr/StateStorage/Abstract.php");
-
 use Psr\Log\LoggerInterface;
 
 /**
@@ -36,7 +30,7 @@ use Psr\Log\LoggerInterface;
 class Tiqr_StateStorage
 {
     /**
-     * Get a storage of a certain type (default: 'file')
+     * Get a storage of a certain type
      * @param String $type The type of storage to create. Supported
      *                     types are 'file', 'pdo' and 'memcache'.
      * @param array $options The options to pass to the storage
@@ -47,11 +41,10 @@ class Tiqr_StateStorage
      * @throws RuntimeException When the options configuration array misses a required parameter
      *
      */
-    public static function getStorage(string $type="file", array $options=array(), LoggerInterface $logger)
+    public static function getStorage(string $type, array $options, LoggerInterface $logger)
     {
         switch ($type) {
             case "file":
-                require_once("Tiqr/StateStorage/File.php");
                 if (!array_key_exists('path', $options)) {
                     throw new RuntimeException('The path is missing in the StateStorage configuration');
                 }
@@ -59,13 +52,10 @@ class Tiqr_StateStorage
                 $instance->init();
                 return $instance;
             case "memcache":
-                require_once("Tiqr/StateStorage/Memcache.php");
                 $instance = new Tiqr_StateStorage_Memcache($options, $logger);
                 $instance->init();
                 return $instance;
             case "pdo":
-                require_once("Tiqr/StateStorage/Pdo.php");
-
                 $requiredOptions = ['table', 'dsn', 'username', 'password'];
                 foreach ($requiredOptions as $requirement) {
                     if (!array_key_exists($requirement, $options)) {

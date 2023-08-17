@@ -21,6 +21,13 @@ class Tiqr_DeviceStorageTest extends TestCase
         $this->assertInstanceOf(Tiqr_DeviceStorage_Abstract::class, $deviceStorage);
     }
 
+    public function test_it_can_create_device_storage_with_defaults()
+    {
+        $deviceStorage = Tiqr_DeviceStorage::getStorage();
+        $this->assertInstanceOf(Tiqr_DeviceStorage_Dummy::class, $deviceStorage);
+        $this->assertInstanceOf(Tiqr_DeviceStorage_Abstract::class, $deviceStorage);
+    }
+
     public function test_it_can_not_create_storage_by_fqn_storage()
     {
         $this->expectException(RuntimeException::class);

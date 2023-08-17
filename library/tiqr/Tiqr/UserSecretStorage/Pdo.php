@@ -21,8 +21,6 @@
  * 
  */
 
-require_once 'Tiqr/UserSecretStorage/UserSecretStorageTrait.php';
-
 use Psr\Log\LoggerInterface;
 
 /**

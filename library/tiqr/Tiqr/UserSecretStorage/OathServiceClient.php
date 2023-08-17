@@ -19,8 +19,6 @@
 
 use Psr\Log\LoggerInterface;
 
-require_once('Tiqr/API/Client.php');
-
 /**
  * OATHService storage for user's secret
  */

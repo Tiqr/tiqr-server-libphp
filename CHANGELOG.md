@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.0.0
+* Switch to the composer autoloader. Removed the `Tiqr_Autoloader` class. This means you must now use composer to use this library, or add your own autoloading.
+* Remove support for Apple push notifications (APNS) v1, and the Zend Framework 1 dependency that it required. The library now only supports APNS v2.
+* Add support for PHP 8.x
+* Replace the abandoned kairos/phpqrcode QR code library by chillerlan/php-qrcode as suggested by the author
+* Documentation updates and corrections. Move security related documentation to SECURITY.md
+
 ## 3.0.2
 * Fix usersecretstorage not throwing on PDO error (#47)
 

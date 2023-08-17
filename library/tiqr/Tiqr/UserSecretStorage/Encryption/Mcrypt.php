@@ -16,8 +16,6 @@
  *
  * @copyright (C) 2010-2012 SURFnet BV
  */
- 
-require_once 'Tiqr/UserSecretStorage/Encryption/Interface.php';
 
 /**
  * Class for encrypting/decrypting the user secret with mcrypt.

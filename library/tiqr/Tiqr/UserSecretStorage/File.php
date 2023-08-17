@@ -19,9 +19,6 @@
 
 use Psr\Log\LoggerInterface;
 
-require_once 'Tiqr/UserStorage/FileTrait.php';
-require_once 'Tiqr/UserSecretStorage/UserSecretStorageTrait.php';
-
 /**
  * This user storage implementation implements a simple user's secret storage using json files.
  * This is mostly for demonstration and development purposes. In a production environment

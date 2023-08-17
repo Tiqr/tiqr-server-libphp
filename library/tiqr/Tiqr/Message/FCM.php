@@ -17,10 +17,6 @@
  * @copyright (C) 2010-2015 SURFnet BV
  */
 
-
-/** @internal base includes */
-require_once('Tiqr/Message/Abstract.php');
-
 /**
  * Android Cloud To Device Messaging message.
  * @author peter

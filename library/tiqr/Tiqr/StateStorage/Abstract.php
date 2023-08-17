@@ -60,7 +60,7 @@ abstract class Tiqr_StateStorage_Abstract implements Tiqr_StateStorage_StateStor
      * a state storage instance of a certain type.
      * @param array $options An array of options for the state storage
      */
-    public function __construct($options=array(), LoggerInterface $logger)
+    public function __construct($options, LoggerInterface $logger)
     {
         $this->logger = $logger;
         $this->_options = $options;

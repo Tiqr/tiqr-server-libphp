@@ -18,11 +18,6 @@
  */
 
 
-/**
- * @internal includes
- */
-require_once("Tiqr/DeviceStorage/Abstract.php");
-
 use Psr\Log\LoggerInterface;
 
 /**
@@ -45,16 +40,17 @@ class Tiqr_DeviceStorage
      * @param LoggerInterface $logger
      * @throws Exception An exception if an unknown storage is requested.
      */
-    public static function getStorage($type="dummy", $options=array(), LoggerInterface $logger)
+    public static function getStorage(string $type="dummy", Array $options=array(), LoggerInterface $logger=null)
     {
+        if (!$logger)
+            $logger=new \Psr\Log\NullLogger();
+
         switch ($type) {
             case "dummy":
-                require_once("Tiqr/DeviceStorage/Dummy.php");
                 $instance = new Tiqr_DeviceStorage_Dummy($options, $logger);
                 $instance->init();
                 return $instance;
             case "tokenexchange":
-                require_once("Tiqr/DeviceStorage/TokenExchange.php");
                 $instance = new Tiqr_DeviceStorage_TokenExchange($options, $logger);
                 $instance->init();
                 return $instance;

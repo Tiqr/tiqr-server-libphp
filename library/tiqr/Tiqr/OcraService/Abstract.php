@@ -19,8 +19,6 @@
 
 use Psr\Log\LoggerInterface;
 
-require_once(__DIR__ . '/../OATH/OCRAParser.php');
-
 abstract class Tiqr_OcraService_Abstract implements Tiqr_OcraService_Interface
 {
     /** @var OATH_OCRAParser */

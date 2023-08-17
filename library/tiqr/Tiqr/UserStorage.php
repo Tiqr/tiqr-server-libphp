@@ -27,7 +27,7 @@ use Psr\Log\LoggerInterface;
 class Tiqr_UserStorage
 {
     /**
-     * Get a storage of a certain type (default: 'file')
+     * Get a storage of a certain type
      *
      * @param String $type The type of storage to create. Supported
      *                     types are 'file', 'pdo' or the full class name of a custom solution.
@@ -41,14 +41,12 @@ class Tiqr_UserStorage
      *
      * @throws Exception An exception if an unknown user storage is requested.
      */
-    public static function getStorage(string $type="file", array $options=array(), LoggerInterface $logger): Tiqr_UserStorage_Interface
+    public static function getStorage(string $type, array $options, LoggerInterface $logger): Tiqr_UserStorage_Interface
     {
         switch ($type) {
             case "file":
-                require_once("Tiqr/UserStorage/File.php");
                 return new Tiqr_UserStorage_File($options, $logger);
             case "pdo":
-                require_once("Tiqr/UserStorage/Pdo.php");
                 return new Tiqr_UserStorage_Pdo($options, $logger);
         }
 
