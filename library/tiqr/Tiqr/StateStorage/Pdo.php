@@ -111,30 +111,6 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
     }
 
     /**
-     * @param string $key to lookup
-     * @return bool true when $key is found, false when the key does not exist
-     * @throws ReadWriteException
-     */
-    private function keyExists(string $key): bool
-    {
-        if (empty($key)) {
-            throw new InvalidArgumentException('Empty key not allowed');
-        }
-        try {
-            $sth = $this->handle->prepare('SELECT `key` FROM ' . $this->tablename . ' WHERE `key` = ?');
-            $sth->execute(array($key));
-            return $sth->fetchColumn() !== false;
-        }
-        catch (Exception $e) {
-            $this->logger->error(
-                sprintf('Error checking for key "%s" in PDO StateStorage', $key),
-                array('exception' => $e)
-            );
-            throw ReadWriteException::fromOriginalException($e);
-        }
-    }
-
-    /**
      * Remove expired keys
      * This is a maintenance task that should be periodically run
      * Does not throw
