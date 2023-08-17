@@ -56,17 +56,9 @@ class TestServerController
         $this->storageDir = $storage_dir;
         $this->logger = $logger;
         $this->host_url = $host_url;
-        $this->initTiqrLibrary();
         $this->tiqrService = $this->createTiqrService($host_url, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_apikey);
         $this->userStorage = $this->createUserStorage();
         $this->userSecretStorage = $this->createUserSecretStorage();        
-    }
-
-    /** Initialize the tiqr-server-libphp's autoloader
-     * @return void
-     */
-    private function initTiqrLibrary()
-    {
     }
 
     /**

@@ -40,7 +40,7 @@ class Tiqr_DeviceStorage
      * @param LoggerInterface $logger
      * @throws Exception An exception if an unknown storage is requested.
      */
-    public static function getStorage($type="dummy", $options=array(), LoggerInterface $logger=null)
+    public static function getStorage(string $type="dummy", Array $options=array(), LoggerInterface $logger=null)
     {
         if (!$logger)
             $logger=new \Psr\Log\NullLogger();

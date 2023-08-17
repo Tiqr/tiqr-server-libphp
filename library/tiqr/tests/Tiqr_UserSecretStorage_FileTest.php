@@ -54,7 +54,8 @@ class Tiqr_UserSecretStorage_FileTest extends TestCase
     {
         $store = $this->buildUserSecretStorage();
         $this->expectError();
-        $this->expectErrorMessageMatches("/Call to private method Tiqr_UserSecretStorage_File::getUserSecret()/");
+        $this->expectErrorMessage("Call to private method Tiqr_UserSecretStorage_File::getUserSecret()");
+        $this->expectErrorMessage("Tiqr_UserSecretStorage_FileTest");
         $store->getUserSecret('UserId');
     }
 
@@ -62,7 +63,8 @@ class Tiqr_UserSecretStorage_FileTest extends TestCase
     {
         $store = $this->buildUserSecretStorage();
         $this->expectError();
-        $this->expectErrorMessageMatches("/Call to private method Tiqr_UserSecretStorage_File::setUserSecret()/");
+        $this->expectErrorMessage("Call to private method Tiqr_UserSecretStorage_File::setUserSecret()");
+        $this->expectErrorMessage("Tiqr_UserSecretStorage_FileTest");
         $store->setUserSecret('UserId', 'My Secret');
     }
 

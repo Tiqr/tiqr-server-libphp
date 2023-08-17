@@ -17,6 +17,8 @@
  * @copyright (C) 2010-2011 SURFnet BV
  */
 
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 use Psr\Log\LoggerInterface;
 
 /** 
@@ -307,13 +309,13 @@ class Tiqr_Service
     public function generateQR(string $s): void
     {
         try {
-            $options = new \chillerlan\QRCode\QROptions;
+            $options = new QROptions;
             $options->imageBase64 = false; // output raw image instead of base64 data URI
-            $options->eccLevel = \chillerlan\QRCode\QRCode::ECC_L;
-            $options->outputType = \chillerlan\QRCode\QRCode::OUTPUT_IMAGE_PNG;
+            $options->eccLevel = QRCode::ECC_L;
+            $options->outputType = QRCode::OUTPUT_IMAGE_PNG;
             $options->scale = 5;
 
-            echo (new \chillerlan\QRCode\QRCode($options))->render($s);
+            echo (new QRCode($options))->render($s);
         } catch (Exception $e) {
             $this->logger->error(
                 "Error generating QR code",
