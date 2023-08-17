@@ -26,14 +26,15 @@ Basically anyone who wants to implement a Tiqr server for their Tiqr client Apps
 # History
 A brief overview of notable points in time of this project
 
-- 2010: This project wat initially created in 2010.
+- 2010: This project was initially created in 2010
 - 2012: The project was moved from a local SVN to GitHub
 - 2014: The UserSecretStorage and the Ocra implementation was created
 - 2015: GCM push message support was added, and several cleanup tasks where performed
 - 2019: FCM push message support was added
 - 2020: PHP 5 support was dropped
-- 2022: Unit & integration test coverage was added
-- 2022: Major refactoring of UserStorage and UserSecretStorage classes, addition of PSR Logging, removal of deprecated functionality
+- 2022: Unit & integration test coverage was added, added TestServer
+- 2022: 3.3: Major refactoring of UserStorage and UserSecretStorage classes, addition of PSR Logging, removal of deprecated functionality, security hardening
+- 2023: 4.0: Switch to composer autoloader, add PHP 8 support, remove APNS v1 and Zend library dependency 
 
 # Ecosystem
 The tiqr-server-libphp uses external libraries sparingly. It uses libraries for sending push notifications and for generating QR code images.
@@ -131,8 +132,6 @@ $service = new Tiqr_Service($options)
 
 ### Example Usage
 The service has 22 public methods that are used to enroll a new user, but also to run authentications. The purpose of this section is not to be an API documentation. But an example is shown on how the service methods behave.
-
-
 
 For more comprehensible examples on how to work with the Tiqr library, have a look at the Tiqr TestServer implementation. It can be found [here](./TestServer/README.md). Or have a look at a real world implementation on our [Stepup-tiqr](https://github.com/OpenConext/Stepup-tiqr) project. A good entrypoint is the [TiqrServer](https://github.com/OpenConext/Stepup-tiqr/blob/develop/src/Tiqr/Legacy/TiqrService.php) and the [TiqrFactory](https://github.com/OpenConext/Stepup-tiqr/blob/develop/src/Tiqr/TiqrFactory.php).
 
