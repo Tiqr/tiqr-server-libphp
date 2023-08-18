@@ -43,9 +43,9 @@ class Tiqr_UserSecretStorage
     public static function getSecretStorage(string $type, LoggerInterface $logger, array $options): Tiqr_UserSecretStorage_Interface
     {
         // If not provided in config, we fall back to dummy (no) encryption
-        $encryptionType = $config['encryption']['type'] ?? 'dummy';
+        $encryptionType = $options['encryption']['type'] ?? 'dummy';
         // If the encryption configuration is not configured, we fall back to an empty encryption configuration
-        $encryptionOptions = $config['encryption'] ?? [];
+        $encryptionOptions = $options['encryption'] ?? [];
         $encryption = Tiqr_UserStorage_Encryption::getEncryption($logger, $encryptionType, $encryptionOptions);
 
         switch ($type) {
