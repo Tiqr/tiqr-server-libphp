@@ -17,6 +17,8 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
+use Psr\Log\LoggerInterface;
+
 /**
  * Interface for encrypting/decrypting the user secret.
  * 
@@ -27,25 +29,26 @@ interface Tiqr_UserSecretStorage_Encryption_Interface
     /**
      * Construct an encryption instance.
      *
-     * @param $config The configuration that a specific configuration class may use.
+     * @param array $config The configuration
+     * @throws RuntimeException
      */
-    public function __construct($config);
+    public function __construct(array $config);
     
     /**
      * Encrypts the given data. 
      *
-     * @param String $data Data to encrypt.
-     *
-     * @return encrypted data
+     * @param string $data Data to encrypt
+     * @return string encrypted data
+     * @throws RuntimeException
      */
-    public function encrypt($data);
+    public function encrypt(string $data) : string;
     
     /**
       * Decrypts the given data.
      *
-     * @param String $data Data to decrypt.
-     *
-     * @return decrypted data
+     * @param string $data Data to decrypt
+     * @return string decrypted data
+     * @throws RuntimeException
      */
-    public function decrypt($data);
+    public function decrypt(string $data) : string;
 }

@@ -5,6 +5,29 @@ require_once 'tiqr_autoloader.inc';
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
+class CustomEncryptionClass_2 implements Tiqr_UserSecretStorage_Encryption_Interface
+{
+    public function __construct(array $options = array())
+    {
+        if (!isset($options['my_custom_option'])) {
+            throw new RuntimeException("Missing option 'my_custom_option'");
+        }
+        if ($options['my_custom_option'] != 'my_custom_value') {
+            throw new RuntimeException("Missing value for 'my_custom_option'");
+        }
+    }
+
+    public function encrypt(string $data): string
+    {
+        return $data;
+    }
+
+    public function decrypt(string $data): string
+    {
+        return $data;
+    }
+}
+
 class Tiqr_UserSecretStorageTest extends TestCase
 {
     /**
@@ -49,6 +72,26 @@ class Tiqr_UserSecretStorageTest extends TestCase
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing(),
             []
         );
+    }
+
+    public function test_it_can_create_custom_encryption_class()
+    {
+            $options = array(
+                // Encryption configuration
+                'encryption' => array(
+                    'type' => CustomEncryptionClass_2::class,
+                    'my_custom_option' => 'my_custom_value'
+                ),
+
+                // UserSecretStorage configuration
+                'path' => './',
+            );
+        $userSecretStorage=Tiqr_UserSecretStorage::getSecretStorage(
+            'file',
+            Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing(),
+            $options
+        );
+        $this->assertInstanceOf(Tiqr_UserSecretStorage_Interface::class, $userSecretStorage);
     }
 
     /**

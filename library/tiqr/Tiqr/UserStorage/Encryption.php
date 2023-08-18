@@ -40,13 +40,18 @@ class Tiqr_UserStorage_Encryption
      */
     public static function getEncryption(LoggerInterface $logger, string $type="dummy", array $options=array()): Tiqr_UserSecretStorage_Encryption_Interface
     {
-        $logger->info(sprintf('Using %s as UserStorage encryption type', $type));
+        $instance = null;
+        $logger->info(sprintf('Using "%s" as UserSecretStorage encryption type', $type));
         switch ($type) {
             case "dummy":
                 $instance = new Tiqr_UserSecretStorage_Encryption_Dummy($options);
                 break;
-            default: 
-                $instance = new $type($options);
+            default:
+                if (class_exists($type)) {
+                    $instance = new $type($options);
+                } else {
+                    throw new RuntimeException(sprintf("Class '%s' not found", $type));
+                }
         }
         
         return $instance;
