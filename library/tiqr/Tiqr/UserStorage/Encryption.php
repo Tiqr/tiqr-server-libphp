@@ -27,14 +27,14 @@ use Psr\Log\LoggerInterface;
 class Tiqr_UserStorage_Encryption
 {
     /**
-     * Get an encryption handler of a certain type (default: 'file')
+     * Get an encryption handler of a certain type (default: 'dummy')
      *
-     * @param String $type The type of storage to create. Supported
-     *                     types are 'dummy', 'mcrypt' or the full class name.
-     * @param array $options The options to pass to the storage
-     *                       instance. See the documentation
-     *                       in the Encryption subdirectory for
-     *                       options per type.
+     * @param LoggerInterface $logger
+     * @param String $type The type of storage to create. Supported types are 'dummy' (default)
+     *                     or any class implementing Tiqr_UserSecretStorage_Encryption_Interface.
+     *                     In that case $type should be the full class name.
+     * @param array $options The options to pass to the storage instance. See the documentation
+     *                       in the Encryption subdirectory for options per type.
      *
      * @return Tiqr_UserSecretStorage_Encryption_Interface
      */
@@ -44,9 +44,6 @@ class Tiqr_UserStorage_Encryption
         switch ($type) {
             case "dummy":
                 $instance = new Tiqr_UserSecretStorage_Encryption_Dummy($options);
-                break;
-            case "mcrypt":
-                $instance = new Tiqr_UserSecretStorage_Encryption_Mcrypt($options);
                 break;
             default: 
                 $instance = new $type($options);
