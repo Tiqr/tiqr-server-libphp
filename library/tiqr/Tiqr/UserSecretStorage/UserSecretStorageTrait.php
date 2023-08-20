@@ -18,17 +18,53 @@
 
 trait UserSecretStorageTrait
 {
+    /**
+     * @var EncryptionInterface
+     */
     private $encryption;
+
+    /**
+     * @var array() of type_id (prefix) => EncryptionInterface
+     */
+
+    private $decryption;
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
      * Get the user's secret
      * @param String $userId
      * @return String The user's secret
+     * @throws Exception
      */
     public function getSecret(string $userId): string
     {
         $encryptedSecret = $this->getUserSecret($userId);
-        return $this->encryption->decrypt($encryptedSecret);
+        $pos = strpos($encryptedSecret, ':');
+        if ($pos === false) {
+            // If the secret is not prefixed with the encryption type_id, it is assumed to be unencrypted.
+            $this->logger->info("Secret for user '$userId' is not prefixed with the encryption type, assuming that it is not unencrypted");
+            return $encryptedSecret;
+        }
+
+        $prefix = substr($encryptedSecret, 0, $pos);
+        if ($prefix === $this->encryption->get_type()) {
+            // Decrypt the secret if it is prefixed with the current encryption type
+            // Remove the encryption type prefix before decrypting
+           return $this->encryption->decrypt( substr($encryptedSecret, $pos+1) );
+        }
+
+        // Check the decryption array for the encryption type to see if there is an encryption
+        // instance defined for it. If so, use that to decrypt the secret.
+        if (isset($this->decryption[$prefix])) {
+            return $this->decryption[$prefix]->decrypt( substr($encryptedSecret, $pos+1) );
+        }
+
+        $this->logger->error("Secret for user '$userId' is encrypted with unsupported encryption type '$prefix'");
+        throw new RuntimeException("Secret for user '$userId' is encrypted with an unsupported encryption type");
     }
 
     /**
@@ -40,6 +76,7 @@ trait UserSecretStorageTrait
     public function setSecret(string $userId, string $secret): void
     {
         $encryptedSecret = $this->encryption->encrypt($secret);
-        $this->setUserSecret($userId, $encryptedSecret);
+        // Prefix the user secret with the encryption type
+        $this->setUserSecret($userId, $this->encryption->get_type() . ':' . $encryptedSecret);
     }
 }

@@ -9,6 +9,7 @@ class CustomEncryptionClass_2 implements Tiqr_UserSecretStorage_Encryption_Inter
 {
     public function __construct(array $options = array())
     {
+        // Check passing options work
         if (!isset($options['my_custom_option'])) {
             throw new RuntimeException("Missing option 'my_custom_option'");
         }
@@ -17,15 +18,10 @@ class CustomEncryptionClass_2 implements Tiqr_UserSecretStorage_Encryption_Inter
         }
     }
 
-    public function encrypt(string $data): string
-    {
-        return $data;
-    }
-
+    public function encrypt(string $data): string { return $data; }
     public function decrypt(string $data): string
-    {
-        return $data;
-    }
+    { return $data; }
+    public function get_type() : string { return 'CustomEncryptionClass_2'; }
 }
 
 class Tiqr_UserSecretStorageTest extends TestCase

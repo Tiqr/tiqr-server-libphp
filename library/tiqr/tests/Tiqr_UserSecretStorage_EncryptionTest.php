@@ -27,18 +27,34 @@ class CustomEncryptionClass_1 implements Tiqr_UserSecretStorage_Encryption_Inter
     {
         return $data;
     }
+
+    public function get_type() : string
+    {
+        return 'CustomEncryptionClass_1';
+    }
 }
 
-class Tiqr_UserStorage_EncryptionTest extends TestCase
+class Tiqr_UserSecretStorage_EncryptionTest extends TestCase
 {
     public function test_it_can_create_dummy_encryption()
     {
-        $userSecretStorage_Encryption=Tiqr_UserStorage_Encryption::getEncryption(
+        $userSecretStorage_Encryption=Tiqr_UserSecretStorage_Encryption::getEncryption(
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing(),
             'dummy'
         );
 
-        $this->assertInstanceOf(Tiqr_UserSecretStorage_Encryption_Dummy::class, $userSecretStorage_Encryption);
+        $this->assertInstanceOf(Tiqr_UserSecretStorage_Encryption_Plain::class, $userSecretStorage_Encryption);
+        $this->assertInstanceOf(Tiqr_UserSecretStorage_Encryption_Interface::class, $userSecretStorage_Encryption);
+    }
+
+    public function test_it_can_create_plain_encryption()
+    {
+        $userSecretStorage_Encryption=Tiqr_UserSecretStorage_Encryption::getEncryption(
+            Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing(),
+            'plain'
+        );
+
+        $this->assertInstanceOf(Tiqr_UserSecretStorage_Encryption_Plain::class, $userSecretStorage_Encryption);
         $this->assertInstanceOf(Tiqr_UserSecretStorage_Encryption_Interface::class, $userSecretStorage_Encryption);
     }
 
@@ -46,7 +62,7 @@ class Tiqr_UserStorage_EncryptionTest extends TestCase
     {
         $this->expectExceptionMessage("Class 'type_that_does_not_exist' not found");
 
-        $userSecretStorage_Encryption=Tiqr_UserStorage_Encryption::getEncryption(
+        $userSecretStorage_Encryption=Tiqr_UserSecretStorage_Encryption::getEncryption(
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing(),
             'type_that_does_not_exist'
         );
@@ -54,7 +70,7 @@ class Tiqr_UserStorage_EncryptionTest extends TestCase
 
     public function test_it_can_create_custom_encryption()
     {
-        $userSecretStorage_Encryption=Tiqr_UserStorage_Encryption::getEncryption(
+        $userSecretStorage_Encryption=Tiqr_UserSecretStorage_Encryption::getEncryption(
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing(),
             CustomEncryptionClass_1::class,
             array('my_custom_option' => 'my_custom_value')

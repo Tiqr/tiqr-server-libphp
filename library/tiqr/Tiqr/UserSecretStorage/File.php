@@ -39,20 +39,20 @@ class Tiqr_UserSecretStorage_File implements Tiqr_UserSecretStorage_Interface
     use UserSecretStorageTrait;
     use FileTrait;
 
-    private $userSecretStorage;
-
-    private $logger;
-
     private $path;
 
     public function __construct(
         Tiqr_UserSecretStorage_Encryption_Interface $encryption,
         string $path,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        array $decryption = array()
     ) {
         // See UserSecretStorageTrait
         $this->encryption = $encryption;
+        $this->decryption = $decryption;
         $this->logger = $logger;
+
+        // See FileTrait
         $this->path = $path;
     }
 

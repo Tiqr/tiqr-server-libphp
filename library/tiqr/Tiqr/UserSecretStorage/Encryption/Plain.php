@@ -21,10 +21,11 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Dummy encryption class, returns the data as is.
+ * Does not actually encrypt/decrypt the data.
  * 
  * @author peter
  */
-class Tiqr_UserSecretStorage_Encryption_Dummy implements Tiqr_UserSecretStorage_Encryption_Interface
+class Tiqr_UserSecretStorage_Encryption_Plain implements Tiqr_UserSecretStorage_Encryption_Interface
 {
     /**
      * Construct an encryption instance.
@@ -58,5 +59,10 @@ class Tiqr_UserSecretStorage_Encryption_Dummy implements Tiqr_UserSecretStorage_
     public function decrypt(string $data) : string
     {
         return $data;
+    }
+
+    public function get_type() : string
+    {
+        return 'plain';
     }
 }

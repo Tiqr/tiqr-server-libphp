@@ -35,7 +35,7 @@ interface Tiqr_UserSecretStorage_Encryption_Interface
     public function __construct(array $config);
     
     /**
-     * Encrypts the given data. 
+     * Encrypts the given data. Throws an exception if the data cannot be encrypted.
      *
      * @param string $data Data to encrypt
      * @return string encrypted data
@@ -44,11 +44,24 @@ interface Tiqr_UserSecretStorage_Encryption_Interface
     public function encrypt(string $data) : string;
     
     /**
-      * Decrypts the given data.
+     * Decrypts the given data. May throw an exception if the data cannot be decrypted
      *
      * @param string $data Data to decrypt
      * @return string decrypted data
      * @throws RuntimeException
      */
     public function decrypt(string $data) : string;
+
+    /**
+     * Get a string that identifies the encryption implementation
+     * It is recommended to use a short lowercase string that identifies the encryption implementation that is used.
+     * The type is stored as part of the encrypted secret to allow the correct encryption implementation
+     * to be selected to decrypt a secret at runtime.
+     *
+     * It must not contain any spaces or special characters.
+     *
+     * @return string The type of encryption
+     * @throws RuntimeException
+     */
+    public function get_type() : string;
 }

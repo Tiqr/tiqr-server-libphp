@@ -117,7 +117,7 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
     private function buildUserSecretStorage(): Tiqr_UserSecretStorage_Pdo
     {
         return new Tiqr_UserSecretStorage_Pdo(
-            new Tiqr_UserSecretStorage_Encryption_Dummy([]),
+            new Tiqr_UserSecretStorage_Encryption_Plain([]),
             $this->logger,
             $this->pdoInstance,
             'tiqrusersecret'

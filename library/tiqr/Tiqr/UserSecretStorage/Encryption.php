@@ -24,7 +24,7 @@ use Psr\Log\LoggerInterface;
  *
  * @author peter
  */
-class Tiqr_UserStorage_Encryption
+class Tiqr_UserSecretStorage_Encryption
 {
     /**
      * Get an encryption handler of a certain type (default: 'dummy')
@@ -44,7 +44,9 @@ class Tiqr_UserStorage_Encryption
         $logger->info(sprintf('Using "%s" as UserSecretStorage encryption type', $type));
         switch ($type) {
             case "dummy":
-                $instance = new Tiqr_UserSecretStorage_Encryption_Dummy($options);
+            case "plain":
+                $instance = new Tiqr_UserSecretStorage_Encryption_Plain($options);
+                break;
                 break;
             default:
                 if (class_exists($type)) {
