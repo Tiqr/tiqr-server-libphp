@@ -48,6 +48,7 @@ class Tiqr_UserSecretStorage
      *                       The encryption method is specified in the 'type' key. Available types are:
      *                       - 'plain' : (default) no encryption
      *                       - 'dummy' : alias for 'plain'
+     *                       - 'openssl: Uses the openssl extension to encrypt the secrets.
      *                       - A custom encryption class can be used by specifying the class name. The custom encryption
      *                         class must implement the Tiqr_UserSecretStorage_Encryption_Interface
      *                       The encryption options are documented in the UserSecretStorage/Encryption/

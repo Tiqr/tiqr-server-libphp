@@ -47,6 +47,8 @@ class Tiqr_UserSecretStorage_Encryption
             case "plain":
                 $instance = new Tiqr_UserSecretStorage_Encryption_Plain($options);
                 break;
+            case "openssl":
+                $instance = new Tiqr_UserSecretStorage_Encryption_OpenSSL($options);
                 break;
             default:
                 if (class_exists($type)) {
