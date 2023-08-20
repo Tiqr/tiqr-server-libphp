@@ -30,7 +30,7 @@ class Tiqr_UserSecretStorage
      * Get a secret storage of a certain type
      *
      * @param String $type The type of storage to create. Supported
-     *                     types are 'file', 'pdo' or 'oathservice'.
+     *                     types are 'file', 'pdo' or 'oathserviceclient'.
      * @param LoggerInterface $logger The logger to use.
      * @param array $options The options to pass to the storage instance.
      *                       This contains the configuration options for the UserSecretStorage
@@ -105,22 +105,23 @@ class Tiqr_UserSecretStorage
      */
     public static function getSecretStorage(string $type, LoggerInterface $logger, array $options): Tiqr_UserSecretStorage_Interface
     {
-        $encryption = null;
-        $decryption = [];
-        if ( $type != 'oathserviceclient') {
-            // Create encryption instance
-            // If not provided in config, we fall back to dummy/plain (no) encryption
-            $encryptionType = $options['encryption']['type'] ?? 'plain';
-            // If the encryption configuration is not configured, we fall back to an empty encryption configuration
-            $encryptionOptions = $options['encryption'] ?? [];
-            $encryption = Tiqr_UserSecretStorage_Encryption::getEncryption($logger, $encryptionType, $encryptionOptions);
+        if ($type == 'oathserviceclient') {
+            return (new Tiqr_UserSecretStorage)->_create_oauth_service_client($logger, $options);
+        }
 
-            // Create decryption instance(s)
-            // If not provided in config, we fall back to dummy/plain (no) encryption
-            $decryptionOptions = $options['decryption'] ?? ['plain' => []];
-            foreach ($decryptionOptions as $decryptionType => $decryptionConfig) {
-                $decryption[$decryptionType] = Tiqr_UserSecretStorage_Encryption::getEncryption($logger, $decryptionType, $decryptionConfig);
-            }
+        // Create encryption instance
+        // If not provided in config, we fall back to dummy/plain (no) encryption
+        $encryptionType = $options['encryption']['type'] ?? 'plain';
+        // If the encryption configuration is not configured, we fall back to an empty encryption configuration
+        $encryptionOptions = $options['encryption'] ?? [];
+        $encryption = Tiqr_UserSecretStorage_Encryption::getEncryption($logger, $encryptionType, $encryptionOptions);
+
+        // Create decryption instance(s)
+        // If not provided in config, we fall back to dummy/plain (no) encryption
+        $decryptionOptions = $options['decryption'] ?? ['plain' => []];
+        $decryption = [];
+        foreach ($decryptionOptions as $decryptionType => $decryptionConfig) {
+            $decryption[$decryptionType] = Tiqr_UserSecretStorage_Encryption::getEncryption($logger, $decryptionType, $decryptionConfig);
         }
 
         switch ($type) {
@@ -130,6 +131,7 @@ class Tiqr_UserSecretStorage
                 }
                 $path = $options['path'];
                 return new Tiqr_UserSecretStorage_File($encryption, $path, $logger, $decryption);
+
             case "pdo":
                 // Input validation on the required configuration options
                 if (!array_key_exists('dsn', $options)) {
@@ -156,20 +158,22 @@ class Tiqr_UserSecretStorage
                     throw ReadWriteException::fromOriginalException($e);
                 }
                 return new Tiqr_UserSecretStorage_Pdo($encryption, $logger, $handle, $tableName, $decryption);
-
-            case "oathserviceclient":
-                if (!array_key_exists('apiURL', $options)) {
-                    throw new RuntimeException('The apiURL is missing in the UserSecretStorage configuration');
-                }
-                if (!array_key_exists('consumerKey', $options)) {
-                    throw new RuntimeException('The consumerKey is missing in the UserSecretStorage configuration');
-                }
-
-                $apiClient = new Tiqr_API_Client();
-                $apiClient->setBaseURL($options['apiURL']);
-                $apiClient->setConsumerKey($options['consumerKey']);
-                return new Tiqr_UserSecretStorage_OathServiceClient($apiClient, $logger);
         }
         throw new RuntimeException(sprintf('Unable to create a UserSecretStorage instance of type: %s', $type));
+    }
+
+    private function _create_oauth_service_client(LoggerInterface $logger, array $options) : Tiqr_UserSecretStorage_OathServiceClient
+    {
+        if (!array_key_exists('apiURL', $options)) {
+            throw new RuntimeException('The apiURL is missing in the UserSecretStorage configuration');
+        }
+        if (!array_key_exists('consumerKey', $options)) {
+            throw new RuntimeException('The consumerKey is missing in the UserSecretStorage configuration');
+        }
+
+        $apiClient = new Tiqr_API_Client();
+        $apiClient->setBaseURL($options['apiURL']);
+        $apiClient->setConsumerKey($options['consumerKey']);
+        return new Tiqr_UserSecretStorage_OathServiceClient($apiClient, $logger);
     }
 }
