@@ -1,5 +1,7 @@
 <?php
 
+use Psr\Log\LoggerInterface;
+
 /**
  * Copyright 2022 SURF B.V.
  *
@@ -19,12 +21,12 @@
 trait UserSecretStorageTrait
 {
     /**
-     * @var EncryptionInterface
+     * @var Tiqr_UserSecretStorage_Encryption_Interface
      */
     private $encryption;
 
     /**
-     * @var array() of type_id (prefix) => EncryptionInterface
+     * @var array() of type_id (prefix) => Tiqr_UserSecretStorage_Encryption_Interface
      */
 
     private $decryption;
