@@ -55,7 +55,6 @@ class Tiqr_UserSecretStorage_Encryption_OpenSSL implements Tiqr_UserSecretStorag
         'aes-256-cbc' => [ 'tag' => false, 'key' => 32 ],
         'aes-256-gcm' => [ 'tag' => true, 'key' => 32 ],
         'chacha20' => [ 'tag' => false, 'key' => 32 ],
-        'chacha20-poly1305' => [ 'tag' => false, 'key' => 32 ],
         'camellia-128-cbc' => [ 'tag' => false, 'key' => 16 ],
         'camellia-192-cbc' => [ 'tag' => false, 'key' => 24 ],
         'camellia-256-cbc' => [ 'tag' => false, 'key' => 32 ],

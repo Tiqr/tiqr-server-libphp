@@ -74,8 +74,8 @@ class Tiqr_UserSecretStorage_Encryption_OpenSSLTest extends TestCase
             if (!in_array($cipher, $opensslSupportedCiphers)) {
                 continue;   // Skip ciphers that are not supported by the current openssl, we can't test them
             }
-            yield [ array('cipher' => $cipher, 'keys' => array('default' => substr($testKey, 0, $cipherInfo['key']*2)) ) ];
-            yield [ array('cipher' => strtoupper($cipher), 'keys' => array('default' => substr($testKey, 0, $cipherInfo['key']*2)) ) ];
+            yield $cipher => [ array('cipher' => $cipher, 'keys' => array('default' => substr($testKey, 0, $cipherInfo['key']*2)) ) ];
+            yield strtoupper($cipher) => [ array('cipher' => strtoupper($cipher), 'keys' => array('default' => substr($testKey, 0, $cipherInfo['key']*2)) ) ];
         }
     }
 
