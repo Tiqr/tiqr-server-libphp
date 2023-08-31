@@ -2,27 +2,10 @@
 
 require_once 'tiqr_autoloader.inc';
 
+require_once 'CustomEncryptionClass.inc';
+
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-
-class CustomEncryptionClass_2 implements Tiqr_UserSecretStorage_Encryption_Interface
-{
-    public function __construct(array $options = array())
-    {
-        // Check passing options work
-        if (!isset($options['my_custom_option'])) {
-            throw new RuntimeException("Missing option 'my_custom_option'");
-        }
-        if ($options['my_custom_option'] != 'my_custom_value') {
-            throw new RuntimeException("Missing value for 'my_custom_option'");
-        }
-    }
-
-    public function encrypt(string $data): string { return $data; }
-    public function decrypt(string $data): string
-    { return $data; }
-    public function get_type() : string { return 'CustomEncryptionClass_2'; }
-}
 
 
 class Tiqr_UserSecretStorageTest extends TestCase
@@ -70,7 +53,7 @@ class Tiqr_UserSecretStorageTest extends TestCase
      *
      * @return Tiqr_UserSecretStorage_Interface
      */
-    public function setup_userSecretStorage(string $type, array $encryption_options = array(), array $raw_user_secret = array()) : Tiqr_UserSecretStorage_Interface
+    private function setup_userSecretStorage(string $type, array $encryption_options = array(), array $raw_user_secret = array()) : Tiqr_UserSecretStorage_Interface
     {
         switch ($type) {
             case 'pdo':
@@ -162,7 +145,7 @@ class Tiqr_UserSecretStorageTest extends TestCase
                 ],
 
                 'decryption' => [
-                    'CustomEncryptionClass_2' => [
+                    'CustomEncryptionClass' => [
                         'my_custom_option' => 'my_custom_value'
                     ],
                     'openssl' => [
@@ -238,7 +221,7 @@ class Tiqr_UserSecretStorageTest extends TestCase
             $options = array(
                 // Encryption configuration
                 'encryption' => array(
-                    'type' => CustomEncryptionClass_2::class,
+                    'type' => CustomEncryptionClass::class,
                     'my_custom_option' => 'my_custom_value'
                 ),
 

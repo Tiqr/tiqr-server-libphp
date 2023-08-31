@@ -17,8 +17,6 @@
  * @copyright (C) 2010-2012 SURFnet BV
  */
 
-use Psr\Log\LoggerInterface;
-
 /**
  * Interface for encrypting/decrypting the user secret.
  * 
