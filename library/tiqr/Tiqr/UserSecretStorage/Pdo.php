@@ -63,11 +63,6 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
     private $handle;
 
     /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
-    /**
      * @param Tiqr_UserSecretStorage_Encryption_Interface $encryption
      * @param LoggerInterface $logger
      * @param PDO $handle
@@ -76,10 +71,15 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
         Tiqr_UserSecretStorage_Encryption_Interface $encryption,
         LoggerInterface $logger,
         PDO $handle,
-        string $tableName
+        string $tableName,
+        array $decryption = array()
     ) {
+        // See UserSecretStorageTrait
         $this->encryption = $encryption;
         $this->logger = $logger;
+        $this->decryption = $decryption;
+
+        // Set our own properties
         $this->handle = $handle;
         $this->tableName = $tableName;
     }

@@ -70,6 +70,6 @@ class Tiqr_UserSecretStorage_FileTest extends TestCase
 
     private function buildUserSecretStorage(): Tiqr_UserSecretStorage_File
     {
-        return new Tiqr_UserSecretStorage_File(new Tiqr_UserSecretStorage_Encryption_Dummy([]), $this->targetPath, $this->logger);
+        return new Tiqr_UserSecretStorage_File(new Tiqr_UserSecretStorage_Encryption_Plain([]), $this->targetPath, $this->logger);
     }
 }
