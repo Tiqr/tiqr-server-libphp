@@ -122,9 +122,9 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
 
         // handle errors, ignoring registration_id's
         $response = json_decode($result, true);
-        foreach ($response['results'] as $k => $v) {
-            if (isset($v['error'])) {
-                throw new Tiqr_Message_Exception_SendFailure("Error in FCM response: " . $v['error'], true);
+        foreach ($response as $k => $v) {
+            if ($k=="error") {
+                throw new Tiqr_Message_Exception_SendFailure(sprintf("Error in FCM response: %s", $result), true);
             }
         }
     }
