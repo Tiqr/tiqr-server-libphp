@@ -41,10 +41,11 @@ $token_exchange_url = $config['token_exchange_url'] ?? 'https://tx.tiqr.org/toke
 $token_exchange_appid = $config['token_exchange_appid'] ?? 'tiqr';
 $apns_certificate_filename =  App::realpath($config['apns_certificate_filename'] ?? '', $config_dir);
 $apns_environment =  $config['apns_environment'] ?? 'sandbox';
-$firebase_apikey = $config['firebase_apikey'] ?? '';
+$firebase_projectId = $config['firebase_projectId'] ?? '';
+$firebase_credentialsFile = App::realpath($config['firebase_credentialsFile'] ?? '', $config_dir);
 
 $psr_logger = new TestServerPsrLogger();
-$test_server = new TestServerController($psr_logger, $host_url, $tiqrauth_protocol, $tiqrenroll_protocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_apikey, $storage_dir);
+$test_server = new TestServerController($psr_logger, $host_url, $tiqrauth_protocol, $tiqrenroll_protocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_projectId, $firebase_credentialsFile, $storage_dir);
 $app = new TestServerApp($test_server);
 $app->HandleHTTPRequest();
 
