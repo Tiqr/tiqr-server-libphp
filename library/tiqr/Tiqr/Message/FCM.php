@@ -14,7 +14,7 @@
  *
  * @license New BSD License - See LICENSE file for details.
  *
- * @copyright (C) 2010-2015 SURFnet BV
+ * @copyright (C) 2010-2024 SURF BV
  */
 
 /**
@@ -28,17 +28,31 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
      *
      * @throws Tiqr_Message_Exception_AuthFailure
      * @throws Tiqr_Message_Exception_SendFailure
+     * @throws \Google\Exception
      */
     public function send()
     {
         $options = $this->getOptions();
-        $apiKey = $options['firebase.apikey'];
+        $projectId = $options['firebase.projectId'];
+        $credentialsFile = $options['firebase.credentialsFile'];
 
         $translatedAddress = $this->getAddress();
         $alertText = $this->getText();
         $url = $this->getCustomProperty('challenge');
 
-        $this->_sendFirebase($translatedAddress, $alertText, $url, $apiKey);
+        $this->_sendFirebase($translatedAddress, $alertText, $url, $projectId, $credentialsFile);
+    }
+
+    /**
+     * @throws \Google\Exception
+     */
+    private function getGoogleAccessToken($credentialsFile){
+        $client = new \Google_Client();
+        $client->setAuthConfig($credentialsFile);
+        $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
+        $client->fetchAccessTokenWithAssertion();
+        $token = $client->getAccessToken();
+        return $token['access_token'];
     }
 
     /**
@@ -47,32 +61,36 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
      * @param $deviceToken string device ID
      * @param $alert string alert message
      * @param $challenge string tiqr challenge url
-     * @param $apiKey string api key for firebase
+     * @param $projectId string the id of the firebase project
+     * @param $credentialsFile string The location of the firebase secret json
      * @param $retry boolean is this a 2nd attempt
-     * @param Tiqr_Message_Exception $gcmException
-     *
      * @throws Tiqr_Message_Exception_SendFailure
+     * @throws \Google\Exception
      */
-    private function _sendFirebase($deviceToken, $alert, $challenge, $apiKey, $retry=false)
+    private function _sendFirebase(string $deviceToken, string $alert, string $challenge, string $projectId, string $credentialsFile, bool $retry=false)
     {
-        $msg = array(
-            'challenge' => $challenge,
-            'text'      => $alert,
-        );
+        $apiurl = 'https://fcm.googleapis.com/v1/projects/'.$projectId.'/messages:send';
 
-        $fields = array(
-            'registration_ids' => array($deviceToken),
-            'data' => $msg,
-            'time_to_live' => 300,
-        );
+        $fields = [
+            'message' => [
+                'token' => $deviceToken,
+                'data' => [
+                    'challenge' => $challenge,
+                    'text'      => $alert,
+                ],
+                "android" => [
+                    "ttl" => "300s",
+                ],
+            ],
+        ];
 
         $headers = array(
-            'Authorization: key=' . $apiKey,
+            'Authorization: Bearer ' . $this->getGoogleAccessToken($credentialsFile),
             'Content-Type: application/json',
         );
 
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send');
+        curl_setopt($ch, CURLOPT_URL, $apiurl);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -94,7 +112,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         // Wait and retry once in case of a 502 Bad Gateway error
         if ($statusCode === 502 && !($retry)) {
           sleep(2);
-          $this->_sendFirebase($deviceToken, $alert, $challenge, $apiKey, true);
+          $this->_sendFirebase($deviceToken, $alert, $challenge, $projectId, $credentialsFile, true);
           return;
         }
 

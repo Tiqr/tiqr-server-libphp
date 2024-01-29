@@ -11,7 +11,8 @@
         "psr/log": "^1.1",
         "edamov/pushok": "^0.14.0",
         "ext-openssl": "*",
-        "chillerlan/php-qrcode": "^3.4"
+        "chillerlan/php-qrcode": "^3.4",
+        "google/apiclient": "^2.14"
     },
     "require-dev": {
         "phpunit/phpunit": "^8.5",
