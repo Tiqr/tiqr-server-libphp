@@ -16,6 +16,9 @@
  *
  * @copyright (C) 2010-2024 SURF BV
  */
+use League\Flysystem\Adapter\Local;
+use League\Flysystem\Filesystem;
+use Cache\Adapter\Filesystem\FilesystemCachePool;
 
 /**
  * Android Cloud To Device Messaging message.
@@ -47,7 +50,13 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
      * @throws \Google\Exception
      */
     private function getGoogleAccessToken($credentialsFile){
+        $filesystemAdapter = new Local(__DIR__.'/');
+        $filesystem        = new Filesystem($filesystemAdapter);
+
+        $pool = new FilesystemCachePool($filesystem);
+
         $client = new \Google_Client();
+        $client->setCache($pool);
         $client->setAuthConfig($credentialsFile);
         $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
         $client->fetchAccessTokenWithAssertion();
