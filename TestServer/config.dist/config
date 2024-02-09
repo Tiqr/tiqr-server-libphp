@@ -8,4 +8,5 @@
   "apns_environment" : "sandbox",
   "firebase_projectId" : "12345-abcde",
   "firebase_credentialsFile" : "google.json",
+  "firebase_cachetokens" : false,
 }
