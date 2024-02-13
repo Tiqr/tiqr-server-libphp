@@ -31,7 +31,6 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
      * Send message.
      *
      * @throws Tiqr_Message_Exception_SendFailure
-     * @throws \Google\Exception
      */
     public function send()
     {
@@ -48,12 +47,11 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
     }
 
     /**
-     * @throws \Google\Exception
      * @throws Tiqr_Message_Exception_SendFailure
      */
     private function getGoogleAccessToken($credentialsFile, $cacheTokens, $tokenCacheDir )
     {
-        $client = new \Google_Client();
+        $client = new Google_Client();
         // Try to add a file based cache for accesstokens, if configured
         if ($cacheTokens) {
             //set up the cache
@@ -62,15 +60,20 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
             $pool = new FilesystemCachePool($filesystem);
 
             //set up a callback to log token refresh
-            $tokenCallback = function ($cacheKey, $accessToken) {
-                $this->logger->debug(sprintf('New access token received at cache key %s', $cacheKey));
+            $logger=$this->logger;
+            $tokenCallback = function ($cacheKey, $accessToken) use ($logger) {
+                $logger->info(sprintf('New access token received at cache key %s', $cacheKey));
             };
             $client->setTokenCallback($tokenCallback);
             $client->setCache($pool);
         } else {
             $this->logger->warning("Cache for oAuth tokens is disabled");
         }
-        $client->setAuthConfig($credentialsFile);
+        try {
+            $client->setAuthConfig($credentialsFile);
+        } catch (\Google\Exception $e) {
+            throw new Tiqr_Message_Exception_SendFailure(sprintf("Error setting Google credentials for FCM : %s", $e->getMessage()), true);
+        }
         $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
         $client->fetchAccessTokenWithAssertion();
         $token = $client->getAccessToken();
@@ -92,7 +95,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
      */
     private function _sendFirebase(string $deviceToken, string $alert, string $challenge, string $projectId, string $credentialsFile, bool $cacheTokens, string $tokenCacheDir, bool $retry=false)
     {
-        $apiurl = 'https://fcm.googleapis.com/v1/projects/'.$projectId.'/messages:send';
+        $apiurl = sprintf('https://fcm.googleapis.com/v1/projects/%s/messages:send',$projectId);
 
         $fields = [
             'message' => [
