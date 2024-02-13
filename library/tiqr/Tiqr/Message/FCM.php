@@ -52,6 +52,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
     private function getGoogleAccessToken($credentialsFile, $cacheTokens, $tokenCacheDir )
     {
         $client = new Google_Client();
+        $client->setLogger($this->logger);
         // Try to add a file based cache for accesstokens, if configured
         if ($cacheTokens) {
             //set up the cache
