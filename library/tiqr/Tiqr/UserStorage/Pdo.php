@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS user (
     tmpblockattempts integer,   // Number of failed login attempts counting towards a temporary block
     blocked tinyint(1),         // used as boolean: 0=not blocked. 1=blocked
     notificationtype varchar(10),
-    notificationaddress varchar(64)
+    notificationaddress varchar(256)
 );
 
  *

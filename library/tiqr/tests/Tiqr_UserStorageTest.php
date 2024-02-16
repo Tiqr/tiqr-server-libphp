@@ -147,7 +147,7 @@ class Tiqr_UserStorageTest extends TestCase
                                                 tmpblockattempts INTEGER,
                                                 blocked INTEGER,
                                                 notificationtype VARCHAR(10),
-                                                notificationaddress VARCHAR(64)
+                                                notificationaddress VARCHAR(256)
                                             );
 SQL
         ) );
@@ -199,7 +199,7 @@ SQL
                                                 tmpblockattempts INTEGER,
                                                 blocked INTEGER,
                                                 notificationtype VARCHAR(10),
-                                                notificationaddress VARCHAR(64)
+                                                notificationaddress VARCHAR(256)
                                             );
 SQL
             ) );
