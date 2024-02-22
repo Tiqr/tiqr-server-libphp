@@ -73,7 +73,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         try {
             $client->setAuthConfig($credentialsFile);
         } catch (\Google\Exception $e) {
-            throw new Tiqr_Message_Exception_SendFailure(sprintf("Error setting Google credentials for FCM : %s", $e->getMessage()), true);
+            throw new Tiqr_Message_Exception_SendFailure(sprintf("Error setting Google credentials for FCM : %s", $e->getMessage()), true, $e);
         }
         $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
         $client->fetchAccessTokenWithAssertion();
