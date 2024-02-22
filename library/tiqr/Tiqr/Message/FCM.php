@@ -14,11 +14,15 @@
  *
  * @license New BSD License - See LICENSE file for details.
  *
- * @copyright (C) 2010-2015 SURFnet BV
+ * @copyright (C) 2010-2024 SURF BV
  */
+use League\Flysystem\Adapter\Local;
+use League\Flysystem\Filesystem;
+use Cache\Adapter\Filesystem\FilesystemCachePool;
 
 /**
  * Android Cloud To Device Messaging message.
+ *
  * @author peter
  */
 class Tiqr_Message_FCM extends Tiqr_Message_Abstract
@@ -26,53 +30,98 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
     /**
      * Send message.
      *
-     * @throws Tiqr_Message_Exception_AuthFailure
      * @throws Tiqr_Message_Exception_SendFailure
      */
     public function send()
     {
         $options = $this->getOptions();
-        $apiKey = $options['firebase.apikey'];
-
+        $projectId = $options['firebase.projectId'];
+        $credentialsFile = $options['firebase.credentialsFile'];
+        $cacheTokens = $options['firebase.cacheTokens'] ?? false;
+        $tokenCacheDir = $options['firebase.tokenCacheDir'] ?? __DIR__;
         $translatedAddress = $this->getAddress();
         $alertText = $this->getText();
         $url = $this->getCustomProperty('challenge');
 
-        $this->_sendFirebase($translatedAddress, $alertText, $url, $apiKey);
+        $this->_sendFirebase($translatedAddress, $alertText, $url, $projectId, $credentialsFile, $cacheTokens, $tokenCacheDir);
+    }
+
+    /**
+     * @throws Tiqr_Message_Exception_SendFailure
+     */
+    private function getGoogleAccessToken($credentialsFile, $cacheTokens, $tokenCacheDir )
+    {
+        $client = new Google_Client();
+        $client->setLogger($this->logger);
+        // Try to add a file based cache for accesstokens, if configured
+        if ($cacheTokens) {
+            //set up the cache
+            $filesystemAdapter = new Local($tokenCacheDir);
+            $filesystem = new Filesystem($filesystemAdapter);
+            $pool = new FilesystemCachePool($filesystem);
+
+            //set up a callback to log token refresh
+            $logger=$this->logger;
+            $tokenCallback = function ($cacheKey, $accessToken) use ($logger) {
+                $logger->info(sprintf('New access token received at cache key %s', $cacheKey));
+            };
+            $client->setTokenCallback($tokenCallback);
+            $client->setCache($pool);
+        } else {
+            $this->logger->warning("Cache for oAuth tokens is disabled");
+        }
+        try {
+            $client->setAuthConfig($credentialsFile);
+        } catch (\Google\Exception $e) {
+            throw new Tiqr_Message_Exception_SendFailure(sprintf("Error setting Google credentials for FCM : %s", $e->getMessage()), true, $e);
+        }
+        $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
+        $client->fetchAccessTokenWithAssertion();
+        $token = $client->getAccessToken();
+        return $token['access_token'];
     }
 
     /**
      * Send a message to a device using the firebase API key.
      *
-     * @param $deviceToken string device ID
-     * @param $alert string alert message
-     * @param $challenge string tiqr challenge url
-     * @param $apiKey string api key for firebase
-     * @param $retry boolean is this a 2nd attempt
-     * @param Tiqr_Message_Exception $gcmException
-     *
+     * @param  $deviceToken     string device ID
+     * @param  $alert           string alert message
+     * @param  $challenge       string tiqr challenge url
+     * @param  $projectId       string the id of the firebase project
+     * @param  $credentialsFile string The location of the firebase secret json
+     * @param  $cacheTokens     bool Enable caching the accesstokens for accessing the Google API
+     * @param  $tokenCacheDir   string Location for storing the accesstoken cache
+     * @param  $retry           boolean is this a 2nd attempt
      * @throws Tiqr_Message_Exception_SendFailure
      */
-    private function _sendFirebase($deviceToken, $alert, $challenge, $apiKey, $retry=false)
+    private function _sendFirebase(string $deviceToken, string $alert, string $challenge, string $projectId, string $credentialsFile, bool $cacheTokens, string $tokenCacheDir, bool $retry=false)
     {
-        $msg = array(
-            'challenge' => $challenge,
-            'text'      => $alert,
-        );
+        $apiurl = sprintf('https://fcm.googleapis.com/v1/projects/%s/messages:send',$projectId);
 
-        $fields = array(
-            'registration_ids' => array($deviceToken),
-            'data' => $msg,
-            'time_to_live' => 300,
-        );
+        $fields = [
+            'message' => [
+                'token' => $deviceToken,
+                'data' => [
+                    'challenge' => $challenge,
+                    'text'      => $alert,
+                ],
+                "android" => [
+                    "ttl" => "300s",
+                ],
+            ],
+        ];
 
-        $headers = array(
-            'Authorization: key=' . $apiKey,
-            'Content-Type: application/json',
-        );
+        try {
+            $headers = array(
+                'Authorization: Bearer ' . $this->getGoogleAccessToken($credentialsFile, $cacheTokens, $tokenCacheDir),
+                'Content-Type: application/json',
+            );
+        } catch (\Google\Exception $e) {
+            throw new Tiqr_Message_Exception_SendFailure(sprintf("Error getting Goosle access token : %s", $e->getMessage()), true);
+        }
 
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send');
+        curl_setopt($ch, CURLOPT_URL, $apiurl);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -80,7 +129,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         $result = curl_exec($ch);
         $errors = curl_error($ch);
         $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $remoteip = curl_getinfo($ch,CURLINFO_PRIMARY_IP);
+        $remoteip = curl_getinfo($ch, CURLINFO_PRIMARY_IP);
         curl_close($ch);
 
         if ($result === false) {
@@ -93,9 +142,9 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
 
         // Wait and retry once in case of a 502 Bad Gateway error
         if ($statusCode === 502 && !($retry)) {
-          sleep(2);
-          $this->_sendFirebase($deviceToken, $alert, $challenge, $apiKey, true);
-          return;
+            sleep(2);
+            $this->_sendFirebase($deviceToken, $alert, $challenge, $projectId, $credentialsFile,  $cacheTokens,  $tokenCacheDir, true);
+            return;
         }
 
         if ($statusCode !== 200) {
@@ -104,9 +153,9 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
 
         // handle errors, ignoring registration_id's
         $response = json_decode($result, true);
-        foreach ($response['results'] as $k => $v) {
-            if (isset($v['error'])) {
-                throw new Tiqr_Message_Exception_SendFailure("Error in FCM response: " . $v['error'], true);
+        foreach ($response as $k => $v) {
+            if ($k=="error") {
+                throw new Tiqr_Message_Exception_SendFailure(sprintf("Error in FCM response: %s", $result), true);
             }
         }
     }

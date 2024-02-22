@@ -6,3 +6,5 @@ TestServer/config/
 coverage.xml
 *~
 TestServer/storage/
+TestServer/config.dist/config/google.json
+TestServer/config/config

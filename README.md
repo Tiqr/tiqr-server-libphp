@@ -84,9 +84,10 @@ $options = [
     // APNS configuration, required for sending push notifications to iOS devices
     'apns.certificate' => 'files/apns.pem',
     'apns.environment' => 'production',
-
-    // FCM configuration, required for sending push notifications to Android devices
-    'firebase.apikey' => 'your-secret-firebase-api-key',
+    
+    //FCM configuration, required for sending push notifications to Android devices
+    'firebase.projectId' => '12345-abcde',
+    'firebase.credentialsFile' => 'google.json',    
 
     // Session storage
     'statestorage' => [
@@ -105,6 +106,8 @@ $options = [
     ],
 ]
 ```
+
+[See this instructions](FCM.md) for generating the `firebase.projectId` and `firebase.credentialsFile`
 
 ### Autoloading and composer
 

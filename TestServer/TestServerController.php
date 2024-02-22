@@ -48,15 +48,18 @@ class TestServerController
      *
      * @param string $apns_certificate_filename The filename of the file with PEM APNS signing certificate and private key
      * @param string $apns_environment The APNS environment to use. 'production' or 'sandbox'
-     * @param string $firebase_apikey The Google firebase API key. Required for sending FCM push notifications
+     * @param string $firebase_projectId The firebase project ID
+     * @param string $firebase_credentialsFile The file containing the firebase secrets json
      * @param string $storage_dir Directory to use for tiqr state storage, user storage and user sercret storage
+     * @param bool $firebase_cacheTokens Is the cache for accesstokens enabled
+     * @param string $firebase_tokenCacheDir Where is the cache for accesstokens located
      */
-    function __construct(LoggerInterface $logger, string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_apikey, string $storage_dir)
+    function __construct(LoggerInterface $logger, string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_projectId, string $firebase_credentialsFile, string $storage_dir, bool $firebase_cacheTokens, string $firebase_tokenCacheDir)
     {
         $this->storageDir = $storage_dir;
         $this->logger = $logger;
         $this->host_url = $host_url;
-        $this->tiqrService = $this->createTiqrService($host_url, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_apikey);
+        $this->tiqrService = $this->createTiqrService($host_url, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_projectId, $firebase_credentialsFile, $firebase_cacheTokens, $firebase_tokenCacheDir );
         $this->userStorage = $this->createUserStorage();
         $this->userSecretStorage = $this->createUserSecretStorage();        
     }
@@ -79,7 +82,7 @@ class TestServerController
     /**
      * @return Tiqr_Service
      */
-    private function createTiqrService($host, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_cert_filename, $apns_environment, $firebase_apikey)
+    private function createTiqrService($host, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_cert_filename, $apns_environment, $firebase_projectId, $firebase_credentialsFile, $firebase_cacheTokens, $firebase_tokenCacheDir)
     {
         // Derive the identifier from the host
         $identifier = parse_url($host, PHP_URL_HOST);
@@ -104,7 +107,10 @@ class TestServerController
                 'apns.version' => 2,    // Use the new HTTP/2 based protocol
 
                 // FCM
-                'firebase.apikey' => $firebase_apikey,
+                'firebase.projectId' => $firebase_projectId,
+                'firebase.credentialsFile' => $firebase_credentialsFile,
+                'firebase.cacheTokens' => $firebase_cacheTokens,
+                'firebase.tokenCacheDir' => $firebase_tokenCacheDir,
 
                 // Note: C2DM is no longer supported by google (https://developers.google.com/android/c2dm)
                 'c2dm.username' => 'test_c2dm_username',

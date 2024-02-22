@@ -6,5 +6,7 @@
   "token_exchange_appid" : "tiqr",
   "apns_certificate_filename" : "apns.pem",
   "apns_environment" : "sandbox",
-  "firebase_apikey" : ""
+  "firebase_projectId" : "12345-abcde",
+  "firebase_credentialsFile" : "google.json",
+  "firebase_cachetokens" : false,
 }

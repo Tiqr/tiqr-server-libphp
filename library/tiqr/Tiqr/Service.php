@@ -203,7 +203,8 @@ class Tiqr_Service
      * - apns.proxy_host_port: Set the proxy port to use with proxy_host_url. Optional. Defaults to 443.
      *
      * * For sending push notifications to Android devices using Google's firebase cloud messaging (FCM) API
-     * - firebase.apikey: String containing the FCM API key
+     * - firebase.projectId: String containing the FCM project ID
+     * - firebase.credentialsFile: the name of the json file containing the service account key
      *
      * - devicestorage: An array with the configuration of the storage for device push notification tokens. Only
      *                  necessary if you use the Tiqr Service to authenticate an already known userId (e.g. when using
