@@ -34,7 +34,8 @@ A brief overview of notable points in time of this project
 - 2020: PHP 5 support was dropped
 - 2022: Unit & integration test coverage was added, added TestServer
 - 2022: 3.3: Major refactoring of UserStorage and UserSecretStorage classes, addition of PSR Logging, removal of deprecated functionality, security hardening
-- 2023: 4.0: Switch to composer autoloader, add PHP 8 support, remove APNS v1 and Zend library dependency 
+- 2023: 4.0: Switch to composer autoloader, add PHP 8 support, remove APNS v1 and Zend library dependency
+- 2024: 4.1: Update FCM to use HTTP v1 API for google PN's
 
 # Ecosystem
 The tiqr-server-libphp uses external libraries sparingly. It uses libraries for sending push notifications and for generating QR code images.
