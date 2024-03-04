@@ -9,7 +9,7 @@
         "ext-curl": "*",
         "ext-json": "*",
         "psr/log": "^3.0",
-        "edamov/pushok": "^0.14.0",
+        "edamov/pushok": "^0.16.0",
         "ext-openssl": "*",
         "chillerlan/php-qrcode": "^3.4",
         "google/apiclient": "^2.14",
