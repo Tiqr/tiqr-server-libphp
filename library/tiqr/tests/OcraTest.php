@@ -25,6 +25,7 @@ class OcraTest extends TestCase
     /**
      * @dataProvider onewayChallengeResponseDataProvider
      * @dataProvider tiqrTestDataProvider
+     * @dataProvider truncationDataProvider
      */
     public function testOcraRFCTestVectors($expected, $suite, $key, $counter, $challenge, $password, $session, $time) {
         $result = OCRA::generateOCRA($suite, $key, $counter, $challenge, $password, $session, $time);
@@ -175,6 +176,23 @@ class OcraTest extends TestCase
         ];
     }
 
+    public function truncationDataProvider()
+    {
+        // Test all allowed truncation lengths that are allowed by the spec (0, 4-10)
+        $key32 = '3132333435363738393031323334353637383930313233343536373839303132';
+        return [
+            // [ result, suite, key, counter, challenge, password, session, time ]
+            ['fb2c8815e0858fda61334e840e47b90e20f4b32f', 'OCRA-1:HOTP-SHA1-0:QH10-S', $key32, '', '0000000000', '', '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f', ''],
+            ['1160', 'OCRA-1:HOTP-SHA1-4:QH10-S', $key32, '', '0000000000', '', '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f', ''],
+            ['18118', 'OCRA-1:HOTP-SHA1-5:QH10-S', $key32, '', '0000000000', '', '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f', ''],
+            ['525367', 'OCRA-1:HOTP-SHA1-6:QH10-S', $key32, '', '0000000000', '', '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f', ''],
+            ['3234167', 'OCRA-1:HOTP-SHA1-7:QH10-S', $key32, '', '0000000000', '', '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f', ''],
+            ['75158174', 'OCRA-1:HOTP-SHA1-8:QH10-S', $key32, '', '0000000000', '', '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f', ''],
+            ['117807965', 'OCRA-1:HOTP-SHA1-9:QH10-S', $key32, '', '0000000000', '', '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f', ''],
+            ['1612833570', 'OCRA-1:HOTP-SHA1-10:QH10-S', $key32, '', '0000000000', '', '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f', ''],
+        ];
+    }
+
     /**
      * @dataProvider ocraInvalidInputDataProvider
      */
@@ -217,6 +235,24 @@ class OcraTest extends TestCase
             // Invalid time, max length of time is 8 bytes
             [ "Parameter 'timeStamp' contains non hex digits", 'OCRA-1:HOTP-SHA512-8:QN08-T1M', '', '', '', '', '', $invalid_hex],
             [ "Parameter 'timeStamp' too long", 'OCRA-1:HOTP-SHA512-8:QN08-T1M', '', '', '', '', '', str_repeat('0', 18)],
+
+            // Unsupported OCRA CryptoFunctions
+
+            // Algo is invalid
+            [ "Unsupported OCRA CryptoFunction", 'OCRA-1:HOTP-SHA2-6:QH10-S', '', '', '', '', '', ''],
+            [ "Unsupported OCRA CryptoFunction", 'OCRA-1:SHA1-6:QH10-S', '', '', '', '', '', ''],
+            [ "Unsupported OCRA CryptoFunction", 'OCRA-1:SHA256-6:QH10-S', '', '', '', '', '', ''],
+            [ "Unsupported OCRA CryptoFunction", 'OCRA-1:TOTP-SHA1-6:QH10-S', '', '', '', '', '', ''],
+
+            // Invalid truncation length
+            [ "Unsupported OCRA CryptoFunction", 'OCRA-1:HOTP-SHA1-1:QH10-S', '', '', '', '', '', ''],
+            [ "Unsupported OCRA CryptoFunction", 'OCRA-1:HOTP-SHA1-2:QH10-S', '', '', '', '', '', ''],
+            [ "Unsupported OCRA CryptoFunction", 'OCRA-1:HOTP-SHA1-3:QH10-S', '', '', '', '', '', ''],
+            [ "Unsupported OCRA CryptoFunction", 'OCRA-1:HOTP-SHA1-11:QH10-S', '', '', '', '', '', ''],
+            [ "Unsupported OCRA CryptoFunction", 'OCRA-1:HOTP-SHA1-123:QH10-S', '', '', '', '', '', ''],
+            [ "Unsupported OCRA CryptoFunction", 'OCRA-1:HOTP-SHA1:QH10-S', '', '', '', '', '', ''],
+            [ "Unsupported OCRA CryptoFunction", 'OCRA-1:HOTP-SHA1-A:QH10-S', '', '', '', '', '', ''],
+            [ "Unsupported OCRA CryptoFunction", 'OCRA-1:HOTP-SHA1-6.0:QH10-S', '', '', '', '', '', ''],
         ];
     }
 
