@@ -79,6 +79,9 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
         parent::init();
 
         $class = class_exists('\Memcache') ? '\Memcache' : (class_exists('\Memcached') ? '\Memcached' : false);
+        if (!$class) {
+            throw new RuntimeException('Memcache or Memcached class not found');
+        }
         self::$extension = strtolower($class);
         
         $this->_memcache = new $class();
