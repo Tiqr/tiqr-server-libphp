@@ -180,7 +180,7 @@ class OATH_OCRAParser {
 	}
 
     /** Generate an OCRA challenge question according to the ocra suite specified in the constructor
-     * @return The randomly generated OCRA question
+     * @return String: The randomly generated OCRA question
      * @throws Exception
      *
      * The required format and length of the challenge question are specified in the "Q" part OCRA suite:
