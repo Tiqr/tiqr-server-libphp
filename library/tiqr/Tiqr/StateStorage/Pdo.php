@@ -111,30 +111,6 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
     }
 
     /**
-     * @param string $key to lookup
-     * @return bool true when $key is found, false when the key does not exist
-     * @throws ReadWriteException
-     */
-    private function keyExists(string $key): bool
-    {
-        if (empty($key)) {
-            throw new InvalidArgumentException('Empty key not allowed');
-        }
-        try {
-            $sth = $this->handle->prepare('SELECT `key` FROM ' . $this->tablename . ' WHERE `key` = ?');
-            $sth->execute(array($key));
-            return $sth->fetchColumn() !== false;
-        }
-        catch (Exception $e) {
-            $this->logger->error(
-                sprintf('Error checking for key "%s" in PDO StateStorage', $key),
-                array('exception' => $e)
-            );
-            throw ReadWriteException::fromOriginalException($e);
-        }
-    }
-
-    /**
      * Remove expired keys
      * This is a maintenance task that should be periodically run
      * Does not throw
@@ -167,11 +143,14 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         if (((float) rand() /(float) getrandmax()) < $this->cleanupProbability) {
             $this->cleanExpired();
         }
-        if ($this->keyExists($key)) {
-            $sth = $this->handle->prepare("UPDATE ".$this->tablename." SET `value` = ?, `expire` = ? WHERE `key` = ?");
-        } else {
-            $sth = $this->handle->prepare("INSERT INTO ".$this->tablename." (`value`,`expire`,`key`) VALUES (?,?,?)");
-        }
+        // REPLACE INTO is mysql dialect. Supported by sqlite as well.
+        // This does:
+        // INSERT INTO tablename (`value`,`expire`,`key`) VALUES (?,?,?)
+        //   ON CONFLICT UPDATE tablename SET `value`=?, `expire`=? WHERE `key`=?
+        // in pgsql "ON CONFLICT" is "ON DUPLICATE KEY"
+
+        $sth = $this->handle->prepare("REPLACE INTO ".$this->tablename." (`value`,`expire`,`key`) VALUES (?,?,?)");
+
         // $expire == 0 means never expire
         if ($expire != 0) {
             $expire+=time();    // Store unix timestamp after which the key expires
