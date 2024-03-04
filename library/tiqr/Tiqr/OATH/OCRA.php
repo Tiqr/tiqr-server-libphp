@@ -117,19 +117,33 @@ class OCRA {
         $sessionInformationLength = 0;
         $timeStampLength = 0;
 
-        // How many digits should we return
+        // Parse the cryptofunction
+        // The cryptofucntion is defined as HOTP-<hash function>-<t>, where
+        // <hash function> is one of sha1, sha256 or sha512
+        // <t> is the truncation length: 0 (no truncation), 4-10
         $components = explode(":", $ocraSuite);
         $cryptoFunction = $components[1];
         $dataInput = strtolower($components[2]); // lower here so we can do case insensitive comparisons
-        
-        if(stripos($cryptoFunction, "sha1")!==false)
+
+        if(stripos($cryptoFunction, "hotp-sha1")!==false)
             $crypto = "sha1";
-        if(stripos($cryptoFunction, "sha256")!==false)
+        elseif(stripos($cryptoFunction, "hotp-sha256")!==false)
             $crypto = "sha256";
-        if(stripos($cryptoFunction, "sha512")!==false)
+        elseif(stripos($cryptoFunction, "hotp-sha512")!==false)
             $crypto = "sha512";
-        
-        $codeDigits = substr($cryptoFunction, strrpos($cryptoFunction, "-")+1);
+        else {
+            throw new InvalidArgumentException('Unsupported OCRA CryptoFunction');
+        }
+
+        // The Cryptofucntion must ha a truncation of 0, 4-10
+        $codeDigits_str = substr($cryptoFunction, strrpos($cryptoFunction, "-")+1);
+        if (! ctype_digit($codeDigits_str)) {
+            throw new InvalidArgumentException('Unsupported OCRA CryptoFunction');
+        }
+        $codeDigits = (integer)$codeDigits_str;
+        if (($codeDigits != 0) && (($codeDigits < 4) || ($codeDigits > 10))) {
+            throw new InvalidArgumentException('Unsupported OCRA CryptoFunction');
+        }
                 
         // The size of the byte array message to be encrypted
         // Counter
@@ -274,8 +288,11 @@ class OCRA {
         $msg = implode("", $msg);
 
         $hash = self::_hmac($crypto, $byteKey, $msg);
-        
-        $result = self::_oath_truncate($hash, $codeDigits);
+
+        if ($codeDigits == 0)
+            $result = $hash;
+        else
+            $result = self::_oath_truncate($hash, $codeDigits);
              
         return $result;
     }
