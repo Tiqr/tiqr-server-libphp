@@ -58,6 +58,7 @@ interface Tiqr_StateStorage_StateStorageInterface
     /**
      * Called to initialize the storage engine
      * @return void
+     * @throws RuntimeException
      */
     public function init(): void;
 }
