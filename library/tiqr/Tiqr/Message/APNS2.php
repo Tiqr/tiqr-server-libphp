@@ -37,6 +37,9 @@ class Tiqr_Message_APNS2 extends Tiqr_Message_Abstract
         // is set to the bundle ID.
         $options=$this->getOptions();
         $cert_filename = $options['apns.certificate'];
+        if (strlen($cert_filename) == 0) {
+            throw new RuntimeException('apns.certificate option not set');
+        }
         $cert_file_contents = file_get_contents($cert_filename);
         if (false === $cert_file_contents) {
             throw new RuntimeException(
