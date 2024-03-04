@@ -42,11 +42,11 @@ HTML;
             $user['secret'] = $user['secret'] ?? '—';
             echo <<<HTML
 <tr>
-    <td><a href="/start-authenticate?user_id=${user['userId']}"><code>${user['userId']}</code></a></td>
-    <td><code>${user['displayName']}</code></td>
-    <td><code>${user['notificationType']}</code></td>
-    <td><code>${user['notificationAddress']}</code></td>
-    <td><code>${user['secret']}</code></td>
+    <td><a href="/start-authenticate?user_id={$user['userId']}"><code>{$user['userId']}</code></a></td>
+    <td><code>{$user['displayName']}</code></td>
+    <td><code>{$user['notificationType']}</code></td>
+    <td><code>{$user['notificationAddress']}</code></td>
+    <td><code>{$user['secret']}</code></td>
 </tr>
 HTML;
         }
