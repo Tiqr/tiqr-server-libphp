@@ -8,7 +8,7 @@ use Psr\Log\AbstractLogger;
 
 class TestServerPsrLogger extends AbstractLogger
 {
-    public function log($level, $message, array $context = array())
+    public function log($level, string|\Stringable $message, array $context = []): void
     {
         error_log(">$level $message");
     }
