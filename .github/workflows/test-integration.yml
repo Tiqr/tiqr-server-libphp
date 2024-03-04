@@ -4,28 +4,29 @@ on:
   push:
     branches: [ master, develop ]
 jobs:
-  build:
+  run-qa-tests:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: /var/www/html/
+    container:
+      image:  ghcr.io/openconext/openconext-basecontainers/php82-apache2-node20-composer2:latest
+      volumes:
+        - .:/var/www/html
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
-      - name: Get Composer Cache Directory
-        id: composer-cache
-        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
-      - uses: actions/cache@v2
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
-      - name: Init environment
-        run: cd ci/docker && docker-compose up -d
-      - name: Install dependencies
-        run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer install'
+        uses: actions/checkout@v2
+
+      - name: Composer install
+        run: composer install
+
       - name: Run test scripts (allowed to fail)
-        run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer static-analysis'
+        run: composer static-analysis
+
       - name: Run test scripts
-        run: cd ci/docker && docker-compose exec -T tiqr-server-libphp bash -lc 'composer phpunit && composer security-tests'
+        run: composer phpunit && composer security-tests
+
       - name: Output log files on failure
         if: failure()
         run: tail -2000 /var/log/syslog
