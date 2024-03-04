@@ -1,4 +1,4 @@
-FROM php:7.4-apache AS tiqr-testserver
+FROM php:8.2-apache AS tiqr-testserver
 
 ENV APACHE_DOCUMENT_ROOT /var/www/TestServer
 
