@@ -43,6 +43,7 @@ class Tiqr_Response_V1 extends Tiqr_Response_Abstract
      */
     public function getErrorResponse()
     {
+        $result = array();
         $result['responseCode'] = self::RESPONSE_LOGIN_ERROR;
         return $result;
     }
@@ -56,6 +57,7 @@ class Tiqr_Response_V1 extends Tiqr_Response_Abstract
      */
     public function getInvalidResponse($attemptsLeft = null)
     {
+        $result = array();
         $result['responseCode'] = self::RESPONSE_INVALID;
         if (!is_null($attemptsLeft)) {
             $result['attemptsLeft'] = $attemptsLeft;
@@ -70,6 +72,7 @@ class Tiqr_Response_V1 extends Tiqr_Response_Abstract
      */
     public function getInvalidUserResponse()
     {
+        $result = array();
         $result['responseCode'] = self::RESPONSE_INVALID_USER;
         return $result;
     }
@@ -81,6 +84,7 @@ class Tiqr_Response_V1 extends Tiqr_Response_Abstract
      */
     public function getInvalidRequestResponse()
     {
+        $result = array();
         $result['responseCode'] = self::RESPONSE_INVALID_REQUEST;
         return $result;
     }
@@ -92,6 +96,7 @@ class Tiqr_Response_V1 extends Tiqr_Response_Abstract
      */
     public function getInvalidChallengeResponse()
     {
+        $result = array();
         $result['responseCode'] = self::RESPONSE_INVALID_CHALLENGE;
         return $result;
     }
@@ -105,6 +110,7 @@ class Tiqr_Response_V1 extends Tiqr_Response_Abstract
      */
     public function getAccountBlockedResponse($duration = null)
     {
+        $result = array();
         $result['responseCode'] = self::RESPONSE_ACCOUNT_BLOCKED;
         if (!is_null($duration)) {
             $result['duration'] = $duration;
@@ -119,6 +125,7 @@ class Tiqr_Response_V1 extends Tiqr_Response_Abstract
      */
     public function getLoginResponse()
     {
+        $result = array();
         $result['responseCode'] = self::RESPONSE_LOGIN_OK;
         return $result;
     }
@@ -130,6 +137,7 @@ class Tiqr_Response_V1 extends Tiqr_Response_Abstract
      */
     public function getEnrollmentOkResponse() 
     {
+        $result = array();
         $result['responseCode'] = self::RESPONSE_ENROLLMENT_OK;
         return $result;
     }
@@ -141,6 +149,7 @@ class Tiqr_Response_V1 extends Tiqr_Response_Abstract
      */
     public function getEnrollmentErrorResponse()
     {
+        $result = array();
         $result['responseCode'] = self::RESPONSE_ENROLLMENT_ERROR;
         return $result;
     }
