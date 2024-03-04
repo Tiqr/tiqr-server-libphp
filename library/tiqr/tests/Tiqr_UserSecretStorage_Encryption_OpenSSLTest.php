@@ -24,7 +24,8 @@ class Tiqr_UserSecretStorage_Encryption_OpenSSLTest extends TestCase
      */
     public function test_invalid_configuration_options($options, $expectedError)
     {
-        $this->expectErrorMessage($expectedError);
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage($expectedError);
 
         $userSecretStorage_Encryption=Tiqr_UserSecretStorage_Encryption::getEncryption(
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing(),

@@ -98,6 +98,7 @@ class Tiqr_StateStorageTest extends TestCase
         $this->assertEquals(NULL,  $ss->getValue("nonexistent_key"));
 
         // Empty key not allowed
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Empty key not allowed');
         $ss->setValue('', 'empty key', 0);
 

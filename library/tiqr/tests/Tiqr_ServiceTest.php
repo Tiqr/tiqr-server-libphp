@@ -90,7 +90,7 @@ class Tiqr_ServiceTest extends TestCase
         $enrollment_key = $service->startEnrollmentSession('test_user_id', 'Test User Name', $session_id);
         $this->assertIsString($enrollment_key);
         // Expect a hex encoded key of Tiqr_Service::SESSION_KEY_LENGTH_BYTES * 2 long
-        $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $enrollment_key);
+        $this->assertMatchesRegularExpression('/^([0-9a-z][0-9a-z])+$/', $enrollment_key);
         $this->assertEquals(Tiqr_Service::SESSION_KEY_LENGTH_BYTES * 2, strlen($enrollment_key));
         $this->assertTrue( Tiqr_Service::SESSION_KEY_LENGTH_BYTES >= 16, 'SECURITY: Review length of SESSION_KEY_LENGTH_BYTES');
 
@@ -120,7 +120,7 @@ class Tiqr_ServiceTest extends TestCase
         // 3a - We need to generate an enrollment URL, this must contain the enrollment secret
         // So we need to generate this enrollment secret first
         $enrollment_secret = $service->getEnrollmentSecret($enrollment_key);
-        $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $enrollment_secret);
+        $this->assertMatchesRegularExpression('/^([0-9a-z][0-9a-z])+$/', $enrollment_secret);
         $this->assertEquals(Tiqr_Service::SESSION_KEY_LENGTH_BYTES * 2, strlen($enrollment_secret));
         $this->assertTrue( Tiqr_Service::SESSION_KEY_LENGTH_BYTES >= 16, 'SECURITY: Review length of SESSION_KEY_LENGTH_BYTES');
 
@@ -189,7 +189,7 @@ class Tiqr_ServiceTest extends TestCase
         $this->assertEquals('test_user_id', $result['u']);
         $this->assertEquals($session_key, $result['s']);
         $this->assertTrue(strlen($result['q']) == 10 );
-        $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $result['q']);
+        $this->assertMatchesRegularExpression('/^([0-9a-z][0-9a-z])+$/', $result['q']);
         $this->assertEquals('test.identifier.example.org', $result['i']);
         $this->assertEquals(2, $result['v']);
     }
@@ -209,7 +209,7 @@ class Tiqr_ServiceTest extends TestCase
         $this->assertFalse(isset($result['u']));
         $this->assertEquals($session_key, $result['s']);
         $this->assertTrue(strlen($result['q']) == 10 );
-        $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $result['q']);
+        $this->assertMatchesRegularExpression('/^([0-9a-z][0-9a-z])+$/', $result['q']);
         $this->assertEquals('test.identifier.example.org', $result['i']);
         $this->assertEquals(2, $result['v']);
     }
@@ -231,7 +231,7 @@ class Tiqr_ServiceTest extends TestCase
         // For the login scenario, where the server does not know the userid yet userid is left blank
         $session_key = $service->startAuthenticationSession($userid, $session_id );
         $this->assertIsString($session_key);
-        $this->assertRegExp('/^([0-9a-z][0-9a-z])+$/', $session_key);
+        $this->assertMatchesRegularExpression('/^([0-9a-z][0-9a-z])+$/', $session_key);
         $this->assertEquals(Tiqr_Service::SESSION_KEY_LENGTH_BYTES * 2, strlen($session_key));
         $this->assertTrue( Tiqr_Service::SESSION_KEY_LENGTH_BYTES >= 16, 'SECURITY: Review length of SESSION_KEY_LENGTH_BYTES');
 

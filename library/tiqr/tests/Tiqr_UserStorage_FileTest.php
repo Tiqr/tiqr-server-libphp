@@ -38,25 +38,19 @@ class Tiqr_UserStorage_FileTest extends TestCase
         $this->assertInstanceOf(Tiqr_UserStorage_Interface::class, $userStorage);
     }
 
-    public function test_user_secret_storage_is_not_part_of_user_storage()
-    {
-        // For refactoring: user secret storage should not be on the user storage anymore
-        $this->assertClassNotHasAttribute('_userSecretStorage', Tiqr_UserStorage_File::class);
-    }
-
     public function test_get_secret_is_not_part_of_user_storage()
     {
         $userStorage = $this->buildUserStorage();
-        $this->expectError();
-        $this->expectErrorMessage('Call to undefined method Tiqr_UserStorage_File::getSecret()');
+        $this->expectException(Error::class);
+        $this->expectExceptionMessage('Call to undefined method Tiqr_UserStorage_File::getSecret()');
         $userStorage->getSecret('UserId');
     }
 
     public function test_set_secret_is_not_part_of_user_storage()
     {
         $userStorage = $this->buildUserStorage();
-        $this->expectError();
-        $this->expectErrorMessage('Call to undefined method Tiqr_UserStorage_File::setSecret()');
+        $this->expectException(Error::class);
+        $this->expectExceptionMessage('Call to undefined method Tiqr_UserStorage_File::setSecret()');
         $userStorage->setSecret('UserId', 'Secret');
     }
 

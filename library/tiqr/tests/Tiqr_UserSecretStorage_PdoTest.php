@@ -38,12 +38,6 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
         $this->assertInstanceOf(Tiqr_UserSecretStorage_Interface::class, $userStorage);
     }
 
-    public function test_user_secret_storage_is_not_part_of_user_storage()
-    {
-        // For refactoring: user secret storage should not be on the user storage anymore
-        $this->assertClassNotHasAttribute('_userSecretStorage', Tiqr_UserStorage_Pdo::class);
-    }
-
     public function test_exception_expected_when_set_secret_fails()
     {
         $store = $this->buildUserSecretStorage();
@@ -101,16 +95,16 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
     public function test_deprecated_getSecret_method_is_not_available()
     {
         $store = $this->buildUserSecretStorage();
-        $this->expectError();
-        $this->expectErrorMessageMatches("/Call to private method Tiqr_UserSecretStorage_Pdo::getUserSecret()/");
+        $this->expectException(Error::class);
+        $this->expectExceptionMessageMatches("/Call to private method Tiqr_UserSecretStorage_Pdo::getUserSecret()/");
         $store->getUserSecret('UserId');
     }
 
     public function test_deprecated_setSecret_method_is_not_available()
     {
         $store = $this->buildUserSecretStorage();
-        $this->expectError();
-        $this->expectErrorMessageMatches("/Call to private method Tiqr_UserSecretStorage_Pdo::setUserSecret()/");
+        $this->expectException(Error::class);
+        $this->expectExceptionMessageMatches("/Call to private method Tiqr_UserSecretStorage_Pdo::setUserSecret()/");
         $store->setUserSecret('UserId', 'My Secret');
     }
 
