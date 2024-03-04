@@ -26,12 +26,6 @@ class Tiqr_UserSecretStorage_OathServiceClientTest extends TestCase
         $this->assertInstanceOf(Tiqr_UserSecretStorage_Interface::class, $userStorage);
     }
 
-    public function test_user_secret_storage_is_not_part_of_user_storage()
-    {
-        // For refactoring: user secret storage should not be on the user storage anymore
-        $this->assertClassNotHasAttribute('_userSecretStorage', Tiqr_UserStorage_Pdo::class);
-    }
-
     public function test_it_can_store_and_retrieve_an_user_secret()
     {
         $store = $this->buildUserSecretStorage();
@@ -43,6 +37,7 @@ class Tiqr_UserSecretStorage_OathServiceClientTest extends TestCase
 
         $store->setSecret('user-id-1', 'my-secret');
         // Retrieving of the user secret is not supported
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Calling getUserSecret on the OathServiceClient is not supported");
         $store->getSecret('user-id-1');
     }

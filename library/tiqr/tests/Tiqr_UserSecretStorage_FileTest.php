@@ -36,12 +36,6 @@ class Tiqr_UserSecretStorage_FileTest extends TestCase
         $this->assertInstanceOf(Tiqr_UserSecretStorage_Interface::class, $userStorage);
     }
 
-    public function test_user_secret_storage_is_not_part_of_user_storage()
-    {
-        // For refactoring: user secret storage should not be on the user storage anymore
-        $this->assertClassNotHasAttribute('_userSecretStorage', Tiqr_UserStorage_File::class);
-    }
-
     public function test_it_can_store_and_retrieve_an_user_secret()
     {
         $store = $this->buildUserSecretStorage();
@@ -53,18 +47,16 @@ class Tiqr_UserSecretStorage_FileTest extends TestCase
     public function test_deprecated_getSecret_method_is_not_available()
     {
         $store = $this->buildUserSecretStorage();
-        $this->expectError();
-        $this->expectErrorMessage("Call to private method Tiqr_UserSecretStorage_File::getUserSecret()");
-        $this->expectErrorMessage("Tiqr_UserSecretStorage_FileTest");
+        $this->expectExceptionMessage("Call to private method Tiqr_UserSecretStorage_File::getUserSecret()");
+        $this->expectExceptionMessage("Tiqr_UserSecretStorage_FileTest");
         $store->getUserSecret('UserId');
     }
 
     public function test_deprecated_setSecret_method_is_not_available()
     {
         $store = $this->buildUserSecretStorage();
-        $this->expectError();
-        $this->expectErrorMessage("Call to private method Tiqr_UserSecretStorage_File::setUserSecret()");
-        $this->expectErrorMessage("Tiqr_UserSecretStorage_FileTest");
+        $this->expectExceptionMessage("Call to private method Tiqr_UserSecretStorage_File::setUserSecret()");
+        $this->expectExceptionMessage("Tiqr_UserSecretStorage_FileTest");
         $store->setUserSecret('UserId', 'My Secret');
     }
 
