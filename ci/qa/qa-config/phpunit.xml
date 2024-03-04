@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="../../../vendor/autoload.php">
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="../../../vendor/autoload.php" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
+  <coverage>
+    <include>
+      <directory>../../../library/tiqr</directory>
+    </include>
+    <exclude>
+      <directory>../../../library/tiqr/tests</directory>
+    </exclude>
+    <report>
+      <clover outputFile="coverage.xml"/>
+    </report>
+  </coverage>
   <testsuites>
     <testsuite name="tests">
       <directory>../../../library/tiqr/tests</directory>
     </testsuite>
   </testsuites>
-  <logging>
-    <log type="coverage-clover" target="coverage.xml"/>
-  </logging>
-  <filter>
-    <whitelist>
-      <directory>../../../library/tiqr</directory>
-      <exclude>
-        <directory>../../../library/tiqr/tests</directory>
-      </exclude>
-    </whitelist>
-  </filter>
+  <logging/>
 </phpunit>
