@@ -15,7 +15,7 @@ build:
     # Use bionic image instead of the default trusty image so we can meet the pushok dependency on curl >=7.46.0
     image: default-bionic
     environment:
-        php: 7.2       
+        php: 8.2
 
     nodes:
         analysis:
