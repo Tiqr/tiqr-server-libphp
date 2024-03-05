@@ -36,9 +36,15 @@
         ],
         "static-analysis": "./ci/qa/static-analysis",
         "phpunit": "./ci/qa/phpunit",
-        "security-tests": "./ci/qa/security-tests"
+        "security-tests": "./ci/qa/security-tests",
+        "pre-autoload-dump": "Google\\Task\\Composer::cleanup"
     },
     "autoload": {
         "classmap": [ "library/tiqr/Tiqr" ]
+    },
+    "extra": {
+        "google/apiclient-services": [
+            ""
+        ]
     }
 }
