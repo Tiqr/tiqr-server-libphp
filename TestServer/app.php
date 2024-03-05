@@ -42,7 +42,7 @@ $token_exchange_appid = $config['token_exchange_appid'] ?? 'tiqr';
 $apns_certificate_filename =  App::realpath($config['apns_certificate_filename'] ?? '', $config_dir);
 $apns_environment =  $config['apns_environment'] ?? 'sandbox';
 $firebase_projectId = $config['firebase_projectId'] ?? 'abc-1234';
-$firebase_credentialsFile = $config_dir . '/' . ($config['firebase_credentialsFile'] ?? $config_dir) . '/' . 'google.json';
+$firebase_credentialsFile = App::realpath($config['firebase_credentialsFile'] ?? '',$config_dir);
 $firebase_cacheTokens = $config['$firebase_cacheTokens'] ?? false;
 $firebase_tokenCacheDir = $config['firebase_tokencachedir'] ?? $storage_dir;
 
