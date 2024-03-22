@@ -15,7 +15,7 @@
 - Go to [`API's& Services`](https://console.cloud.google.com/apis/dashboard), and click `+ Enable API's and Services`
 - Search for `firebase cloud messaging api` and enable it
 - Next, go to `Credentials` and create a new credential. Choose for the service account, enter a name, and ID, and copy the email-address generated
-- Open the newl user and navigate to the `keys` tab. Add a new key, and chose the json format. The downloaded file should be places in the config directory and configured in the config file as `firebase_credentialsFile`
+- Open the new user and navigate to the `keys` tab. Add a new key, and chose the json format. The downloaded file should be places in the config directory and configured in the config file as `firebase_credentialsFile`
 
 ## Grant permissions
 
