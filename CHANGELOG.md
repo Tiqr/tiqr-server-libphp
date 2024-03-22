@@ -1,11 +1,13 @@
 # Changelog
 
-## 4.x
+## 4.2.0
 * Require PHP 8.2
-* Switch to FCM HTTP v1 API for Google push notifications (#52). See the included FCM.md for instructions on how to set up FCM for Tiqr.
 * Use SQL "REPLACE INTO" syntax for the state storage. This requires a mysql or sqlite backend.
 * Stricter checking of OCRA suite configuration.
 * Add openssl encryption type to replace the deprecated mcrypt encryption (#50).
+
+## 4.1.0
+* Switch to FCM HTTP v1 API for Google push notifications (#52). See the included FCM.md for instructions on how to set up FCM for Tiqr.
 
 ## 4.0.0
 * Switch to the composer autoloader. Removed the `Tiqr_Autoloader` class. This means you must now use composer to use this library, or add your own autoloading.
