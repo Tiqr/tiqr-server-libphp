@@ -35,7 +35,7 @@ A brief overview of notable points in time of this project
 - 2022: Unit & integration test coverage was added, added TestServer
 - 2022: 3.3: Major refactoring of UserStorage and UserSecretStorage classes, addition of PSR Logging, removal of deprecated functionality, security hardening
 - 2023: 4.0: Switch to composer autoloader, add PHP 8 support, remove APNS v1 and Zend library dependency
-- 2024: 4.1: Update FCM to use HTTP v1 API for google PN's
+- 2024: 4.1: Update FCM to use HTTP v1 API for google PN's, add openssl encryption type for UserSecretStorage
 
 # Ecosystem
 The tiqr-server-libphp uses external libraries sparingly. It uses libraries for sending push notifications and for generating QR code images.
@@ -155,6 +155,77 @@ $logger = new Logger('name');
 $logger->pushHandler(new StreamHandler('path/to/your.log', Logger::DEBUG));
 
 $this->tiqrService = new Tiqr_Service($logger, $options);
+```
+
+# UserStorage and UserSecretStorage
+
+The [UserStorage.php](library/tiqr/Tiqr/UserStorage.php) and [UserSecretStorage.php](library/tiqr/Tiqr/UserSecretStorage.php) are used to store Tiqr user account data (UserStorage) and to store the user's OCRA secret (UserSecretStorage). The use of both classes is optional as you provide Tiqr_Service() with the userid and secret, these can come from anywhere. The 'file' type is more suitable for testing and development. The 'pdo' type is intended for production use.
+
+The UserSecretStorage supports encrypting the user secret using e.g. an AES key. You can also provide your own encrpytion implementation. See [UserSecretStorage.php](library/tiqr/Tiqr/UserSecretStorage.php) for more information.
+
+## Example UserStorage and UserSecretStorage usage
+
+Example using a single mysql 'user' table for user and user secret storage, the user's secret is stored encrypted using an AES key. 
+
+### Create a user storage table in MySQL
+
+```mysql
+CREATE TABLE IF NOT EXISTS user (
+  id integer NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  userid varchar(30) NOT NULL UNIQUE,
+  displayname varchar(30) NOT NULL,
+  secret varchar(128),
+  loginattempts integer,
+  tmpblocktimestamp BIGINT,
+  tmpblockattempts integer,
+  blocked tinyint(1),
+  notificationtype varchar(10),
+  notificationaddress varchar(64)
+);
+```
+
+### Create and configure the UserStorage and UserSecretStorage classes
+
+```php
+
+$user_storage = Tiqr_UserStorage::getUserStorage(
+    'pdo',
+    $logger,
+    array(
+        'dsn' => 'mysql:host=mysql.example.com;dbname=tiqr',
+        'username' => 'tiqr_rw',
+        'password' => 'secret',
+        'table' => 'user'
+    )
+);
+
+$secret_storage = Tiqr_UserSecretStorage::getSecretStorage(
+    'pdo',
+    $logger,
+    array(
+        'dsn' => 'mysql:host=mysql.example.com;dbname=tiqr',
+        'username' => 'tiqr_rw',
+        'password' => 'secret',
+        'table' => 'user',
+        
+        // Encrypt the secret using an AES key
+        'encryption' => [
+            'type' => 'openssl',
+            'cipher' => 'aes-256-cbc', // Cypher to use for encryption
+            'key_id' => 'key_2024',    // ID of the key to use for encryption
+            'keys' => [
+                'key_2024' => '0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20', // Key used for encryption
+                'key_2015' => '303132333435363738393a3b3c3d3e3f303132333435363738393a3b3c3d3e3f', // A (old) key that can be used for decryption
+            ],
+        ],
+    )
+);
+
+$user_storage->createUser('jdoe', 'John Doe');  // Create user with id 'jdoe' and displayname 'John Doe'. 'jdoe' is the user's unique identifier.
+$secret_storage->setSecret('jdoe', '4B7AD80B70FC758C99EFDD7E93932EEE43B9378A1AE5E26098B912C2ECA91828'); // Set the user's secret
+// Set some other data that is associated with the user
+$user_storage->setNotificationType('jdoe', 'APNS');
+$user_storage->setNotificationAddress('jdoe', '251afb4304140542c15252e4a07c4211b441ece5');
 ```
 
 # Running tests
