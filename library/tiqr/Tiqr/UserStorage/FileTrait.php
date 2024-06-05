@@ -77,4 +77,22 @@ trait FileTrait
         if (substr($this->path, -1)!="/") return $this->path."/";
         return $this->path;
     }
+
+    /**
+     * @see Tiqr_HealthCheck_Interface::healthCheck()
+     */
+    public function healthCheck(string &$statusMessage = ''): bool
+    {
+        if (!is_dir($this->path)) {
+            $statusMessage = "FileStorage: Path does not exist";
+            return false;
+        }
+        // Check if the path is writable
+        if (!is_writable($this->path)) {
+            $statusMessage = "FileStorage: Path is not writable";
+            return false;
+        }
+
+        return true;
+    }
 }

@@ -1,5 +1,8 @@
 # Changelog
 
+## 4.3.0
+* Add healthCheck() to the UserStorage, UserSecretStorage and StateSTorage classes (#).
+
 ## 4.2.0
 * Require PHP 8.2
 * Use SQL "REPLACE INTO" syntax for the state storage. This requires a mysql or sqlite backend.

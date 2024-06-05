@@ -372,4 +372,22 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
     {
         return $this->_getIntValue('tmpblocktimestamp', $userId);
     }
+
+    /**
+     * @see Tiqr_HealthCheck_Interface::healthCheck()
+     */
+    public function healthCheck(string &$statusMessage = ''): bool
+    {
+        // Check whether the table exists by reading a random row
+        try {
+            $sth = $this->handle->prepare('SELECT displayname, notificationtype, notificationaddress, loginattempts, tmpblockattempts, blocked, tmpblocktimestamp FROM '.$this->tablename.' LIMIT 1');
+            $sth->execute();
+        }
+        catch (Exception $e) {
+            $statusMessage = "Error reading from UserStorage_PDO: ". $e->getMessage();
+            return false;
+        }
+
+        return true;
+    }
 }

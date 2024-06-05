@@ -96,7 +96,7 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
     {
         $store = $this->buildUserSecretStorage();
         $this->expectException(Error::class);
-        $this->expectExceptionMessageMatches("/Call to private method Tiqr_UserSecretStorage_Pdo::getUserSecret()/");
+        $this->expectExceptionMessageMatches("/Call to protected method Tiqr_UserSecretStorage_Pdo::getUserSecret()/");
         $store->getUserSecret('UserId');
     }
 
@@ -104,8 +104,29 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
     {
         $store = $this->buildUserSecretStorage();
         $this->expectException(Error::class);
-        $this->expectExceptionMessageMatches("/Call to private method Tiqr_UserSecretStorage_Pdo::setUserSecret()/");
+        $this->expectExceptionMessageMatches("/Call to protected method Tiqr_UserSecretStorage_Pdo::setUserSecret()/");
         $store->setUserSecret('UserId', 'My Secret');
+    }
+
+    public function test_healthcheck()
+    {
+        $store = $this->buildUserSecretStorage();
+        $status = '';
+        $this->assertTrue($store->healthCheck($status));
+    }
+
+    public function test_healthcheck_fails_when_table_does_not_exist()
+    {
+        $ss=new Tiqr_UserSecretStorage_Pdo(
+            new Tiqr_UserSecretStorage_Encryption_Plain([]),
+            $this->logger,
+            $this->pdoInstance,
+            'table_does_not_exist'
+        );
+
+        $status='';
+        $this->assertFalse($ss->healthCheck($status));
+        $this->assertStringContainsString('UserSecretStorage_PDO error', $status);
     }
 
     private function buildUserSecretStorage(): Tiqr_UserSecretStorage_Pdo

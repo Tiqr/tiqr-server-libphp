@@ -34,9 +34,8 @@ use Psr\Log\LoggerInterface;
  *
 
  */
-class Tiqr_UserSecretStorage_File implements Tiqr_UserSecretStorage_Interface
+class Tiqr_UserSecretStorage_File  extends Tiqr_UserSecretStorage_Abstract
 {
-    use UserSecretStorageTrait;
     use FileTrait;
 
     private $path;
@@ -47,10 +46,7 @@ class Tiqr_UserSecretStorage_File implements Tiqr_UserSecretStorage_Interface
         LoggerInterface $logger,
         array $decryption = array()
     ) {
-        // See UserSecretStorageTrait
-        $this->encryption = $encryption;
-        $this->decryption = $decryption;
-        $this->logger = $logger;
+        parent::__construct($logger, $encryption, $decryption);
 
         // See FileTrait
         $this->path = $path;
@@ -64,7 +60,7 @@ class Tiqr_UserSecretStorage_File implements Tiqr_UserSecretStorage_Interface
      * @return String The user's secret
      * @throws Exception
      */
-    private function getUserSecret(string $userId): string
+    protected function getUserSecret(string $userId): string
     {
         if ($data = $this->_loadUser($userId)) {
             if (isset($data["secret"])) {
@@ -82,7 +78,7 @@ class Tiqr_UserSecretStorage_File implements Tiqr_UserSecretStorage_Interface
      * @param String $secret
      * @throws Exception
      */
-    private function setUserSecret(string $userId, string $secret): void
+    protected function setUserSecret(string $userId, string $secret): void
     {
         $data=array();
         if ($this->_userExists($userId)) {

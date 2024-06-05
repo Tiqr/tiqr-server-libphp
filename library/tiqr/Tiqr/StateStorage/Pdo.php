@@ -230,4 +230,20 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         return $result;
     }
 
+    /**
+     * @see Tiqr_HealthCheck_Interface::healthCheck()
+     */
+    public function healthCheck(string &$statusMessage = ''): bool
+    {
+        try {
+            // Retrieve a random row from the table, this checks that the table exists and is readable
+            $sth = $this->handle->prepare('SELECT `value`, `key`, `expire` FROM ' . $this->tablename . ' LIMIT 1');
+            $sth->execute();
+        }
+        catch (Exception $e) {
+            $statusMessage = sprintf('Error performing health check on PDO StateStorage: %s', $e->getMessage());
+            return false;
+        }
+        return true;
+    }
 }

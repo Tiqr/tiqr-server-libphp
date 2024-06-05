@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
  * @author ivo
  *
  */
-class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface
+class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface, Tiqr_HealthCheck_Interface
 {
     private $logger;
 
@@ -130,5 +130,23 @@ class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface
     public function init(): void
     {
         # Nothing to do here
+    }
+
+    /**
+     * @see Tiqr_HealthCheck_Interface::healthCheck()
+     */
+    public function healthCheck(string &$statusMessage = ''): bool
+    {
+        try {
+            // Generate a random key and use it to store a value
+            $key = bin2hex(random_bytes(16));
+            $this->setValue($key, 'healthcheck', 10);
+            $this->unsetValue($key);    // Cleanup
+        } catch (Exception $e) {
+            $statusMessage = 'Tiqr_StateStorage_File: error setting key: ' . $e->getMessage();
+            return false;
+        }
+
+        return true;
     }
 }

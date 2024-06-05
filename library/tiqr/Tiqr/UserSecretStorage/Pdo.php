@@ -54,10 +54,8 @@ CREATE TABLE IF NOT EXISTS usersecret (
  *
  */
 
-class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
+class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserSecretStorage_Abstract
 {
-    use UserSecretStorageTrait;
-
     private $tableName;
 
     private $handle;
@@ -74,10 +72,7 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
         string $tableName,
         array $decryption = array()
     ) {
-        // See UserSecretStorageTrait
-        $this->encryption = $encryption;
-        $this->logger = $logger;
-        $this->decryption = $decryption;
+        parent::__construct($logger, $encryption, $decryption);
 
         // Set our own properties
         $this->handle = $handle;
@@ -109,7 +104,7 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
      * @return string
      * @throws Exception
      */
-    private function getUserSecret(string $userId): string
+    protected function getUserSecret(string $userId): string
     {
         try {
             $sth = $this->handle->prepare('SELECT secret FROM ' . $this->tableName . ' WHERE userid = ?');
@@ -137,7 +132,7 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
      *
      * @throws Exception
      */
-    private function setUserSecret(string $userId, string $secret): void
+    protected function setUserSecret(string $userId, string $secret): void
     {
         // UserSecretStorage can be used in a separate table. In this case the table has its own userid column
         // This means that when a user has been created using in the UserStorage, it does not exists in the
@@ -163,5 +158,23 @@ class Tiqr_UserSecretStorage_Pdo implements Tiqr_UserSecretStorage_Interface
             );
             throw ReadWriteException::fromOriginalException($e);
         }
+    }
+
+    /**
+     * @see Tiqr_UserSecretStorage_Interface::healthCheck()
+     */
+    public function healthCheck(string &$statusMessage = ''): bool
+    {
+        // Check whether the table exists by reading a random row
+        try {
+            $sth = $this->handle->prepare('SELECT secret FROM '.$this->tableName.' LIMIT 1');
+            $sth->execute();
+        }
+        catch (Exception $e) {
+            $statusMessage = "UserSecretStorage_PDO error: " . $e->getMessage();
+            return false;
+        }
+
+        return true;
     }
 }

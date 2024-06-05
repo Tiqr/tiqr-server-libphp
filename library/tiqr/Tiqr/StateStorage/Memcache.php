@@ -158,12 +158,29 @@ class Tiqr_StateStorage_Memcache extends Tiqr_StateStorage_Abstract
 
         $result = $this->_memcache->get($key);
         if ($result === false) {
-            // Memcache interface does not provide error information, either the key does not exists or
+            // Memcache interface does not provide error information, either the key does not exist or
             // there was an error communicating with the memcache
             $this->logger->info( sprintf('Unable to get key "%s" from memcache StateStorage', $key) );
             return null;
         }
         return $result;
     }
-        
+
+    /**
+     * @see Tiqr_HealthCheck_Interface::healthCheck()
+     */
+    public function healthCheck(string &$statusMessage = ''): bool
+    {
+        try {
+            // Generate a random key and use it to store a value in the memcache
+            $key = bin2hex(random_bytes(16));
+            $this->setValue($key, 'healthcheck', 10);
+        } catch (Exception $e) {
+            $statusMessage = 'Unable to store key in memcache: ' . $e->getMessage();
+            return false;
+        }
+
+        return true;
+    }
+
 }
