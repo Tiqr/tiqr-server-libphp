@@ -64,4 +64,19 @@ class Tiqr_UserSecretStorage_FileTest extends TestCase
     {
         return new Tiqr_UserSecretStorage_File(new Tiqr_UserSecretStorage_Encryption_Plain([]), $this->targetPath, $this->logger);
     }
+
+    public function test_healcheck()
+    {
+        $store = $this->buildUserSecretStorage();
+        $this->assertTrue($store->healthCheck());
+    }
+
+    public function test_healcheck_fails_when_storage_is_not_writable()
+    {
+        $this->targetPath = '/path/to/nowhere';
+        $store = $this->buildUserSecretStorage();
+        $status = '';
+        $this->assertFalse($store->healthCheck($status));
+        $this->assertStringContainsString('FileStorage', $status);
+    }
 }

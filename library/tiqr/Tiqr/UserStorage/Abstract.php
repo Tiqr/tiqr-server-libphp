@@ -26,9 +26,9 @@ use Psr\Log\LoggerInterface;
  * 
  * @author peter
  */
-abstract class Tiqr_UserStorage_Abstract implements Tiqr_UserStorage_Interface
+abstract class Tiqr_UserStorage_Abstract implements Tiqr_UserStorage_Interface, Tiqr_HealthCheck_Interface
 {
-    protected $logger;
+    protected LoggerInterface $logger;
 
     public function __construct(array $config, LoggerInterface $logger)
     {
@@ -44,5 +44,13 @@ abstract class Tiqr_UserStorage_Abstract implements Tiqr_UserStorage_Interface
     public function getAdditionalAttributes(string $userId): array
     {
         return array();
+    }
+
+    /**
+     * @see Tiqr_HealthCheck_Interface::healthCheck()
+     */
+    public function healthCheck(string &$statusMessage = ''): bool
+    {
+        return true;    // Health check is always successful when not implemented
     }
 }

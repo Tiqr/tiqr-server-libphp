@@ -28,7 +28,7 @@ class Tiqr_UserSecretStorage_OathServiceClient implements Tiqr_UserSecretStorage
     /**
      * @var LoggerInterface
      */
-    private $logger;
+    private LoggerInterface $logger;
 
     public function __construct(Tiqr_API_Client $client, LoggerInterface $logger)
     {

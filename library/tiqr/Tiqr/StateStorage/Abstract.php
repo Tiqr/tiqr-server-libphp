@@ -27,19 +27,19 @@ use Psr\Log\LoggerInterface;
  * @author ivo
  *
  */
-abstract class Tiqr_StateStorage_Abstract implements Tiqr_StateStorage_StateStorageInterface
+abstract class Tiqr_StateStorage_Abstract implements Tiqr_StateStorage_StateStorageInterface, Tiqr_HealthCheck_Interface
 {
     /**
      * The options for the storage. Derived classes can access this
      * to retrieve options configured for the state storage.
      * @var array
      */
-    protected $_options = array();
+    protected array $_options = array();
 
     /**
      * @var LoggerInterface
      */
-    protected $logger;
+    protected LoggerInterface $logger;
 
     /**
      * An initializer that will be called directly after instantiating
@@ -60,9 +60,17 @@ abstract class Tiqr_StateStorage_Abstract implements Tiqr_StateStorage_StateStor
      * a state storage instance of a certain type.
      * @param array $options An array of options for the state storage
      */
-    public function __construct($options, LoggerInterface $logger)
+    public function __construct(array $options, LoggerInterface $logger)
     {
         $this->logger = $logger;
         $this->_options = $options;
+    }
+
+    /**
+     * @see Tiqr_HealthCheck_Interface::healthCheck()
+     */
+    public function healthCheck(string &$statusMessage = ''): bool
+    {
+        return true;    // Health check is always successful when not implemented
     }
 }

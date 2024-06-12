@@ -94,6 +94,7 @@ class Tiqr_StateStorageTest extends TestCase
 
     private function stateTests(Tiqr_StateStorage_StateStorageInterface $ss)
     {
+        $this->assertTrue($ss->healthCheck() ) ;
         // Getting nonexistent value returns NULL
         $this->assertEquals(NULL,  $ss->getValue("nonexistent_key"));
 
@@ -158,4 +159,5 @@ class Tiqr_StateStorageTest extends TestCase
         ];
         return Tiqr_StateStorage::getStorage("pdo", $options, $this->logger);
     }
+
 }

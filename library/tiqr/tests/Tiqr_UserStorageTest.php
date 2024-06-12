@@ -16,6 +16,7 @@ class Tiqr_UserStorageTest extends TestCase
 
     // Used by Pdo and File
     function userStorageTests(Tiqr_UserStorage_Abstract $userStorage) {
+        $this->assertTrue( $userStorage->healthCheck() );
         $this->assertFalse( $userStorage->userExists( 'user1' ) );
 
         // Create a user in the storage
@@ -234,5 +235,35 @@ SQL
 
         // Run user storage tests
         $this->userStorageTests($userStorage);
+    }
+
+    function test_pdo_healthcheck_fails_when_table_does_not_exist()
+    {
+        $tmpDir = $this->makeTempDir();
+        $dsn = 'sqlite:' . $tmpDir . '/user.sq3';
+        // Create test database
+        $pdo = new PDO(
+            $dsn,
+            null,
+            null,
+            array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,)
+        );
+
+        $options=array(
+            'table' => 'does_not_exists',  // Optional
+            'dsn' => $dsn,
+            'username' => null,
+            'password' => null,
+        );
+        $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
+        $userStorage = Tiqr_UserStorage::getStorage(
+            'pdo',
+            $options,
+            $logger
+        );
+
+        $status = '';
+        $this->assertFalse( $userStorage->healthCheck($status) );
+        $this->assertStringContainsString('Error reading from UserStorage_PDO', $status);
     }
 }

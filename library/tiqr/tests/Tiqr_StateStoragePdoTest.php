@@ -100,4 +100,24 @@ class Tiqr_StateStoragePdoTest extends TestCase
             'value too high' => [1.001],
         ];
     }
+
+    public function test_healthcheck_fails_when_PDO_execute_fails()
+    {
+        $this->pdoInstance
+            ->shouldReceive('prepare')
+            ->shouldReceive('execute')
+            ->andThrow(new PDOException('Database unreachable'));
+        $this->assertFalse($this->stateStorage->healthCheck());
+    }
+
+
+    public function test_healthcheck_fails_when_table_does_not_exist()
+    {
+        $targetPath = $this->makeTempDir();
+        $dsn = 'sqlite:' . $targetPath . '/state.sq3';
+
+        $pdoInstance = new PDO($dsn, null, null);
+        $ss=new Tiqr_StateStorage_Pdo( $pdoInstance, $this->logger, 'does_not_exists', 1 );
+        $this->assertFalse( $ss->healthCheck() );
+    }
 }

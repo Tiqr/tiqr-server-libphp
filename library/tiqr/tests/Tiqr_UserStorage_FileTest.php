@@ -54,6 +54,18 @@ class Tiqr_UserStorage_FileTest extends TestCase
         $userStorage->setSecret('UserId', 'Secret');
     }
 
+    public function test_healthcheck_fails_when_path_does_not_exist()
+    {
+        $config = [
+            'type' => 'file',
+            'path' => '/path/to/nowhere'
+        ];
+        $userStorage = new Tiqr_UserStorage_File($config, $this->logger, $config);
+        $status='';
+        $this->assertFalse($userStorage->healthCheck($status));
+        $this->assertStringContainsString('FileStorage:', $status);
+    }
+
     private function buildUserStorage()
     {
         $config = [
