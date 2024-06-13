@@ -5,16 +5,16 @@
  *
  * openssl is widely available, and is already a dependency of the tiqr library
  *
- * The intended purpose of this class is to encrypt the user's secret before storing it the UserSercretSorage,
+ * The intended purpose of this class is to encrypt the user's secret before storing it in the UserSecretStorage,
  * allowing you to store the encryption key and the encrypted secrets in different locations so that access to the
- * storage backed, or the backups thereof, does not allow access to the user's secrets
+ * storage backed, or the backups thereof, does not allow access to the user's secrets.
  *
  *  Along with the encrypted user secret the IV, cipher and key_id are encoded in each ciphertext. This allows you to:
  *  - Change the cipher in the future and still decrypt key stored under the old cipher
  *  - Rotate the key in the future and still decrypt data stored under the old key
  *
- *  The intended use it to allow you to update the encryption configuration, and recrypt the data with the new configuration
- *  at a later time.
+ * The intended use is to allow you to update the encryption configuration, and recrypt the data with the new configuration
+ * at a later time.
  *
  * SECURITY:
  * The default cipher is AES-128-CBC, which is a secure symmetric cipher that requires a 128-bit (16-byte) key and that
