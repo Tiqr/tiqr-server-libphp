@@ -1,7 +1,7 @@
 # Changelog
 
 ## 4.3.0
-* Add healthCheck() to the UserStorage, UserSecretStorage and StateSTorage classes (#).
+* Add healthCheck() to the UserStorage, UserSecretStorage and StateStorage classes (#54).
 
 ## 4.2.0
 * Require PHP 8.2
