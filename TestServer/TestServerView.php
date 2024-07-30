@@ -13,9 +13,10 @@ class TestServerView
         $this->begin();
         echo <<<HTML
 <h1>Tiqr Test Server</h1>
-<a href="/start-enrollment">Enroll new user</a><br /><br />
-<a href="/start-authenticate">Authenticate user</a><br /><br />
-<a href="/list-users">list users</a><br /><br />
+<a href="/start-enrollment">Enroll a new user</a><br /><br />
+<a href="/start-authenticate">Start authentication</a><br /><br />
+<a href="/list-users">list users, authenticate a specific user, send push notification</a><br /><br />
+<a href="/show-logs">Show logs</a><br /><br />
 HTML;
         $this->end();
     }
@@ -24,7 +25,8 @@ HTML;
         $this->begin();
         echo <<<HTML
 <h1>List of users</h1>
-<p>This is the list of user IDs that are registered on this server. Click a user ID to start an authentication for that user.</p>
+<p>This is the list of user IDs that are registered on this server. Click a user ID to start an authentication for that user.
+This also gives you the option to start the authentication by sending a push notification.</p>
 <table border="1">
 <tr>
     <th>userId</th>    
@@ -162,7 +164,33 @@ HTML;
         $this->end();
     }
 
+    /*
+     * @param array $logs Array of strings with log entries to show. Entries are ordered newest first
+     */
+    public function ShowLogs($logs)
+    {
+        $this->begin();
+        echo '<h1>Logs</h1>';
 
+        foreach ($logs as $log) {
+            if (strpos($log, '--== START ==--')) {
+                echo '<b>' . htmlentities($log) . '</b><br /><br />';
+            } else if (stripos($log, 'error')) {
+                echo '<font color="red">' . htmlentities($log) . '</font><br />';
+            } else if (stripos($log, 'warning')) {
+                echo '<font color="darkorange">' . htmlentities($log) . '</font><br />';
+            } else if (stripos($log, 'notice')) {
+                echo '<font color="green">' . htmlentities($log) . '</font><br />';
+            } else if (stripos($log, 'debug')) {
+                echo '<font color="#a9a9a9">' . htmlentities($log) . '</font><br />';
+            }
+            else {
+                echo htmlentities($log) . '<br />';
+            }
+        }
+
+        $this->end();
+    }
 }
 
 

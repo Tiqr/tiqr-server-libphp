@@ -50,7 +50,7 @@ $firebase_credentialsFile = App::realpath($config['firebase_credentialsFile'] ??
 $firebase_cacheTokens = $config['$firebase_cacheTokens'] ?? false;
 $firebase_tokenCacheDir = $config['firebase_tokencachedir'] ?? $storage_dir;
 
-$current_user = $_SERVER['Remote-User'] ?? 'anonymous';
+$current_user = $_SERVER['HTTP_REMOTE_USER'] ?? 'anonymous';
 // Sanatise the current_user
 $current_user = preg_replace('/[^a-zA-Z0-9_]/', '', $current_user);
 
