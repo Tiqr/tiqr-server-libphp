@@ -49,6 +49,10 @@ class Tiqr_Message_APNS2 extends Tiqr_Message_Abstract
 
         $cert=openssl_x509_parse( $cert_file_contents );
         if (false === $cert) {
+            // Log openssl error information
+            while ($msg = openssl_error_string()) {
+                $this->logger->error('openssl_x509_parse(): ' . $msg);
+            }
             throw new RuntimeException('Error parsing APNS client certificate');
         }
         $bundle_id = $cert['subject']['UID'] ?? NULL;
