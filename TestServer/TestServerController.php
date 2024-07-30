@@ -7,10 +7,7 @@
 
 namespace TestServer;
 
-use Mockery;
 use Psr\Log\LoggerInterface;
-use Tiqr_AutoLoader;
-use Tiqr_OCRAWrapper;
 use Tiqr_Service;
 use Tiqr_UserStorage;
 
@@ -26,6 +23,7 @@ class TestServerController
     private $apns_environment;
     private $logger;
     private $storageDir;
+    private $current_user;
 
     private $supportedNotificationTypes = array(
         'GCM',
@@ -35,12 +33,12 @@ class TestServerController
     );
 
     /**
-     * @param $host_url This is the URL by which the tiqr client can reach this server, including http(s):// and port.
+     * @param $host_url string This is the URL by which the tiqr client can reach this server, including http(s):// and port.
      * E.g. 'http://my-laptop.local:8000'
      *
-     * @param $authProtocol This is the app specific url for authentications of the tiqr client, without '://'
+     * @param $authProtocol string This is the app specific url for authentications of the tiqr client, without '://'
      * e.g. 'tiqrauth'. This must match what is configured in the tiqr client
-     * @param $enrollProtocol This is the app specific url for enrolling user accounts in the tiqr client, without '://'
+     * @param $enrollProtocol string This is the app specific url for enrolling user accounts in the tiqr client, without '://'
      * e.g. 'tiqrenroll'. This must match what is configured in the tiqr client
      *
      * @param string $token_exchange_url The URL of the tiqr token exchange server
@@ -53,15 +51,18 @@ class TestServerController
      * @param string $storage_dir Directory to use for tiqr state storage, user storage and user sercret storage
      * @param bool $firebase_cacheTokens Is the cache for accesstokens enabled
      * @param string $firebase_tokenCacheDir Where is the cache for accesstokens located
+     * @param string $current_user The current user, used for getting logfile names
      */
-    function __construct(LoggerInterface $logger, string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_projectId, string $firebase_credentialsFile, string $storage_dir, bool $firebase_cacheTokens, string $firebase_tokenCacheDir)
+    function __construct(LoggerInterface $logger, string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_projectId, string $firebase_credentialsFile, string $storage_dir, bool $firebase_cacheTokens, string $firebase_tokenCacheDir, string $current_user)
     {
         $this->storageDir = $storage_dir;
         $this->logger = $logger;
         $this->host_url = $host_url;
         $this->tiqrService = $this->createTiqrService($host_url, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_projectId, $firebase_credentialsFile, $firebase_cacheTokens, $firebase_tokenCacheDir );
         $this->userStorage = $this->createUserStorage();
-        $this->userSecretStorage = $this->createUserSecretStorage();        
+        $this->userSecretStorage = $this->createUserSecretStorage();
+
+        $this->current_user = $current_user;
     }
 
     /**
@@ -172,7 +173,7 @@ class TestServerController
         $view = new TestServerView();
 
         try {
-            $app::log_info("host_url=$this->host_url");
+            $this->logger->info("host_url=$this->host_url");
             switch ($path) {
                 case "/":   // Test server home page
                     $view->ShowRoot();
@@ -218,13 +219,17 @@ class TestServerController
                     $this->authentication($app);
                     break;
 
+                case '/show-logs':
+                    $this->show_logs($view);
+                    break;
+
                 default:
                     TestServerApp::error_exit(404, "Unknown route '$path'");
             }
         }
         catch (\Exception $e) {
-            $app::log_error("Exception: " . $e->getMessage());
-            $app::log_error($e);
+            $this->logger->error("Exception: " . $e->getMessage());
+            $this->logger->error($e);
             $view->Exception($path, $e);
         }
     }
@@ -235,13 +240,13 @@ class TestServerController
         // the web browser displaying the enrollment interface. It is not used between the tiqr client and
         // this server. We do not use it.
         $session_id = 'session_id_' . time();
-        $app::log_info("Created session $session_id");
+        $this->logger->info("Created session $session_id");
 
         // The user_id to create. Get it from the request, if it is not there use a test user ID.
         $user_id = $app->getGET()['user_id'] ?? 'test-user-' . time();
 
         if ($this->userStorage->userExists($user_id)) {
-            $app::log_warning("$user_id already exists");
+            $this->logger->warning("$user_id already exists");
         }
 
         $user_display_name = $user_id . '\'s display name';
@@ -251,7 +256,7 @@ class TestServerController
         // Note: we create the user in the userStorage later with a different display name so the displayname in the
         //       App differs from the user's displayname on the server.
         $enrollment_key = $this->tiqrService->startEnrollmentSession($user_id, $user_display_name, $session_id);
-        $app::log_info("Started enrollment session $enrollment_key");
+        $this->logger->info("Started enrollment session $enrollment_key");
         $metadataUrl = $this->host_url . "/metadata";
         $enroll_string = $this->tiqrService->generateEnrollString("$metadataUrl?enrollment_key=$enrollment_key");
         $encoded_enroll_string = htmlentities(urlencode($enroll_string));
@@ -288,7 +293,7 @@ class TestServerController
         }
         // Generate an enrollment secret to add to the metadata URL
         $enrollment_secret = $this->tiqrService->getEnrollmentSecret($enrollment_key);
-        $app::log_info("Created enrollment secret $enrollment_secret for enrollment key $enrollment_key");
+        $this->logger->info("Created enrollment secret $enrollment_secret for enrollment key $enrollment_key");
 
         // Note: The enrollment_secret must be added manually to the enrollment URL.
         // This makes the process of generating the enrollment URL more complex, but gives
@@ -307,16 +312,16 @@ class TestServerController
         foreach ($enrollment_metadata as $key1 => $value1) {
             if (is_array($value1)) {
                 foreach ($value1 as $key2 => $value2) {
-                    $app::log_info("Metadata: $key1/$key2=$value2");
+                    $this->logger->info("Metadata: $key1/$key2=$value2");
                 }
             }
             else {
-                $app::log_info("Metadata: $key1=$value1");
+                $this->logger->info("Metadata: $key1=$value1");
             }
         }
         // The enrollment metadata must be returned to the client as JSON
         $enrollment_metadata_json = json_encode($enrollment_metadata, JSON_UNESCAPED_SLASHES);
-        $app::log_info("Return: $enrollment_metadata_json");
+        $this->logger->info("Return: $enrollment_metadata_json");
         header("content-type: application/json");
         echo $enrollment_metadata_json;
     }
@@ -337,7 +342,7 @@ class TestServerController
         if (false === $userid) {
             $app::error_exit(404, "Invalid enrollment_secret");
         }
-        $app::log_info("userid: $userid");
+        $this->logger->info("userid: $userid");
 
         $secret = $app->getPOST()['secret'] ?? '';
         if (strlen($secret) == 0) {
@@ -345,21 +350,21 @@ class TestServerController
         }
         // This is the hex encoded value of the authentication secret that the tiqr client
         // generated
-        $app::log_info("secret: $secret");
+        $this->logger->info("secret: $secret");
 
         $language = $app->getPOST()['language'] ?? '';
         if (strlen($language) == 0) {
-            $app::log_warning("No language in POST");
+            $this->logger->warning("No language in POST");
         }
         // The iso language code e.g. "nl-NL"
-        $app::log_info("language: $language");
+        $this->logger->info("language: $language");
 
         $notificationType = $app->getPOST()['notificationType'] ?? '';
         if (strlen($notificationType) == 0) {
-            $app::log_warning("No notificationType in POST");
+            $this->logger->warning("No notificationType in POST");
         }
         // The notification message type (APNS, GCM, FCM ...)
-        $app::log_info("notificationType: $notificationType");
+        $this->logger->info("notificationType: $notificationType");
 
         if (! in_array($notificationType, $this->supportedNotificationTypes)) {
             $app->log_warning("Unsupported notification type: $notificationType");
@@ -367,40 +372,40 @@ class TestServerController
 
         $notificationAddress = $app->getPOST()['notificationAddress'] ?? '';
         if (strlen($notificationAddress) == 0) {
-            $app::log_warning("No notificationAddress in POST");
+            $this->logger->warning("No notificationAddress in POST");
         }
         // This is the notification address that the Tiqr Client got from the token exchange (e.g. tx.tiqr.org)
-        $app::log_info("notificationAddress: $notificationAddress");
+        $this->logger->info("notificationAddress: $notificationAddress");
 
         $version = $app->getPOST()['version'] ?? '';
         if (strlen($version) == 0) {
-            $app::log_warning("No version in POST");
+            $this->logger->warning("No version in POST");
         }
         // ?
-        $app::log_info("version: $version");
+        $this->logger->info("version: $version");
 
         $operation = $app->getPOST()['operation'] ?? '';
         if (strlen($operation) == 0) {
-            $app::log_warning("No operation in POST");
+            $this->logger->warning("No operation in POST");
         }
         // Must be "register"
-        $app::log_info("operation: $operation");
+        $this->logger->info("operation: $operation");
         if ($operation != 'register') {
             $app::error_exit(404, "Invalid operation: '$operation'. Expected 'register'");
         }
 
         // Get User-Agent HTTP header
         $user_agent = urldecode($_SERVER['HTTP_USER_AGENT'] ?? '');
-        $app::log_info("User-Agent: $user_agent");
+        $this->logger->info("User-Agent: $user_agent");
 
         // Create the user. Use the display name to store the version the client POSTed and the user-agent it sent
         // in this POST request's header.
         $this->userStorage->createUser($userid, "$version | $user_agent");
-        $app::log_info("Created user $userid");
+        $this->logger->info("Created user $userid");
 
         // Set the user secret
         $this->userSecretStorage->setSecret($userid, $secret);
-        $app::log_info("Secret for $userid was stored");
+        $this->logger->info("Secret for $userid was stored");
 
         // Store notification type and the notification address that the client sent us
         $this->userStorage->setNotificationType($userid, $notificationType);
@@ -408,7 +413,7 @@ class TestServerController
 
         // Finalize the enrollemnt
         $this->tiqrService->finalizeEnrollment($enrollment_secret);
-        $app::log_info("Enrollment was finalized");
+        $this->logger->info("Enrollment was finalized");
 
         // Must return "OK" to the tiqr client after a successful enrollment
         echo "OK";
@@ -446,7 +451,7 @@ class TestServerController
     private function start_authenticate(App $app, TestServerView $view)
     {
         $session_id = 'session_id_' . time();
-        $app::log_info("Created session $session_id");
+        $this->logger->info("Created session $session_id");
 
         // The user_id to authenticate. Get it from the request, if it is not there use an empty user ID
         // Both scenario's are support by tiqr:
@@ -457,32 +462,32 @@ class TestServerController
         // Get optional user ID
         $user_id = $app->getGET()['user_id'] ?? '';
         if (strlen($user_id) > 0) {
-            $app::log_info("Authenticating user '$user_id'");
+            $this->logger->info("Authenticating user '$user_id'");
 
             if (!$this->userStorage->userExists($user_id)) {
-                $app::log_warning("'$user_id' is not known on the server");
+                $this->logger->warning("'$user_id' is not known on the server");
             }
         }
 
 
         // Start authentication session
         $session_key = $this->tiqrService->startAuthenticationSession($user_id, $session_id);
-        $app::log_info('Started authentication session');
-        $app::log_info("session_key=$session_key");
+        $this->logger->info('Started authentication session');
+        $this->logger->info("session_key=$session_key");
 
         // Get authentication URL for the tiqr client (to put in the QR code)
         $authentication_URL = $this->tiqrService->generateAuthURL($session_key);
-        $app::log_info('Started authentication URL');
-        $app::log_info("authentication_url=$authentication_URL");
+        $this->logger->info('Started authentication URL');
+        $this->logger->info("authentication_url=$authentication_URL");
 
         $image_url = "/qr?code=" . htmlentities(urlencode($authentication_URL));
 
         $response = '';
         if (strlen($user_id) > 0) {
             // Calculate response
-            $app::log_info("Calculating response for $user_id");
+            $this->logger->info("Calculating response for $user_id");
             $secret = $this->userSecretStorage->getSecret($user_id);
-            $app::log_info("secret=$secret");
+            $this->logger->info("secret=$secret");
 
             $challenge='';
             // Parse the authentication URL to get the challenge question
@@ -495,9 +500,9 @@ class TestServerController
                 $exploded = explode('/', $authentication_URL);
                 $challenge = $exploded[4];   // 10 digit hex challenge
             }
-            $app::log_info("challenge=$challenge");
+            $this->logger->info("challenge=$challenge");
             $response=\OCRA::generateOCRA('OCRA-1:HOTP-SHA1-6:QH10-S', $secret, '', $challenge, '', $session_key, '');
-            $app::log_info("response=$response");
+            $this->logger->info("response=$response");
         }
 
         $view->StartAuthenticate(htmlentities($authentication_URL), $image_url, $user_id, $response, $session_key);
@@ -552,32 +557,32 @@ class TestServerController
         // This should be the session key from the authentication URL that we generated
         $sessionKey = $app->getPOST()['sessionKey'] ?? '';
         if (strlen($sessionKey) == 0) {
-            $app::error_exit(404, "Missing sessionKey is POST");
+            $app::error_exit(404, "Missing sessionKey in POST");
         }
-        $app::log_info("sessionKey: $sessionKey");
+        $this->logger->info("sessionKey: $sessionKey");
 
         // The userId the client authenticated
         $userId = $app->getPOST()['userId'] ?? '';
         if (strlen($userId) == 0) {
-            $app::error_exit(404, "Missing $userId is POST");
+            $app::error_exit(404, "Missing $userId in POST");
         }
-        $app::log_info("userId: $userId");
+        $this->logger->info("userId: $userId");
 
         // Get version from POST
         $version = $app->getPOST()['version'] ?? '';
         if (strlen($version) == 0) {
-            $app::log_warning("No version in POST");
+            $this->logger->warning("No version in POST");
         }
         // ?
-        $app::log_info("version: $version");
+        $this->logger->info("version: $version");
 
         // Get operation from POST
         $operation = $app->getPOST()['operation'] ?? '';
         if (strlen($operation) == 0) {
-            $app::log_warning("No operation in POST");
+            $this->logger->warning("No operation in POST");
         }
         // Must be "login"
-        $app::log_info("operation: $operation");
+        $this->logger->info("operation: $operation");
         if ($operation != 'login') {
             $app::error_exit(404, "Invalid operation: '$operation'. Expected 'login'");
         }
@@ -585,23 +590,23 @@ class TestServerController
         // Get response from POST
         $response = $app->getPOST()['response'] ?? '';
         if (strlen($response) == 0) {
-            $app::log_warning("No response in POST");
+            $this->logger->warning("No response in POST");
         }
-        $app::log_info("response: $response");
+        $this->logger->info("response: $response");
 
         $language = $app->getPOST()['language'] ?? '';
         if (strlen($language) == 0) {
-            $app::log_warning("No language in POST");
+            $this->logger->warning("No language in POST");
         }
         // The iso language code e.g. "nl-NL"
-        $app::log_info("language: $language");
+        $this->logger->info("language: $language");
 
         $notificationType = $app->getPOST()['notificationType'] ?? '';
         if (strlen($notificationType) == 0) {
-            $app::log_warning("No notificationType in POST");
+            $this->logger->warning("No notificationType in POST");
         }
         // The notification message type (APNS, GCM, FCM ...)
-        $app::log_info("notificationType: $notificationType");
+        $this->logger->info("notificationType: $notificationType");
 
         if (! in_array($notificationType, $this->supportedNotificationTypes)) {
             $app->log_warning("Unsupported notification type: $notificationType");
@@ -609,40 +614,48 @@ class TestServerController
 
         $notificationAddress = $app->getPOST()['notificationAddress'] ?? '';
         if (strlen($notificationAddress) == 0) {
-            $app::log_warning("No notificationAddress in POST");
+            $this->logger->warning("No notificationAddress in POST");
         }
         // This is the notification address that the Tiqr Client got from the token exchange (e.g. tx.tiqr.org)
-        $app::log_info("notificationAddress: $notificationAddress");
-
-        // Note: a production tiqr server will now update the notification type and notification address in the
-        // user storage, we do not. We only log when they are different
+        // or the actual notification address for APNS_DIRECT and FCM_DIRECT
+        $this->logger->info("notificationAddress: $notificationAddress");
 
         $notificationType_from_userStorage = $this->userStorage->getNotificationType($userId);
         $notificationAddress_from_userStorage = $this->userStorage->getNotificationAddress($userId);
+        $bUpdateNotificationAddress = false;
         if ($notificationAddress != $notificationAddress_from_userStorage) {
-            $app::log_warning("Client sent different notification address. client=$notificationAddress, server=$notificationAddress_from_userStorage");
+            $this->logger->info("Client sent different notification address. client=$notificationAddress, server=$notificationAddress_from_userStorage");
+            $bUpdateNotificationAddress = true;
         }
         if ($notificationType != $notificationType_from_userStorage) {
-            $app::log_warning("Client sent different notification type. client=$notificationType, server=$notificationType_from_userStorage");
+            $this->logger->info("Client sent different notification type. client=$notificationType, server=$notificationType_from_userStorage");
+            $bUpdateNotificationAddress = true;
+        }
+
+        // Update the notification address and type when the client sent different values
+        if ($bUpdateNotificationAddress) {
+            $this->logger->info("Updating notification address and type");
+            $this->userStorage->setNotificationAddress($userId, $notificationAddress);
+            $this->userStorage->setNotificationType($userId, $notificationType);
         }
 
         // Get User-Agent HTTP header
         $user_agent = urldecode($_SERVER['HTTP_USER_AGENT'] ?? '');
-        $app::log_info("User-Agent: $user_agent");
+        $this->logger->info("User-Agent: $user_agent");
 
         $result = 'ERROR'; // Result for the tiqr Client
         // 'OK', 'INVALID_CHALLENGE', 'INVALID_REQUEST', 'INVALID_RESPONSE', 'INVALID_USER'
 
         if (!$this->userStorage->userExists($userId)) {
-            $app::log_error("Unknown user: $userId ");
+            $this->logger->error("Unknown user: $userId ");
             $result = 'INVALID_USER';
         }
 
         // Lookup the secret of the user by ID
         $userSecret = $this->userSecretStorage->getSecret($userId);   // Assume this works
-        $app::log_info("userSercret=$userSecret");
+        $this->logger->info("userSercret=$userSecret");
 
-        $app::log_info("Authenticating user");
+        $this->logger->info("Authenticating user");
         $result = $this->tiqrService->authenticate($userId, $userSecret, $sessionKey, $response);
         $resultStr = 'ERROR';
         switch ($result) {
@@ -667,20 +680,30 @@ class TestServerController
             try {
                 if ($notificationAddress != $notificationAddress_from_userStorage) {
                     $this->userStorage->setNotificationAddress($userId, $notificationAddress);
-                    log_info("Updated notification address");
+                    $this->logger->info("Updated notification address");
                 }
                 if ($notificationType != $notificationType_from_userStorage) {
                     $this->userStorage->setNotificationType($userId, $notificationType);
-                    log_info("Updated notification type");
+                    $this->logger->info("Updated notification type");
                 }
             }
             catch (\Exception $e) {
-                $app::log_warning('Updating push notification information failed');
-                $app::log_warning($e);
+                $this->logger->warning('Updating push notification information failed');
+                $this->logger->warning($e);
             }
         }
 
-        $app::log_info("Returning authentication result '$resultStr'");
+        $this->logger->info("Returning authentication result '$resultStr'");
         echo $resultStr;
+    }
+
+
+    private function show_logs($view)
+    {
+        $logFile = $this->getStorageDir() . '/' . $this->current_user . '.log';
+        $logs = file_get_contents($logFile);
+        // Reverse order so that newest lines are shown first
+        $logs = array_reverse(explode("\n", $logs));
+        $view->ShowLogs($logs);
     }
 }
