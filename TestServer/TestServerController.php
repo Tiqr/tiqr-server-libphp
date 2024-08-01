@@ -367,7 +367,7 @@ class TestServerController
         $this->logger->info("notificationType: $notificationType");
 
         if (! in_array($notificationType, $this->supportedNotificationTypes)) {
-            $app->log_warning("Unsupported notification type: $notificationType");
+            $this->logger->warning("Unsupported notification type: $notificationType");
         }
 
         $notificationAddress = $app->getPOST()['notificationAddress'] ?? '';
@@ -514,20 +514,20 @@ class TestServerController
         if (strlen($user_id) == 0) {
             $app::error_exit(404, "Missing user_id in POST");
         }
-        $app->log_info("user_id = $user_id");
+        $this->logger->info("user_id = $user_id");
 
         $session_key = $app->getGET()['session_key'] ?? '';
         if (strlen($session_key) == 0) {
             $app::error_exit(404, "Missing session_key in POST");
         }
-        $app->log_info("session_key = $session_key");
+        $this->logger->info("session_key = $session_key");
 
         // Get Notification address and type from userid
         $notificationType=$this->userStorage->getNotificationType($user_id);
-        $app->log_info("notificationType = $notificationType");
+        $this->logger->info("notificationType = $notificationType");
 
         if (! in_array($notificationType, $this->supportedNotificationTypes)) {
-            $app->log_warning("Unsupported notification type: $notificationType");
+            $this->logger->warning("Unsupported notification type: $notificationType");
         }
 
         $notificationAddress=$this->userStorage->getNotificationAddress($user_id);
@@ -536,7 +536,7 @@ class TestServerController
         // translateNotificationAddress does not translate the new APNS_DIRECT and FCM_DIRECT notificationType, it
         // only translates APNS, GCM and FCM. For any other types it returns the unmodified $notificationAddress
         $deviceNotificationAddress = $this->tiqrService->translateNotificationAddress($notificationType, $notificationAddress);
-        $app->log_info("deviceNotificationAddress (from token exchange) = $deviceNotificationAddress");
+        $this->logger->info("deviceNotificationAddress (from token exchange) = $deviceNotificationAddress");
         
         // Note that the current Tiqr app returns notification type 'APNS' or 'GCM'.
         // The Google Cloud Messaging (GCM) API - implemented in the Tiqr_Message_GCM class - is deprecated and has
@@ -544,9 +544,9 @@ class TestServerController
         // So even though the tiqr app returns GCM we actually use FCM implemented by Tiqr_Message_FCM
         // sendAuthNotification() accepts GCM, FCM_DIRECT and knows to use Tiqr_Message_FCM instead. For both APNS and
         // APNS_DIRECT Tiqr_Message_APNS will be used.
-        $app->log_info("Sending push notification using $notificationType to $deviceNotificationAddress");
+        $this->logger->info("Sending push notification using $notificationType to $deviceNotificationAddress");
         $this->tiqrService->sendAuthNotification($session_key, $notificationType, $deviceNotificationAddress);
-        $app->log_info("Push notification sent");
+        $this->logger->info("Push notification sent");
 
         $view->PushResult("Sent $notificationType to $deviceNotificationAddress");
     }
@@ -609,7 +609,7 @@ class TestServerController
         $this->logger->info("notificationType: $notificationType");
 
         if (! in_array($notificationType, $this->supportedNotificationTypes)) {
-            $app->log_warning("Unsupported notification type: $notificationType");
+            $this->logger->warning("Unsupported notification type: $notificationType");
         }
 
         $notificationAddress = $app->getPOST()['notificationAddress'] ?? '';
