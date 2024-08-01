@@ -44,6 +44,8 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         $properties = $this->getCustomProperties();
 
         $this->_sendFirebase($translatedAddress, $alertText, $properties, $projectId, $credentialsFile, $cacheTokens, $tokenCacheDir);
+
+        $this->logger->notice(sprintf('Successfully sent FCM push notification. projectId: "%s"; deviceToken: "%s"', $projectId, $translatedAddress));
     }
 
     /**
@@ -63,7 +65,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
             //set up a callback to log token refresh
             $logger=$this->logger;
             $tokenCallback = function ($cacheKey, $accessToken) use ($logger) {
-                $logger->info(sprintf('New access token received at cache key %s', $cacheKey));
+                $logger->notice(sprintf('New access token received at cache key %s', $cacheKey));
             };
             $client->setTokenCallback($tokenCallback);
             $client->setCache($pool);
@@ -73,7 +75,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         try {
             $client->setAuthConfig($credentialsFile);
         } catch (\Google\Exception $e) {
-            throw new Tiqr_Message_Exception_SendFailure(sprintf("Error setting Google credentials for FCM : %s", $e->getMessage()), true, $e);
+            throw new Tiqr_Message_Exception_SendFailure(sprintf("Error setting Google credentials for FCM: %s", $e->getMessage()), true, $e);
         }
         $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
         $client->fetchAccessTokenWithAssertion();
@@ -122,10 +124,12 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
                 'Content-Type: application/json',
             );
         } catch (\Google\Exception $e) {
-            throw new Tiqr_Message_Exception_SendFailure(sprintf("Error getting Goosle access token : %s", $e->getMessage()), true);
+            throw new Tiqr_Message_Exception_SendFailure(sprintf("Error getting Google access token : %s", $e->getMessage()), true);
         }
 
         $payload = json_encode($fields);
+        $this->logger->debug(sprintf("JSON payload: %s", $payload));
+
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $apiurl);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -148,6 +152,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
 
         // Wait and retry once in case of a 502 Bad Gateway error
         if ($statusCode === 502 && !($retry)) {
+            $this->logger->warning("Received HTTP 502 Bad Gateway error, retrying once");
             sleep(2);
             $this->_sendFirebase($deviceToken, $alert, $properties, $projectId, $credentialsFile,  $cacheTokens,  $tokenCacheDir, true);
             return;
