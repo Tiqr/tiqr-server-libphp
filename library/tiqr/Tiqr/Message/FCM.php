@@ -41,9 +41,9 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         $tokenCacheDir = $options['firebase.tokenCacheDir'] ?? __DIR__;
         $translatedAddress = $this->getAddress();
         $alertText = $this->getText();
-        $url = $this->getCustomProperty('challenge');
+        $properties = $this->getCustomProperties();
 
-        $this->_sendFirebase($translatedAddress, $alertText, $url, $projectId, $credentialsFile, $cacheTokens, $tokenCacheDir);
+        $this->_sendFirebase($translatedAddress, $alertText, $properties, $projectId, $credentialsFile, $cacheTokens, $tokenCacheDir);
     }
 
     /**
@@ -84,32 +84,37 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
     /**
      * Send a message to a device using the firebase API key.
      *
-     * @param  $deviceToken     string device ID
-     * @param  $alert           string alert message
-     * @param  $challenge       string tiqr challenge url
-     * @param  $projectId       string the id of the firebase project
-     * @param  $credentialsFile string The location of the firebase secret json
-     * @param  $cacheTokens     bool Enable caching the accesstokens for accessing the Google API
-     * @param  $tokenCacheDir   string Location for storing the accesstoken cache
-     * @param  $retry           boolean is this a 2nd attempt
+     * @param  $deviceToken      string device ID
+     * @param  $alert            string alert message
+     * @param  $customProperties array Additional properties to send with the message like the challenge.
+     *                                 Array of string->string (property name -> property value)
+     * @param  $projectId        string the id of the firebase project
+     * @param  $credentialsFile  string The location of the firebase secret json
+     * @param  $cacheTokens      bool Enable caching the accesstokens for accessing the Google API
+     * @param  $tokenCacheDir    string Location for storing the accesstoken cache
+     * @param  $retry            boolean is this a 2nd attempt
      * @throws Tiqr_Message_Exception_SendFailure
      */
-    private function _sendFirebase(string $deviceToken, string $alert, string $challenge, string $projectId, string $credentialsFile, bool $cacheTokens, string $tokenCacheDir, bool $retry=false)
+    private function _sendFirebase(string $deviceToken, string $alert, array $properties, string $projectId, string $credentialsFile, bool $cacheTokens, string $tokenCacheDir, bool $retry=false)
     {
         $apiurl = sprintf('https://fcm.googleapis.com/v1/projects/%s/messages:send',$projectId);
 
         $fields = [
             'message' => [
                 'token' => $deviceToken,
-                'data' => [
-                    'challenge' => $challenge,
-                    'text'      => $alert,
-                ],
+                'data' => array(),
                 "android" => [
                     "ttl" => "300s",
                 ],
             ],
         ];
+
+        // Add custom properties
+        foreach ($properties as $k => $v) {
+            $fields['message']['data'][(string)$k] = (string)$v;
+        }
+        // Add message
+        $fields['message']['data']['text'] = $alert;
 
         try {
             $headers = array(
@@ -120,12 +125,13 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
             throw new Tiqr_Message_Exception_SendFailure(sprintf("Error getting Goosle access token : %s", $e->getMessage()), true);
         }
 
+        $payload = json_encode($fields);
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $apiurl);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
         $result = curl_exec($ch);
         $errors = curl_error($ch);
         $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -143,7 +149,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         // Wait and retry once in case of a 502 Bad Gateway error
         if ($statusCode === 502 && !($retry)) {
             sleep(2);
-            $this->_sendFirebase($deviceToken, $alert, $challenge, $projectId, $credentialsFile,  $cacheTokens,  $tokenCacheDir, true);
+            $this->_sendFirebase($deviceToken, $alert, $properties, $projectId, $credentialsFile,  $cacheTokens,  $tokenCacheDir, true);
             return;
         }
 
