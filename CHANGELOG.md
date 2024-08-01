@@ -11,6 +11,8 @@
     seconds that a user has to start the authentication process after the push notification was sent. The default value 
     is 150 seconds. 
   - iOS: Add "mutable-content": 1 option to allow the app to be notified when a push message arrives. 
+  - FCM: Add the ability to send a notification with additional customProperties like authenticationTimeout.
+  - FCM: Add additional logging.
 
 ## 4.3.0
 * Add healthCheck() to the UserStorage, UserSecretStorage and StateStorage classes (#54).
