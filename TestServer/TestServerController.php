@@ -7,6 +7,7 @@
 
 namespace TestServer;
 
+use http\Exception\RuntimeException;
 use Psr\Log\LoggerInterface;
 use Tiqr_Service;
 use Tiqr_UserStorage;
@@ -19,11 +20,30 @@ class TestServerController
     private $userStorage;
     private $userSecretStorage;
     private $host_url;
-    private $apns_certificate_filename;
-    private $apns_environment;
     private $logger;
     private $storageDir;
     private $current_user;
+
+    // define the configuration options that a user may change (override)
+    private $allowed_user_config = array(
+        'apns_environment',
+        // 'some_other_option',
+    );
+
+    // Note: user_config, global_config and current_config are only used for displaying the current configuration
+    // and allowing the user to update it. The actual configuration that is used is locked in place in the constructor
+    // Updating the *_config arrays does not affect the actual configuration of tiqrService, userStorage etc until these
+    // are constructed again (i.e. at the next HTTP request)
+
+    // User configuration options overrides
+    // Update the $current_user.config file in the storage directory to change these
+    private $user_config;
+
+    // List of configuration options without taking the user configuration into account
+    private $global_config;
+
+    // List of configuration options that are currently in effect (i.e. global_config with user_config overrides)
+    private $current_config;
 
     private $supportedNotificationTypes = array(
         'GCM',
@@ -58,6 +78,45 @@ class TestServerController
         $this->storageDir = $storage_dir;
         $this->logger = $logger;
         $this->host_url = $host_url;
+
+        // Store configuration options that were used for displaying to the user
+        $this->global_config = array(
+            'host_url' => $host_url,
+            'current_user' => $current_user,
+            'authProtocol' => $authProtocol,
+            'enrollProtocol' => $enrollProtocol,
+            'token_exchange_url' => $token_exchange_url,
+            'token_exchange_appid' => $token_exchange_appid,
+            'apns_environment' => $apns_environment,
+            'firebase_projectId' => $firebase_projectId,
+            'firebase_cacheTokens' => $firebase_cacheTokens ? 'true' : 'false',
+        );
+
+        // Load user config if it exists, and make a current config from the global config with user config overrides
+        $this->current_config = $this->global_config;
+        if (file_exists($storage_dir . '/' . $current_user . '.config')) {
+            $this->user_config = json_decode(file_get_contents($storage_dir . '/' . $current_user . '.config'), true);
+            if (json_last_error() != JSON_ERROR_NONE) {
+                $this->logger->error('Error parsing user configuration file: ' . json_last_error_msg());
+            }
+
+            // Override configuration options
+            if (isset($this->user_config['apns_environment'])) {
+                $apns_environment = $this->user_config['apns_environment'];
+                $this->logger->info("Overriding default apns_environment to $apns_environment from user configuration");
+            }
+
+            /*
+            if (isset($this->user_config['some_other_option'])) {
+                $some_other_option = $this->user_config['some_other_option'];
+                $this->logger->info("Overriding default some_other_option to $some_other_option from user configuration");
+            }
+            */
+        }
+        else {
+            $this->user_config = array();
+        }
+
         $this->tiqrService = $this->createTiqrService($host_url, $authProtocol, $enrollProtocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_projectId, $firebase_credentialsFile, $firebase_cacheTokens, $firebase_tokenCacheDir );
         $this->userStorage = $this->createUserStorage();
         $this->userSecretStorage = $this->createUserSecretStorage();
@@ -221,6 +280,14 @@ class TestServerController
 
                 case '/show-logs':
                     $this->show_logs($view);
+                    break;
+
+                case '/show-config':
+                    $this->show_config($view);
+                    break;
+
+                case '/update-config':
+                    $this->update_config($app, $view);
                     break;
 
                 default:
@@ -698,12 +765,49 @@ class TestServerController
     }
 
 
-    private function show_logs($view)
+    private function show_logs(TestServerView $view)
     {
         $logFile = $this->getStorageDir() . '/' . $this->current_user . '.log';
         $logs = file_get_contents($logFile);
         // Reverse order so that newest lines are shown first
         $logs = array_reverse(explode("\n", $logs));
         $view->ShowLogs($logs);
+    }
+
+
+    private function show_config(TestServerView $view)
+    {
+        $view->ShowConfig($this->current_config, $this->user_config);
+    }
+
+    private function update_config(App $app, TestServerView $view)
+    {
+        $user_config = array();
+
+        // Get the allowed keys from the POST'ed user configuration and remove any empty ones (== "default")
+        $post = $app->getPOST();
+        foreach ($this->allowed_user_config as $key) {
+            if (isset($post[$key])) {
+                $user_config[$key] = $post[$key];
+                if ($post[$key] == '') {
+                    $this->current_config[$key] = $this->global_config[$key];  // Reset to default from global config
+                }
+                else {
+                    $this->current_config[$key] = $post[$key];  // Update option from POST
+                }
+            }
+        }
+        $this->user_config = $user_config;
+
+        // Write the user configuration to the storage directory
+        $storageDir = $this->getStorageDir();
+        $user_config_file = $storageDir . '/' . $this->current_user . '.config';
+        if (false === file_put_contents($user_config_file, json_encode($user_config, JSON_PRETTY_PRINT)) ) {
+            $this->logger->error("Error writing user configuration to $user_config_file");
+            throw new RuntimeException("Error writing user configuration to $user_config_file");
+        }
+        $this->logger->info("Wrote updated user configuration to $user_config_file");
+
+        $view->ShowConfig($this->current_config, $this->user_config);
     }
 }
