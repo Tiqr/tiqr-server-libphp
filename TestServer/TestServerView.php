@@ -17,6 +17,7 @@ class TestServerView
 <a href="/start-authenticate">Start authentication</a><br /><br />
 <a href="/list-users">list users, authenticate a specific user, send push notification</a><br /><br />
 <a href="/show-logs">Show logs</a><br /><br />
+<a href="/show-config">Show config</a><br /><br />
 HTML;
         $this->end();
     }
@@ -188,6 +189,36 @@ HTML;
                 echo htmlentities($log) . '<br />';
             }
         }
+
+        $this->end();
+    }
+
+    public function ShowConfig($config, $user_config) {
+        $this->begin();
+        echo '<h1>Configuration</h1>';
+        echo '<h2>Current configuration</h2>';
+        foreach ($config as $key => $value) {
+            echo "<b>".htmlentities($key)."</b>: <code>".htmlentities($value)."</code><br />";
+        }
+
+        echo '<h2>User configuration</h2>';
+        // Show input form with the user configuration options to allow the user to change them
+        echo '<form method="post" action="/update-config">';
+        $apns_environment = $user_config['apns_environment'] ?? '';
+        echo '<label for="apns_environment">APNS environment:</label><br />';
+        echo '<input type="radio" id="apns_environment" name="apns_environment" value="" '.($apns_environment == '' ? 'checked' : '').'> Default<br />';
+        echo '<input type="radio" id="apns_environment" name="apns_environment" value="sandbox" '.($apns_environment == 'sandbox' ? 'checked' : '').'> Sandbox<br />';
+        echo '<input type="radio" id="apns_environment" name="apns_environment" value="production" '.($apns_environment == 'production' ? 'checked' : '').'> Production<br />';
+
+        /*
+        $some_other_option = $user_config['some_other_option'] ?? '';
+        echo '<label for="some_other_option">Some other option:</label><br />';
+        echo '<input type="text" id="some_other_option" name="some_other_option" value="'.htmlentities($some_other_option).'"><br />';
+        */
+
+        echo '<br />';
+        echo '<input type="submit" value="Update configuration">';
+        echo '</form>';
 
         $this->end();
     }
