@@ -90,6 +90,12 @@ HTML;
         echo <<<HTML
 <br />
 <a href="/">Home</a><br />
+<br />
+<hr />
+<small>
+This is a Tiqr TestServer. The TestServer is a simple web application aimed at Developers and Tester for testing a Tiqr client with the Tiqr <a href=""https://github.com/Tiqr/tiqr-server-libphp">tiqr-server-libphp library</a>. <br />
+See <a href="https://tiqr.org">tiqr.org</a> for more information about the Tiqr project.
+</small>
 </body>
 </html>
 HTML;
