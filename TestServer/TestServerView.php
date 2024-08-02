@@ -13,6 +13,7 @@ class TestServerView
         $this->begin();
         echo <<<HTML
 <h1>Tiqr Test Server</h1>
+
 <p>Hi!</p>
 <p>This is a Tiqr TestServer. The TestServer is used for testing tiqr clients (i.e. a smartphone app that supports the Tiqr protocol).</p>
 <a>Here you can <a href="/start-enrollment">enroll a new user</a> and <a href="/start-authenticate">authenticate any existing user</a> or <a href="/list-users">select a specific user to authenticate</a>.</p>
@@ -26,7 +27,6 @@ class TestServerView
 <li><a href="/show-logs">Show logs</a></li>
 <li><a href="/show-config">Show config</a></li>
 </ul>
-
 HTML;
         $this->end();
     }
