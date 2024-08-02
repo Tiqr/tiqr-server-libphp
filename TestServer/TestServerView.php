@@ -13,11 +13,20 @@ class TestServerView
         $this->begin();
         echo <<<HTML
 <h1>Tiqr Test Server</h1>
-<a href="/start-enrollment">Enroll a new user</a><br /><br />
-<a href="/start-authenticate">Start authentication</a><br /><br />
-<a href="/list-users">list users, authenticate a specific user, send push notification</a><br /><br />
-<a href="/show-logs">Show logs</a><br /><br />
-<a href="/show-config">Show config</a><br /><br />
+<p>Hi!</p>
+<p>This is a Tiqr TestServer. The TestServer is used for testing tiqr clients (i.e. a smartphone app that supports the Tiqr protocol).</p>
+<a>Here you can <a href="/start-enrollment">enroll a new user</a> and <a href="/start-authenticate">authenticate any existing user</a> or <a href="/list-users">select a specific user to authenticate</a>.</p>
+<p>Note: For your tiqr client to be able to work with this TestServer its <a href="/show-config">configuration</a> must match this server's configuration. If anything goes wrong, have look at the TestServer's <a href="/show-logs">logs.</a></p>
+<hr />
+<h2>Quick links</h2>
+<ul>
+<li><a href="/start-enrollment">Enroll a new user</a></li>
+<li><a href="/start-authenticate">Start authentication</a></li>
+<li><a href="/list-users">List users</a></li>
+<li><a href="/show-logs">Show logs</a></li>
+<li><a href="/show-config">Show config</a></li>
+</ul>
+
 HTML;
         $this->end();
     }
@@ -110,7 +119,8 @@ HTML;
         $this->begin();
         echo <<<HTML
         <h1>Authenticate user $user_id</h1>
-<p>Scan the QR code below using the Tiqr app. When using the smart phone's browser you can tap on the QR code to open the link it contains.</p>
+<p>Scan the QR code below using the Tiqr app. When using the smartphone's browser, you can tap on the QR code to open the link it contains instead of scanning it.</p>
+<p>This QR code is valid for a limited time.</p>
 <a href="$authentication_URL"><img src="$image_url" /></a> <br />
 <br />
 <code>$authentication_URL</code>
@@ -118,7 +128,7 @@ HTML;
 HTML;
         if (strlen($response)>0) {
             echo <<<HTML
-<p>The response (for offline validation) is: <code>$response</code></p>
+<p>The correct OCRA response for this authentication (for offline validation) is: <code>$response</code></p>
 <p><a href="/send-push-notification?user_id=$user_id&session_key=$session_key">send push notification to the user</a></p>
 HTML;
 
