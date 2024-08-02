@@ -85,6 +85,11 @@ class Tiqr_Message_APNS2 extends Tiqr_Message_Abstract
         foreach ($this->getCustomProperties() as $name => $value) {
             $payload->setCustomValue($name, $value);
         }
+        // set "mutable-content": 1 in the notification. This will call the Tiqr app when the notification arrives so
+        // that the app can read it (and also modify it). This allows the app to be notified of the arrival of the notification
+        // without the user interacting with it.
+        $payload->setMutableContent(true);
+
         $this->logger->debug(sprintf('JSON Payload: %s', $payload->toJson()));
         $notification=new Notification($payload, $this->getAddress());
         // Set expiration to 30 seconds from now, same as Message_APNS
