@@ -44,6 +44,9 @@ The rest of the library code is vanilla PHP code.
 
 For testing purposes we use additional dev-dependencies. They include well know testing tools like PHPUnit and Mockery.
 
+# TestServer
+The library includes a [Tiqr TestServer](TestServer) that is aimed at developers and testers of tiqr clients. See the [TestServer README](TestServer/README.md) for more information.
+
 # Future strategy
 - Having a robust test coverage on the code should have a high priority on every new feature created or bug fixed.
 
