@@ -43,7 +43,6 @@ This also gives you the option to start the authentication by sending a push not
     <th>displayName (version | User-Agent)</th>
     <th>notificationType</th>
     <th>notificationAddress</th>
-    <th>secret</th>
 </tr>
 HTML;
         foreach ($users as $user) {
@@ -51,14 +50,18 @@ HTML;
             $user['displayName'] = $user['displayName'] ?? '—';
             $user['notificationType'] = $user['notificationType'] ?? '—';
             $user['notificationAddress'] = $user['notificationAddress'] ?? '—';
+            if (strlen($user['notificationAddress']) > 20) {
+                $user['notificationAddress'] = '<code>' . substr($user['notificationAddress'], 0, 10) . '</code>...<code>' . substr($user['notificationAddress'], -10) . '</code> (' . strlen($user['notificationAddress']) . ')';
+            } else {
+                $user['notificationAddress'] = '<code>'.$user['notificationAddress'].'</code>';
+            }
             $user['secret'] = $user['secret'] ?? '—';
             echo <<<HTML
 <tr>
     <td><a href="/start-authenticate?user_id={$user['userId']}"><code>{$user['userId']}</code></a></td>
     <td><code>{$user['displayName']}</code></td>
     <td><code>{$user['notificationType']}</code></td>
-    <td><code>{$user['notificationAddress']}</code></td>
-    <td><code>{$user['secret']}</code></td>
+    <td>{$user['notificationAddress']}</td>
 </tr>
 HTML;
         }
@@ -66,21 +69,84 @@ HTML;
         $this->end();
     }
 
-    public function StartEnrollment($enroll_string, $image_url) : void {
+    public function StartEnrollment(string $enroll_string, string $user_id, string $session_id) : void {
+        $image_url = "/qr?code=" . urlencode($enroll_string);
+        $expire = htmlentities(\Tiqr_Service::ENROLLMENT_EXPIRE);
+        $enroll_string = htmlentities($enroll_string);
+        $get_enrollment_status = '/get-enrollment-status?session_id=' . urlencode($session_id);
+        $user_id = htmlentities($user_id);
         $this->begin();
         echo <<<HTML
-<h1>Enroll a new user</h1>
-<p>Scan the QR code below using the Tiqr app. When using the smart phone's browser you can tap on the QR code to open the link it contains.</p>
-<p>You can use this QR code only once.</p>
+<h1>Enroll a new user $user_id</h1>
+<p>Scan the QR code below using the Tiqr app to start the enrollment of a new user <code>$user_id</code>. When using the smart phone's browser you can tap on the QR code to open the link it contains.</p>
+<p>You can use this QR code only once. You must complete the enrollment within $expire seconds.</p>
 <a href="$enroll_string"><img src="$image_url" /></a> <br />
 <br />
 <code>$enroll_string</code>
 <br />
 <br />
-<a href="/start-enrollment">Refresh enrollemnt QR code</a><br />
+<p><a href="/start-enrollment">Refresh enrollemnt QR code</a></p>
+<p><a href="$get_enrollment_status">Get enrollment status</a></p>
 HTML;
         $this->end();
     }
+
+    public function ShowEnrollmentStatus(string $status, string $session_id)
+    {
+        $statusmap = array(
+            \Tiqr_Service::ENROLLMENT_STATUS_IDLE => 'ENROLLMENT_STATUS_IDLE',
+            \Tiqr_Service::ENROLLMENT_STATUS_INITIALIZED => 'ENROLLMENT_STATUS_INITIALIZED',
+            \Tiqr_Service::ENROLLMENT_STATUS_RETRIEVED => 'ENROLLMENT_STATUS_RETRIEVED',
+            \Tiqr_Service::ENROLLMENT_STATUS_PROCESSED => 'ENROLLMENT_STATUS_PROCESSED',
+            \Tiqr_Service::ENROLLMENT_STATUS_FINALIZED => 'ENROLLMENT_STATUS_FINALIZED',
+        );
+        $statusdescriptionmap = array(
+            \Tiqr_Service::ENROLLMENT_STATUS_IDLE => 'There is no enrollment going on in this session, or there was an error getting the enrollment status',
+            \Tiqr_Service::ENROLLMENT_STATUS_INITIALIZED => 'The enrollment session was started, but the tiqr client has not retrieved the metadata yet',
+            \Tiqr_Service::ENROLLMENT_STATUS_RETRIEVED => 'The tiqr client has retrieved the metadata',
+            \Tiqr_Service::ENROLLMENT_STATUS_PROCESSED => 'The tiqr client has sent back the tiqr authentication secret',
+            \Tiqr_Service::ENROLLMENT_STATUS_FINALIZED => 'The server has stored the authentication secret',
+        );
+
+        $get_enrollment_status = '/get-enrollment-status?session_id=' . urlencode($session_id);
+
+        $this->begin();
+
+        echo <<<HTML
+<h1>Enrollment status</h1>
+    
+<p>Status: <code>$status</code></p>
+HTML;
+        if (!isset($statusmap[$status])) {
+            echo "<p>ERROR: Unknown status code</p>";
+        }
+
+        echo "<ul>";
+        foreach ($statusmap as $statuscode => $statusconst) {
+            $statusdescription = $statusdescriptionmap[$statuscode];
+            if ($status == $statuscode) {
+                echo "<li><b>$statusconst ($statuscode): $statusdescription</b></li>";
+            } else {
+                echo "<li>$statusconst ($statuscode): $statusdescription</li>";
+            }
+        }
+        echo "</ul>";
+
+        echo <<<HTML
+<p></p><a href="$get_enrollment_status">Refresh enrollment status</a></p>
+HTML;
+        $this->end();
+    }
+
+
+    public function ShowQRCode($code) {
+        $this->begin();
+        $codeHTML = htmlentities($code);
+        echo <<<HTML
+HTML;
+
+    }
+
 
     private function begin() {
         echo <<<HTML
@@ -110,42 +176,61 @@ See <a href="https://tiqr.org">tiqr.org</a> for more information about the Tiqr 
 HTML;
     }
 
-    public function StartAuthenticate(string $authentication_URL, string $image_url, string $user_id, string $response, string $session_key)
+    public function StartAuthenticate(string $authenticationURL, string $user_id, string $response, string $session_key, string $secret, string $auth_session_id)
     {
-        $refreshurl = '/start-authenticate';
+        // This view can handle both authenticating a known user and an unknown user
+        // If the user_id is empty, we're authenticating an unknown user
+        $refreshURL = '/start-authenticate';
+        $authenticationStatusURL = '/get-authentication-status?session_id=' . urlencode($auth_session_id);
         if (strlen($user_id) > 0) {
-            $refreshurl.= "?user_id=$user_id";
+            $refreshURL.= "?user_id=" . urlencode($user_id);
+            $authenticationStatusURL.= '&user_id=' . urlencode($user_id);
         }
+        $sendPushNotificationURL = '/send-push-notification?user_id=' . urlencode($user_id) . '&session_key=' . urlencode($session_key) . '&session_id=' . urlencode($auth_session_id);
+        $image_url = "/qr?code=" . urlencode($authenticationURL);
+        $authenticationURLHTML=htmlentities($authenticationURL);
+        $authentication_timeout=htmlentities(\Tiqr_Service::CHALLENGE_EXPIRE);
+
         $this->begin();
         echo <<<HTML
         <h1>Authenticate user $user_id</h1>
 <p>Scan the QR code below using the Tiqr app. When using the smartphone's browser, you can tap on the QR code to open the link it contains instead of scanning it.</p>
-<p>This QR code is valid for a limited time.</p>
-<a href="$authentication_URL"><img src="$image_url" /></a> <br />
+<p>This QR code is valid for a limited time ($authentication_timeout seconds).</p>
+<a href="$authenticationURLHTML"><img src="$image_url" /></a> <br />
 <br />
-<code>$authentication_URL</code>
+<code>$authenticationURLHTML</code>
 <br />
 HTML;
-        if (strlen($response)>0) {
+        // We're authenticating a known user, so we can show the response and secret and offer to send a push notification
+        // to the user to start the authentication process
+        if (strlen($user_id)>0) {
+            $userIdHTML = htmlentities($user_id);
             echo <<<HTML
 <p>The correct OCRA response for this authentication (for offline validation) is: <code>$response</code></p>
-<p><a href="/send-push-notification?user_id=$user_id&session_key=$session_key">send push notification to the user</a></p>
+<p>The OCRA secret for this user is: <code>$secret</code></p>
+<p><a href="$sendPushNotificationURL">Send push notification to user $userIdHTML</a></p>
 HTML;
-
         }
         echo <<<HTML
+<p></p><a href="$refreshURL">Refresh authentication session and QR code</a></p>
+<p><a href="$authenticationStatusURL">Check the authentication status of this session</a></p>
 <br />
-<a href="$refreshurl">Refresh authentication QR code</a><br />
 HTML;
         $this->end();
     }
 
 
-    function PushResult(string $notificationresult) {
+    function PushResult(string $notificationresult, string $session_key, string $user_id, string $session_id) {
         $this->begin();
-        $text = htmlentities($notificationresult);
+        $checkAuthenticationStatusURL = '/get-authentication-status?session_key=' . urlencode($session_key).'&user_id='.urlencode($user_id).'&session_id='.urlencode($session_id);
+        $sendPushNotificationURL = '/send-push-notification?user_id=' . urlencode($user_id) . '&session_key=' . urlencode($session_key).'&session_id='.urlencode($session_id);
+        $textHTML = htmlentities($notificationresult);
+        $userIdHTML = htmlentities($user_id);
             echo <<<HTML
-<p>$text</p>
+<p>$textHTML</p>
+<p><a href="$checkAuthenticationStatusURL">Check authentication status of user <code>$userIdHTML</code></a></p>
+<p><a href="$sendPushNotificationURL">Resend push notification for <code>$userIdHTML</code></a></p>
+<p><a href="$checkAuthenticationStatusURL">Check authentication status</a></p>
 HTML;
         $this->end();
     }
@@ -180,6 +265,28 @@ HTML;
         }
         $this->end();
     }
+
+
+    public function ShowAuthenticationStatus(string $status, string $session_id, string $user_id)
+    {
+        $this->begin();
+        $statusHTML = htmlentities($status);
+        $userIdHTML = htmlentities($user_id);
+        $authenticationStatusURL = '/get-authentication-status?session_id=' . urlencode($session_id);
+        if (strlen($user_id) > 0) {
+            $authenticationStatusURL .= '&user_id=' . urlencode($user_id);
+        }
+        echo <<<HTML
+<h1>Authentication status</h1>
+<p>Status: <code>$statusHTML</code></p>
+<p></p><a href="$authenticationStatusURL">Refresh authentication status</a></p>
+HTML;
+        if (strlen($user_id) > 0) {
+            echo "<p><a href='/start-authenticate?user_id=" . urlencode($user_id) ."'>Start new authentication for user <code>$userIdHTML</code></a></p>";
+        }
+        $this->end();
+    }
+
 
     /*
      * @param array $logs Array of strings with log entries to show. Entries are ordered newest first
