@@ -6,6 +6,8 @@
     different users. 
   - Update notificationAddress and notificationType in the UserStorage when the current values are different from the 
     values in the authentication response.
+  - Improve usability of the list user screen.
+  - Add vieuws for showing the enrollement status and authentication status.
 * Push notifications:
   - Add authenticationTimeout as a custom value to the push notification message. authenticationTimeout is the time in 
     seconds that a user has to start the authentication process after the push notification was sent. The default value 
