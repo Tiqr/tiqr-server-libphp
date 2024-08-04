@@ -68,7 +68,7 @@ class Tiqr_Service
      */
     // IDLE: There is no enrollment going on in this session, or there was an error getting the enrollment status
     const ENROLLMENT_STATUS_IDLE = 1;
-    // INITIALIZED: The enrollment session was started but the tiqr client has not retrieved the metadata yet
+    // INITIALIZED: The enrollment session was started, but the tiqr client has not retrieved the metadata yet
     const ENROLLMENT_STATUS_INITIALIZED = 2;
     // RETRIEVED: The tiqr client has retrieved the metadata
     const ENROLLMENT_STATUS_RETRIEVED = 3;
