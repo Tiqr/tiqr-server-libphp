@@ -29,6 +29,10 @@ $config_dir = __DIR__ . '/config';
 $config = array();
 if (file_exists($config_dir . '/' . $config_filename)) {
     $config = json_decode(file_get_contents($config_dir . '/' . $config_filename), true);
+
+    if (json_last_error() != JSON_ERROR_NONE) {
+        die('Error parsing configuration file: ' . json_last_error_msg());
+    }
 }
 
 # Directory for storing session info and user data
@@ -46,9 +50,13 @@ $firebase_credentialsFile = App::realpath($config['firebase_credentialsFile'] ??
 $firebase_cacheTokens = $config['$firebase_cacheTokens'] ?? false;
 $firebase_tokenCacheDir = $config['firebase_tokencachedir'] ?? $storage_dir;
 
-$psr_logger = new TestServerPsrLogger();
-$test_server = new TestServerController($psr_logger, $host_url, $tiqrauth_protocol, $tiqrenroll_protocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_projectId, $firebase_credentialsFile, $storage_dir, $firebase_cacheTokens, $firebase_tokenCacheDir);
-$app = new TestServerApp($test_server);
+$current_user = $_SERVER['HTTP_REMOTE_USER'] ?? 'anonymous';
+// Sanatise the current_user
+$current_user = preg_replace('/[^a-zA-Z0-9_]/', '', $current_user);
+
+$psr_logger = new TestServerPsrLogger($storage_dir . '/' . $current_user . '.log');
+$test_server = new TestServerController($psr_logger, $host_url, $tiqrauth_protocol, $tiqrenroll_protocol, $token_exchange_url, $token_exchange_appid, $apns_certificate_filename, $apns_environment, $firebase_projectId, $firebase_credentialsFile, $storage_dir, $firebase_cacheTokens, $firebase_tokenCacheDir, $current_user);
+$app = new TestServerApp($test_server, $psr_logger);
 $app->HandleHTTPRequest();
 
 return true;

@@ -1,8 +1,8 @@
 FROM php:8.2-apache AS tiqr-testserver
 
-ENV APACHE_DOCUMENT_ROOT /var/www/TestServer
+ENV APACHE_DOCUMENT_ROOT=/var/www/TestServer
 
-ENV SERVERNAME localhost
+ENV SERVERNAME=localhost
 
 # Enable mod-rewrite
 RUN a2enmod rewrite

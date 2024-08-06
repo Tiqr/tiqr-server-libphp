@@ -8,6 +8,7 @@
 namespace TestServer;
 
 use Exception;
+use Psr\Log\LoggerInterface;
 
 abstract class App
 {
@@ -63,8 +64,12 @@ class TestServerApp extends App
     private $BODY = '';
     private $router;
 
-    public final function __construct($router)
+    private $logger;
+
+    public final function __construct($router, LoggerInterface $logger)
     {
+        $this->logger = $logger;
+
         $this->SERVER = $_SERVER;
         $this->GET = $_GET;
         $this->POST = $_POST;
@@ -75,24 +80,25 @@ class TestServerApp extends App
         }
 
         $this->router = $router;
+
     }
 
     function HandleHTTPRequest()
     {
-        self::log_info("--== START ==--");
+        $this->logger->info("--== START ==--");
         $uri = $this->SERVER["REQUEST_URI"];
         $method = $this->SERVER["REQUEST_METHOD"];
-        self::log_info("$method $uri");
+        $this->logger->info("$method $uri");
         // Print HTTP headers from the request
         foreach ($this->SERVER as $k => $v) {
             if (strpos($k, "HTTP_") === 0) {
                 // Transform back to HTTP header style
                 $k = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($k, 5)))));
-                self::log_info("$k: $v");
+                $this->logger->info("$k: $v");
             }
         }
         if ($method == 'POST') {
-            self::log_info($this->BODY);
+            $this->logger->info($this->BODY);
         }
         if (strlen($uri) == 0) {
             self::error_exit(500, 'Empty REQUEST_URI');
@@ -100,7 +106,7 @@ class TestServerApp extends App
         if ($uri[0] != '/') {
             self::error_exit(500, 'REQUEST_URI must start with "/"');
         }
-        self::log_info('--');   // End of the HTTP dump
+        $this->logger->info('----');   // End of the HTTP dump
 
         $path = parse_url($uri, PHP_URL_PATH);
 

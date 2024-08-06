@@ -49,6 +49,10 @@ class Tiqr_Message_APNS2 extends Tiqr_Message_Abstract
 
         $cert=openssl_x509_parse( $cert_file_contents );
         if (false === $cert) {
+            // Log openssl error information
+            while ($msg = openssl_error_string()) {
+                $this->logger->error('openssl_x509_parse(): ' . $msg);
+            }
             throw new RuntimeException('Error parsing APNS client certificate');
         }
         $bundle_id = $cert['subject']['UID'] ?? NULL;
@@ -81,6 +85,11 @@ class Tiqr_Message_APNS2 extends Tiqr_Message_Abstract
         foreach ($this->getCustomProperties() as $name => $value) {
             $payload->setCustomValue($name, $value);
         }
+        // set "mutable-content": 1 in the notification. This will call the Tiqr app when the notification arrives so
+        // that the app can read it (and also modify it). This allows the app to be notified of the arrival of the notification
+        // without the user interacting with it.
+        $payload->setMutableContent(true);
+
         $this->logger->debug(sprintf('JSON Payload: %s', $payload->toJson()));
         $notification=new Notification($payload, $this->getAddress());
         // Set expiration to 30 seconds from now, same as Message_APNS

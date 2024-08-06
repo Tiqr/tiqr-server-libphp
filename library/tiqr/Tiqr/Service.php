@@ -68,7 +68,7 @@ class Tiqr_Service
      */
     // IDLE: There is no enrollment going on in this session, or there was an error getting the enrollment status
     const ENROLLMENT_STATUS_IDLE = 1;
-    // INITIALIZED: The enrollment session was started but the tiqr client has not retrieved the metadata yet
+    // INITIALIZED: The enrollment session was started, but the tiqr client has not retrieved the metadata yet
     const ENROLLMENT_STATUS_INITIALIZED = 2;
     // RETRIEVED: The tiqr client has retrieved the metadata
     const ENROLLMENT_STATUS_RETRIEVED = 3;
@@ -357,11 +357,18 @@ class Tiqr_Service
                     throw new InvalidArgumentException("Unsupported notification type '$notificationType'");
             }
 
+            // Authentication timeout in seconds to send as payload in the push notification to the client. The Tiqr client
+            // can use this value to stop offering the authentication to the user.
+            // Use CHALLENGE_EXPIRE - 30 seconds as the maximum timeout to send to the client. This gives the user 30 seconds
+            // before the authentication session expires at the server. Never send an authenticationTimeout of less than 30 seconds.
+            $authenticationTimeout = max( 30, self::CHALLENGE_EXPIRE - 30);
+
             $this->logger->info(sprintf('Creating and sending a %s push notification', $notificationType));
             $message->setId(time());
             $message->setText("Please authenticate for " . $this->_name);
             $message->setAddress($notificationAddress);
             $message->setCustomProperty('challenge', $this->_getChallengeUrl($sessionKey));
+            $message->setCustomProperty('authenticationTimeout', $authenticationTimeout);
             $message->send();
         } catch (Exception $e) {
             $this->logger->error(
