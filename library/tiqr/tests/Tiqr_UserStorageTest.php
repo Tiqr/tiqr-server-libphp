@@ -81,8 +81,8 @@ class Tiqr_UserStorageTest extends TestCase
         catch (Exception $e) {}
 
         // notification type
-        $userStorage->setNotificationType('user1', 'NOTIFICATION_TYPE');
-        $this->assertEquals( 'NOTIFICATION_TYPE', $userStorage->getNotificationType( 'user1' ) );
+        $userStorage->setNotificationType('user1', 'APNS_DIRECT');    // Max 15 characters
+        $this->assertEquals( 'APNS_DIRECT', $userStorage->getNotificationType( 'user1' ) );
 
         // notification address
         $userStorage->setNotificationType('user1', 'NOTIFICATION_ADDRESS');
