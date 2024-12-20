@@ -85,8 +85,8 @@ class Tiqr_UserStorageTest extends TestCase
         $this->assertEquals( 'APNS_DIRECT', $userStorage->getNotificationType( 'user1' ) );
 
         // notification address
-        $userStorage->setNotificationType('user1', 'NOTIFICATION_ADDRESS');
-        $this->assertEquals( 'NOTIFICATION_ADDRESS', $userStorage->getNotificationType( 'user1' ) );
+        $userStorage->setNotificationAddress('user1', 'NOTIFICATION_ADDRESS');
+        $this->assertEquals( 'NOTIFICATION_ADDRESS', $userStorage->getNotificationAddress( 'user1' ) );
 
         // Login attempts
         $userStorage->setLoginAttempts('user1', 3 );
