@@ -29,18 +29,15 @@ use Psr\Log\LoggerInterface;
  * 
  * @author Patrick Honing <Patrick.Honing@han.nl>
  *
- * You can create separate tables for Tiqr_UserSecretStorage_Pdo and Tiqr_UserStorage_Pdo
- * You can also combine the two tables by adding a "secret" column to the user storage table
+ * You can create separate tables for Tiqr_UserSecretStorage_Pdo and Tiqr_UserStorage_Pdo. In that
+ * case use:
+ *  - sql/usersecret.sql for Tiqr_UserSecretStorage_Pdo
+ *  - sql/user.sql for Tiqr_UserStorage_Pdo
+ * You can also combine the two tables by adding a "secret" column to the user storage table. In that
+ * case use sql/user_combined.sql for both Tiqr_UserSecretStorage_Pdo and Tiqr_UserStorage_Pdo.
+ *
  * @see Tiqr_UserStorage_Pdo
  *
- * Mysql Create statement usersecret table
-
-CREATE TABLE IF NOT EXISTS usersecret (
-    id integer NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    userid varchar(30) NOT NULL UNIQUE,
-    secret varchar(128),
-);
-
  * @see Tiqr_UserSecretStorage::getSecretStorage()
  * @see Tiqr_UserSecretStorage_Interface
  *

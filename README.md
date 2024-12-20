@@ -172,20 +172,7 @@ Example using a single mysql 'user' table for user and user secret storage, the 
 
 ### Create a user storage table in MySQL
 
-```mysql
-CREATE TABLE IF NOT EXISTS user (
-  id integer NOT NULL PRIMARY KEY AUTO_INCREMENT,
-  userid varchar(30) NOT NULL UNIQUE,
-  displayname varchar(30) NOT NULL,
-  secret varchar(128),
-  loginattempts integer,
-  tmpblocktimestamp BIGINT,
-  tmpblockattempts integer,
-  blocked tinyint(1),
-  notificationtype varchar(10),
-  notificationaddress varchar(64)
-);
-```
+Use [user_combined.sql](sql/user_combined.sql) to create a table in your MySQL database. This table can be used by both the UserStorage and UserSecretStorage.
 
 ### Create and configure the UserStorage and UserSecretStorage classes
 
@@ -227,7 +214,7 @@ $secret_storage = Tiqr_UserSecretStorage::getSecretStorage(
 $user_storage->createUser('jdoe', 'John Doe');  // Create user with id 'jdoe' and displayname 'John Doe'. 'jdoe' is the user's unique identifier.
 $secret_storage->setSecret('jdoe', '4B7AD80B70FC758C99EFDD7E93932EEE43B9378A1AE5E26098B912C2ECA91828'); // Set the user's secret
 // Set some other data that is associated with the user
-$user_storage->setNotificationType('jdoe', 'APNS');
+$user_storage->setNotificationType('jdoe', 'APNS_DIRECT');
 $user_storage->setNotificationAddress('jdoe', '251afb4304140542c15252e4a07c4211b441ece5');
 ```
 

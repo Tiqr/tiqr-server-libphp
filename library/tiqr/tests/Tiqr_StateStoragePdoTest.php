@@ -35,7 +35,9 @@ class Tiqr_StateStoragePdoTest extends TestCase
     {
         // Create test database
         $pdo = new PDO($dsn, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-        $pdo->exec("CREATE TABLE state (key varchar(255) PRIMARY KEY, expire int, value text);");
+        $sql = file_get_contents(__DIR__ . '/../../../sql/state.sql');
+        $this->assertIsString($sql);
+        $pdo->exec($sql);
     }
 
     protected function setUp(): void

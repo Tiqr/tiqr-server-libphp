@@ -50,16 +50,10 @@ use Psr\Log\LoggerInterface;
  *      cleanup_probability = 1 / (10000 (2 + 1)) = 0.00003
  *
  *
- * Create SQL table (MySQL):
-
- CREATE TABLE IF NOT EXISTS tiqrstate (
-    `key` varchar(255) PRIMARY KEY,
-    expire BIGINT,
-    `value` text
-);
-
-CREATE INDEX IF NOT EXISTS index_tiqrstate_expire ON tiqrstate (expire);
-
+ * See sql/sate.sql for the table definition
+ *
+ *
+ *
  * @see Tiqr_StateStorage::getStorage()
  * @see Tiqr_StateStorage_StateStorageInterface
  *

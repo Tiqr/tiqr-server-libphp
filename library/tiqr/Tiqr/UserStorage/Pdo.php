@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS user (
     tmpblocktimestamp BIGINT,   // 8-byte integer, holds unix timestamp of temporary block. 0=not temporary block
     tmpblockattempts integer,   // Number of failed login attempts counting towards a temporary block
     blocked tinyint(1),         // used as boolean: 0=not blocked. 1=blocked
-    notificationtype varchar(10),
+    notificationtype varchar(15),
     notificationaddress varchar(256)
 );
 
@@ -47,6 +47,15 @@ use Psr\Log\LoggerInterface;
  * It is usable for any database with a PDO driver
  * 
  * @author Patrick Honing <Patrick.Honing@han.nl>
+ *
+ * See sql/user.sql for the table definition
+ *
+ * You can create separate tables for Tiqr_UserSecretStorage_Pdo and Tiqr_UserStorage_Pdo. In that
+ * case use:
+ * - sql/usersecret.sql for Tiqr_UserSecretStorage_Pdo
+ * - sql/user.sql for Tiqr_UserStorage_Pdo
+ * You can also combine the two tables by adding a "secret" column to the user storage table.
+ * In that case use sql/user_combined.sql for both Tiqr_UserSecretStorage_Pdo and Tiqr_UserStorage_Pdo.
  *
  * @see Tiqr_UserStorage::getStorage()
  * @see Tiqr_UserStorage_Interface
