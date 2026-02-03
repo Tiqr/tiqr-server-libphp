@@ -16,9 +16,7 @@
  *
  * @copyright (C) 2010-2024 SURF BV
  */
-use League\Flysystem\Adapter\Local;
-use League\Flysystem\Filesystem;
-use Cache\Adapter\Filesystem\FilesystemCachePool;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 /**
  * Android Cloud To Device Messaging message.
@@ -58,9 +56,11 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         // Try to add a file based cache for accesstokens, if configured
         if ($cacheTokens) {
             //set up the cache
-            $filesystemAdapter = new Local($tokenCacheDir);
-            $filesystem = new Filesystem($filesystemAdapter);
-            $pool = new FilesystemCachePool($filesystem);
+            $pool = new FilesystemAdapter(
+                namespace: 'firebase_tokens',
+                defaultLifetime: 0,
+                directory: $tokenCacheDir
+            );
 
             //set up a callback to log token refresh
             $logger=$this->logger;
