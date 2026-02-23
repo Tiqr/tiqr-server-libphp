@@ -1,7 +1,7 @@
 # Changelog
 
 ## 4.4.0
-* Replace cache/filesystem-adapter for symfony/cache to support PHP 8.2+ this effects sending FCM (Android) push notification ([#57](https://github.com/Tiqr/tiqr-server-libphp/pull/57))
+* Replace cache/filesystem-adapter for symfony/cache to support PHP 8.2+ this affects sending FCM (Android) push notification ([#57](https://github.com/Tiqr/tiqr-server-libphp/pull/57))
 * Move SQL create statements from code/documentation to separate files in the /sql directory and use them in the test suite
 * Increase the size of the notification type field from 10 to 15 characters and add tests for it
 
