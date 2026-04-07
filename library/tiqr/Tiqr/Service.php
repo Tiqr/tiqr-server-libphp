@@ -369,7 +369,9 @@ class Tiqr_Service
             $message->setAddress($notificationAddress);
             $message->setCustomProperty('challenge', $this->_getChallengeUrl($sessionKey));
             $message->setCustomProperty('authenticationTimeout', $authenticationTimeout);
-            if ($serviceName) $message->setCustomProperty('serviceName', $serviceName);
+            if ($serviceName) {
+                $message->setCustomProperty('serviceName', $serviceName);
+            }
             $message->send();
         } catch (Exception $e) {
             $this->logger->error(
