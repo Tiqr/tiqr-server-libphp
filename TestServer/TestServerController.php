@@ -664,7 +664,7 @@ class TestServerController
         $this->tiqrService->sendAuthNotification($session_key, $notificationType, $deviceNotificationAddress, $serviceName);
         $this->logger->info("Push notification sent");
 
-        $view->PushResult("Sent $notificationType to $deviceNotificationAddress", $session_key, $user_id, $session_id);
+        $view->PushResult("Sent $notificationType to $deviceNotificationAddress", $session_key, $user_id, $session_id, $serviceName);
     }
 
 
