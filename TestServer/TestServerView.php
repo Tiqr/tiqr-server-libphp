@@ -226,9 +226,10 @@ HTML;
         $sendPushNotificationURL = '/send-push-notification?user_id=' . urlencode($user_id) . '&session_key=' . urlencode($session_key).'&session_id='.urlencode($session_id);
         $textHTML = htmlentities($notificationresult);
         $userIdHTML = htmlentities($user_id);
+        $serviceNameHTML = htmlentities($serviceName);
             echo <<<HTML
 <p>$textHTML</p>
-<p>Servicename : <code>$serviceName</code></p>
+<p>Servicename : <code>$serviceNameHTML</code></p>
 <p><a href="$checkAuthenticationStatusURL">Check authentication status of user <code>$userIdHTML</code></a></p>
 <p><a href="$sendPushNotificationURL">Resend push notification for <code>$userIdHTML</code></a></p>
 <p><a href="$checkAuthenticationStatusURL">Check authentication status</a></p>
