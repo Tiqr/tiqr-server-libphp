@@ -650,7 +650,10 @@ class TestServerController
         // only translates APNS, GCM and FCM. For any other types it returns the unmodified $notificationAddress
         $deviceNotificationAddress = $this->tiqrService->translateNotificationAddress($notificationType, $notificationAddress);
         $this->logger->info("deviceNotificationAddress (from token exchange) = $deviceNotificationAddress");
-        
+
+        // Set a servicename to add to the pushnotification
+        $serviceName = "TestServer - ". $_SERVER['HTTP_HOST'];
+
         // Note that the current Tiqr app returns notification type 'APNS' or 'GCM'.
         // The Google Cloud Messaging (GCM) API - implemented in the Tiqr_Message_GCM class - is deprecated and has
         // been replaced by Firebase Cloud Messaging (FCM). See: https://developers.google.com/cloud-messaging
@@ -658,10 +661,10 @@ class TestServerController
         // sendAuthNotification() accepts GCM, FCM_DIRECT and knows to use Tiqr_Message_FCM instead. For both APNS and
         // APNS_DIRECT Tiqr_Message_APNS will be used.
         $this->logger->info("Sending push notification using $notificationType to $deviceNotificationAddress");
-        $this->tiqrService->sendAuthNotification($session_key, $notificationType, $deviceNotificationAddress);
+        $this->tiqrService->sendAuthNotification($session_key, $notificationType, $deviceNotificationAddress, $serviceName);
         $this->logger->info("Push notification sent");
 
-        $view->PushResult("Sent $notificationType to $deviceNotificationAddress", $session_key, $user_id, $session_id);
+        $view->PushResult("Sent $notificationType to $deviceNotificationAddress", $session_key, $user_id, $session_id, $serviceName);
     }
 
 

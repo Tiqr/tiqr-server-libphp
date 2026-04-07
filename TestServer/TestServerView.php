@@ -220,14 +220,16 @@ HTML;
     }
 
 
-    function PushResult(string $notificationresult, string $session_key, string $user_id, string $session_id) {
+    function PushResult(string $notificationresult, string $session_key, string $user_id, string $session_id, string $serviceName) {
         $this->begin();
         $checkAuthenticationStatusURL = '/get-authentication-status?session_key=' . urlencode($session_key).'&user_id='.urlencode($user_id).'&session_id='.urlencode($session_id);
         $sendPushNotificationURL = '/send-push-notification?user_id=' . urlencode($user_id) . '&session_key=' . urlencode($session_key).'&session_id='.urlencode($session_id);
         $textHTML = htmlentities($notificationresult);
         $userIdHTML = htmlentities($user_id);
+        $serviceNameHTML = htmlentities($serviceName);
             echo <<<HTML
 <p>$textHTML</p>
+<p>Servicename : <code>$serviceNameHTML</code></p>
 <p><a href="$checkAuthenticationStatusURL">Check authentication status of user <code>$userIdHTML</code></a></p>
 <p><a href="$sendPushNotificationURL">Resend push notification for <code>$userIdHTML</code></a></p>
 <p><a href="$checkAuthenticationStatusURL">Check authentication status</a></p>
