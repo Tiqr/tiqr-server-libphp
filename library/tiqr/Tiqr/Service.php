@@ -328,13 +328,13 @@ class Tiqr_Service
 
     /**
      * Send a push notification to a user containing an authentication challenge
-     * @param String $sessionKey          The session key identifying this authentication session
-     * @param String $notificationType    Notification type returned by the tiqr client: APNS, GCM, FCM, APNS_DIRECT or FCM_DIRECT
+     * @param String $sessionKey The session key identifying this authentication session
+     * @param String $notificationType Notification type returned by the tiqr client: APNS, GCM, FCM, APNS_DIRECT or FCM_DIRECT
      * @param String $notificationAddress Notification address, e.g. device token, phone number etc.
-     **
-     * @throws Exception
+     * @param string $serviceName Display name of the service being authenticated
+     * @throws Tiqr_Message_Exception_SendFailure
      */
-    public function sendAuthNotification(string $sessionKey, string $notificationType, string $notificationAddress): void
+    public function sendAuthNotification(string $sessionKey, string $notificationType, string $notificationAddress, string $serviceName = null): void
     {
         $message = NULL;
         try {
@@ -369,6 +369,7 @@ class Tiqr_Service
             $message->setAddress($notificationAddress);
             $message->setCustomProperty('challenge', $this->_getChallengeUrl($sessionKey));
             $message->setCustomProperty('authenticationTimeout', $authenticationTimeout);
+            if ($serviceName) $message->setCustomProperty('serviceName', $serviceName);
             $message->send();
         } catch (Exception $e) {
             $this->logger->error(
