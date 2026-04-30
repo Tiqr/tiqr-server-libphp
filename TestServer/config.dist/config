@@ -1,5 +1,6 @@
 {
   "host_url" : "http://localhost:8000",
+  "display_name" : "Tiqr Test Server",
   "tiqrauth_protocol" : "tiqrtestauth",
   "tiqrenroll_protocol" : "tiqrtestenroll",
   "token_exchange_url" : "https://tx.tiqr.org/tokenexchange/",

@@ -56,6 +56,7 @@ class TestServerController
      * @param $host_url string This is the URL by which the tiqr client can reach this server, including http(s):// and port.
      * E.g. 'http://my-laptop.local:8000'
      *
+     * @param string $display_name The display name to show in the test server UI
      * @param $authProtocol string This is the app specific url for authentications of the tiqr client, without '://'
      * e.g. 'tiqrauth'. This must match what is configured in the tiqr client
      * @param $enrollProtocol string This is the app specific url for enrolling user accounts in the tiqr client, without '://'
@@ -73,7 +74,7 @@ class TestServerController
      * @param string $firebase_tokenCacheDir Where is the cache for accesstokens located
      * @param string $current_user The current user, used for getting logfile names
      */
-    function __construct(LoggerInterface $logger, string $host_url, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_projectId, string $firebase_credentialsFile, string $storage_dir, bool $firebase_cacheTokens, string $firebase_tokenCacheDir, string $current_user)
+    function __construct(LoggerInterface $logger, string $host_url,  string $display_name, string $authProtocol, string $enrollProtocol, string $token_exchange_url, string $token_exchange_appid, string $apns_certificate_filename, string $apns_environment, string $firebase_projectId, string $firebase_credentialsFile, string $storage_dir, bool $firebase_cacheTokens, string $firebase_tokenCacheDir, string $current_user)
     {
         $this->storageDir = $storage_dir;
         $this->logger = $logger;
