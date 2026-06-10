@@ -29,3 +29,9 @@ build:
                       coverage:
                           file: ./ci/qa/qa-config/coverage.xml
                           format: clover
+        php85:
+            environment:
+                php: 8.5
+            tests:
+                override:
+                    - command: ./vendor/bin/phpunit --configuration=./ci/qa/qa-config/phpunit.xml
