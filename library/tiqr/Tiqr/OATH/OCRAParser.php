@@ -233,7 +233,7 @@ class OATH_OCRAParser {
 			$result &= ($s1[$i] == $s2[$i]);
 		}
 
-		return (boolean)$result;
+		return (bool)$result;
 	}
 
 }

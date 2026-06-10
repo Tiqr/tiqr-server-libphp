@@ -32,7 +32,7 @@ class Tiqr_Message_Exception_SendFailure extends Tiqr_Message_Exception
      * @param boolean   $temporary  temporary failure?
      * @param Exception $parent     parent exception
      */
-    public function __construct($message, $temporary=false, Exception $parent=null)
+    public function __construct($message, $temporary=false, ?Exception $parent=null)
     {
         parent::__construct($message, $parent);
         $this->_temporary = $temporary;

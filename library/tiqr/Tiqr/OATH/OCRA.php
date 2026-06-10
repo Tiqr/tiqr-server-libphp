@@ -140,7 +140,7 @@ class OCRA {
         if (! ctype_digit($codeDigits_str)) {
             throw new InvalidArgumentException('Unsupported OCRA CryptoFunction');
         }
-        $codeDigits = (integer)$codeDigits_str;
+        $codeDigits = (int)$codeDigits_str;
         if (($codeDigits != 0) && (($codeDigits < 4) || ($codeDigits > 10))) {
             throw new InvalidArgumentException('Unsupported OCRA CryptoFunction');
         }
