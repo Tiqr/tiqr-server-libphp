@@ -299,7 +299,6 @@ class OcraTest extends TestCase
 
         $classOCRA = new ReflectionClass('OCRA');
         $_hexStr2Bytes = $classOCRA->getMethod("_hexStr2Bytes");
-        $_hexStr2Bytes->setAccessible(true);
 
         if ( $expected instanceof Exception ) {
             $this->expectExceptionObject($expected);

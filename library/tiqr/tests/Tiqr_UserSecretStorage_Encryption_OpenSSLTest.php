@@ -65,7 +65,6 @@ class Tiqr_UserSecretStorage_Encryption_OpenSSLTest extends TestCase
         $enc=new Tiqr_UserSecretStorage_Encryption_OpenSSL(['cipher' => 'aes-128-cbc', 'keys' => array('default' => '0102030405060708090a0b0c0d0e0f10')]);
         $reflection = new ReflectionClass($enc);
         $property = $reflection->getProperty('_supportedCiphers');
-        $property->setAccessible(true);
         $supportedCiphers=$property->getValue($enc);
 
         $testKey='0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20';

@@ -334,7 +334,7 @@ class Tiqr_Service
      * @param string $serviceName Display name of the service being authenticated
      * @throws Tiqr_Message_Exception_SendFailure
      */
-    public function sendAuthNotification(string $sessionKey, string $notificationType, string $notificationAddress, string $serviceName = null): void
+    public function sendAuthNotification(string $sessionKey, string $notificationType, string $notificationAddress, ?string $serviceName = null): void
     {
         $message = NULL;
         try {
