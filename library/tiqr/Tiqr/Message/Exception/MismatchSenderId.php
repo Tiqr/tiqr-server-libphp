@@ -29,8 +29,8 @@ class Tiqr_Message_Exception_MismatchSenderId extends Tiqr_Message_Exception
      * Constructor
      *
      * @param string    $message    exception message
-     * @param boolean   $temporary  temporary failure?
-     * @param Exception $parent     parent exception
+     * @param bool      $temporary  temporary failure?
+     * @param Exception|null $parent    parent exception
      */
     public function __construct($message, $temporary=false, ?Exception $parent=null)
     {
