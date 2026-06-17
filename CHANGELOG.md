@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.4.1
+* Fix PHP 8.4/8.5 deprecations: use explicit nullable types (`?Type $param = null`) in `Tiqr_DeviceStorage::getStorage()`, `Tiqr_OcraService::getOcraService()`, `Tiqr_Service::sendAuthNotification()` and the `Tiqr_Message` exceptions ([#62](https://github.com/Tiqr/tiqr-server-libphp/pull/62))
+* Replace non-canonical `(boolean)` and `(integer)` casts with `(bool)` and `(int)` ([#62](https://github.com/Tiqr/tiqr-server-libphp/pull/62))
+* Remove no-op `ReflectionMethod::setAccessible()` calls in tests (deprecated since PHP 8.5, no effect since PHP 8.1) ([#62](https://github.com/Tiqr/tiqr-server-libphp/pull/62))
+
 ## 4.4.0
 * Replace cache/filesystem-adapter for symfony/cache to support PHP 8.2+ this affects sending FCM (Android) push notification ([#57](https://github.com/Tiqr/tiqr-server-libphp/pull/57))
 * Move SQL create statements from code/documentation to separate files in the /sql directory and use them in the test suite
