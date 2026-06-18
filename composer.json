@@ -11,7 +11,7 @@
         "ext-openssl": "*",
         "psr/log": "^3.0",
         "psr/cache": "^3.0",
-        "edamov/pushok": "^0.16.0",
+        "edamov/pushok": "^0.19",
         "chillerlan/php-qrcode": "^4.4",
         "google/apiclient": "^2.14",
         "symfony/cache": "^6.4|^7.0"
