@@ -1,7 +1,7 @@
 # Changelog
 
 ## 4.4.2
-* Upgrade `chillerlan/php-qrcode` from `^3.4` to `^4.4` to resolve PHP 8.4/8.5 implicit nullable deprecation in `chillerlan/php-settings-container` 1.x ([#63](https://github.com/Tiqr/tiqr-server-libphp/pull/63))
+* Upgrade `chillerlan/php-qrcode` from `^3.4` to `^5.0` to resolve PHP 8.4/8.5 implicit nullable deprecations in `chillerlan/php-settings-container` 1.x and the `imagedestroy()` deprecation in PHP 8.5 ([#63](https://github.com/Tiqr/tiqr-server-libphp/pull/63))
 * Upgrade `edamov/pushok` from `^0.16` to `^0.19` to resolve PHP 8.4/8.5 implicit nullable deprecations in `Pushok\Payload\Alert` and `Pushok\Response` ([#63](https://github.com/Tiqr/tiqr-server-libphp/pull/63))
 
 ## 4.4.1
