@@ -39,6 +39,7 @@ if (file_exists($config_dir . '/' . $config_filename)) {
 $storage_dir = __DIR__ . '/storage/';
 
 $host_url = $config['host_url'] ?? 'http://localhost:8000';
+$display_name = $config['display_name'] ?? 'Tiqr Test Server';
 $tiqrauth_protocol = $config['tiqrauth_protocol'] ?? 'tiqrauth';
 $tiqrenroll_protocol = $config['tiqrenroll_protocol'] ?? 'tiqrenroll';
 $token_exchange_url = $config['token_exchange_url'] ?? 'https://tx.tiqr.org/tokenexchange/';

@@ -9,10 +9,18 @@ namespace TestServer;
 
 class TestServerView
 {
+    private $displayName;
+
+    public function __construct(string $displayName = 'Tiqr Test Server')
+    {
+        $this->displayName = $displayName;
+    }
+
     public function ShowRoot($args = array()) : void {
+        $displayName = htmlentities($this->displayName);
         $this->begin();
         echo <<<HTML
-<h1>Tiqr Test Server</h1>
+<h1>$displayName</h1>
 
 <p>Hi!</p>
 <p>This is a Tiqr TestServer. The TestServer is used for testing tiqr clients (i.e. a smartphone app that supports the Tiqr protocol).</p>
