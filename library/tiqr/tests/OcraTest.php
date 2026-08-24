@@ -260,7 +260,7 @@ class OcraTest extends TestCase
     public function testTruncate() {
         // Test RFC4226 truncate algorithm
         // Use SHA-1 with an integer value to generate the strings to truncate
-        $tests=array(
+        $tests=[
 //          sha => expected result
             6 => 37787,
             23 => 24262,
@@ -277,7 +277,7 @@ class OcraTest extends TestCase
             50979 => 16854,
             68359 => 54266,
             113274 => 7068,
-        );
+        ];
         foreach ($tests as $i => $expected) {
             $hash=sha1($i);
             $t=OCRA::_oath_truncate($hash, 6);
@@ -294,19 +294,18 @@ class OcraTest extends TestCase
     /**
      * @dataProvider HexToBinTestProvider
      */
-    function testHexToBin($expected, string $hex, int $maxBytes, string $parameterName) {
+    public function testHexToBin($expected, string $hex, int $maxBytes, string $parameterName) {
         // Use reflection to access the private static function OCRA::_hexStr2Bytes(string $hex, int $maxBytes, string $parameterName) : string
 
         $classOCRA = new ReflectionClass('OCRA');
         $_hexStr2Bytes = $classOCRA->getMethod("_hexStr2Bytes");
-        $_hexStr2Bytes->setAccessible(true);
 
         if ( $expected instanceof Exception ) {
             $this->expectExceptionObject($expected);
-            $_hexStr2Bytes->invokeArgs(NULL, array($hex, $maxBytes, $parameterName));
+            $_hexStr2Bytes->invokeArgs(NULL, [$hex, $maxBytes, $parameterName]);
         }
         else {
-            $this->assertSame($expected, $_hexStr2Bytes->invokeArgs(NULL, array($hex, $maxBytes, $parameterName)));
+            $this->assertSame($expected, $_hexStr2Bytes->invokeArgs(NULL, [$hex, $maxBytes, $parameterName]));
         }
     }
 

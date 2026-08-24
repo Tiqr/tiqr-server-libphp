@@ -4,19 +4,15 @@ use Psr\Log\LoggerInterface;
 
 abstract class Tiqr_UserSecretStorage_Abstract implements Tiqr_UserSecretStorage_Interface, Tiqr_HealthCheck_Interface
 {
-    protected LoggerInterface $logger;
-    private Tiqr_UserSecretStorage_Encryption_Interface $encryption;
-
-    /**
-     * @var array() of type_id (prefix) => Tiqr_UserSecretStorage_Encryption_Interface
-     */
-    private array $decryption;
-
-    public function __construct(LoggerInterface $logger, Tiqr_UserSecretStorage_Encryption_Interface $encryption, array $decryption = array())
+    public function __construct(
+        protected LoggerInterface $logger,
+        private readonly Tiqr_UserSecretStorage_Encryption_Interface $encryption,
+        /**
+         * @var array() of type_id (prefix) => Tiqr_UserSecretStorage_Encryption_Interface
+         */
+        private array $decryption = []
+    )
     {
-        $this->logger = $logger;
-        $this->encryption = $encryption;
-        $this->decryption = $decryption;
     }
 
     /**

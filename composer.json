@@ -21,6 +21,7 @@
         "ext-pdo_sqlite": "*",
         "mockery/mockery": "^1.6",
         "phpmd/phpmd": "^2.15",
+        "rector/rector": "^2.4",
         "squizlabs/php_codesniffer": "^3.7"
     },
     "config": {
@@ -38,6 +39,8 @@
         "static-analysis": "./ci/qa/static-analysis",
         "phpunit": "./ci/qa/phpunit",
         "security-tests": "./ci/qa/security-tests",
+        "rector": "./ci/qa/rector.sh --dry-run",
+        "rector-fix": "./ci/qa/rector.sh",
         "pre-autoload-dump": "Google\\Task\\Composer::cleanup"
     },
     "autoload": {

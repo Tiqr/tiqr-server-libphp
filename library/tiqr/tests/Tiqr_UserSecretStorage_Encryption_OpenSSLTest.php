@@ -62,21 +62,20 @@ class Tiqr_UserSecretStorage_Encryption_OpenSSLTest extends TestCase
     {
         // supportedCiphers is a private static property of Tiqr_UserSecretStorage_Encryption_OpenSSL
         // make it public to access it
-        $enc=new Tiqr_UserSecretStorage_Encryption_OpenSSL(['cipher' => 'aes-128-cbc', 'keys' => array('default' => '0102030405060708090a0b0c0d0e0f10')]);
+        $enc=new Tiqr_UserSecretStorage_Encryption_OpenSSL(['cipher' => 'aes-128-cbc', 'keys' => ['default' => '0102030405060708090a0b0c0d0e0f10']]);
         $reflection = new ReflectionClass($enc);
         $property = $reflection->getProperty('_supportedCiphers');
-        $property->setAccessible(true);
         $supportedCiphers=$property->getValue($enc);
 
         $testKey='0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20';
-        $opensslSupportedCiphers = array_map('strtolower', openssl_get_cipher_methods());
+        $opensslSupportedCiphers = array_map(strtolower(...), openssl_get_cipher_methods());
 
         foreach ($supportedCiphers as $cipher=>$cipherInfo) {
             if (!in_array($cipher, $opensslSupportedCiphers)) {
                 continue;   // Skip ciphers that are not supported by the current openssl, we can't test them
             }
-            yield $cipher => [ array('cipher' => $cipher, 'keys' => array('default' => substr($testKey, 0, $cipherInfo['key']*2)) ) ];
-            yield strtoupper($cipher) => [ array('cipher' => strtoupper($cipher), 'keys' => array('default' => substr($testKey, 0, $cipherInfo['key']*2)) ) ];
+            yield $cipher => [ ['cipher' => $cipher, 'keys' => ['default' => substr($testKey, 0, $cipherInfo['key']*2)] ] ];
+            yield strtoupper($cipher) => [ ['cipher' => strtoupper($cipher), 'keys' => ['default' => substr($testKey, 0, $cipherInfo['key']*2)] ] ];
         }
     }
 
@@ -96,19 +95,19 @@ class Tiqr_UserSecretStorage_Encryption_OpenSSLTest extends TestCase
     public function provide_invalid_encryption_options()
     {
         yield [
-            array('cipher' => 'aes-128-cbc', 'key_id'=>'key1', 'keys' => array('default' => '0102030405060708090a0b0c0d0e0f10')),
+            ['cipher' => 'aes-128-cbc', 'key_id'=>'key1', 'keys' => ['default' => '0102030405060708090a0b0c0d0e0f10']],
             "No key configured for key_id 'key1'"
         ];
         yield [
-            array('cipher' => 'aes-128-cbc', 'key_id'=>'key1', 'keys' => array('key1' => '0102030405060708090a0b0c0d0e0f')),
+            ['cipher' => 'aes-128-cbc', 'key_id'=>'key1', 'keys' => ['key1' => '0102030405060708090a0b0c0d0e0f']],
             "Invalid length of key with key_id 'key1' used with cipher 'aes-128-cbc', expected 16 bytes, got 15 bytes"
         ];
         yield [
-            array('cipher' => 'aes-128-cbc', 'key_id'=>'key1', 'keys' => array('key1' => '0102030405060708090a0b0c0d0e0f1011')),
+            ['cipher' => 'aes-128-cbc', 'key_id'=>'key1', 'keys' => ['key1' => '0102030405060708090a0b0c0d0e0f1011']],
             "Invalid length of key with key_id 'key1' used with cipher 'aes-128-cbc', expected 16 bytes, got 17 bytes"
         ];
         yield [
-            array('cipher' => 'aes-128-cbc', 'key_id'=>'key1', 'keys' => array('key1' => '0102030405060708090a0b0c0d0e0fxx')),
+            ['cipher' => 'aes-128-cbc', 'key_id'=>'key1', 'keys' => ['key1' => '0102030405060708090a0b0c0d0e0fxx']],
             "Error decoding key with key_id 'key1'"
         ];
     }
@@ -118,7 +117,7 @@ class Tiqr_UserSecretStorage_Encryption_OpenSSLTest extends TestCase
      */
     public function test_decrypt($cipher, $key, $iv, $tag, $ciphertext, $plaintext) {
         $enc=new Tiqr_UserSecretStorage_Encryption_OpenSSL(
-            array('cipher' => 'aes-128-cbc', 'keys' => array('test_key' => $key))
+            ['cipher' => 'aes-128-cbc', 'keys' => ['test_key' => $key]]
         );
 
         // <cipher>:<key_id>:<iv>:<tag>:<ciphertext>
@@ -163,37 +162,37 @@ class Tiqr_UserSecretStorage_Encryption_OpenSSLTest extends TestCase
 
     public function provide_invalid_encrypted_data() {
         yield [
-            array('cipher' => 'aes-128-cbc', 'keys' => array('default' => '000102030405060708090A0B0C0D0E0F' )),
+            ['cipher' => 'aes-128-cbc', 'keys' => ['default' => '000102030405060708090A0B0C0D0E0F' ]],
             'aes-128-cbc:default:EBESExQVFhcYGRobHB0eHw==::oQMdQsKcTWBauKmGPfrC7BGVuxI7TrOTxcECSN2jhLE=:',
             "Invalid ciphertext format"
         ];
         yield [
-            array('cipher' => 'aes-128-cbc', 'keys' => array('default' => '000102030405060708090A0B0C0D0E0F' )),
+            ['cipher' => 'aes-128-cbc', 'keys' => ['default' => '000102030405060708090A0B0C0D0E0F' ]],
             'aes-128-cbc:default:EBESExQVFhcYGRobHB0eHw==:oQMdQsKcTWBauKmGPfrC7BGVuxI7TrOTxcECSN2jhLE=',
             "Invalid ciphertext format"
         ];
         yield [
-            array('cipher' => 'aes-128-cbc', 'keys' => array('default' => '000102030405060708090A0B0C0D0E0F' )),
+            ['cipher' => 'aes-128-cbc', 'keys' => ['default' => '000102030405060708090A0B0C0D0E0F' ]],
             'aes-128-cbc:invalid:EBESExQVFhcYGRobHB0eHw==::oQMdQsKcTWBauKmGPfrC7BGVuxI7TrOTxcECSN2jhLE=',
             "No key configured for key_id 'invalid"
         ];
         yield [
-            array('cipher' => 'aes-128-cbc', 'keys' => array('default' => '000102030405060708090A0B0C0D0E0F' )),
+            ['cipher' => 'aes-128-cbc', 'keys' => ['default' => '000102030405060708090A0B0C0D0E0F' ]],
             'aes-128-cbc:default:EBESExQV_hcYGRobHB0eHw==::oQMdQsKcTWBauKmGPfrC7BGVuxI7TrOTxcECSN2jhLE=',
             "Error decoding IV"
         ];
         yield [
-            array('cipher' => 'aes-128-cbc', 'keys' => array('default' => '000102030405060708090A0B0C0D0E0F' )),
+            ['cipher' => 'aes-128-cbc', 'keys' => ['default' => '000102030405060708090A0B0C0D0E0F' ]],
             'aes-128-cbc:default:EBESExQVFhcYGRobHB0eHw==:_:xxxdQsKcTWBauKmGPfrC7BGVuxI7TrOTxcECSN2jhLE=',
             "Error decoding tag"
         ];
         yield [
-            array('cipher' => 'aes-128-cbc', 'keys' => array('default' => '000102030405060708090A0B0C0D0E0F' )),
+            ['cipher' => 'aes-128-cbc', 'keys' => ['default' => '000102030405060708090A0B0C0D0E0F' ]],
             'aes-128-cbc:default:EBESExQVFhcYGRobHB0eHw==::oQMdQsKcTWBauKmGPfr_7BGVuxI7TrOTxcECSN2jhLE=',
             "Error decrypting data"
         ];
         yield [
-            array('cipher' => 'aes-128-cbc', 'keys' => array('default' => '000102030405060708090A0B0C0D0E0F' )),
+            ['cipher' => 'aes-128-cbc', 'keys' => ['default' => '000102030405060708090A0B0C0D0E0F' ]],
             'aes-128-cbc:default:EBESExQVFhcYGRobHB0eHw==::xxxdQsKcTWBauKmGPfrC7BGVuxI7TrOTxcECSN2jhLE=',
             "Error decrypting data"
         ];

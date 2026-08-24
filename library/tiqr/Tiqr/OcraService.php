@@ -37,17 +37,14 @@ class Tiqr_OcraService
      * @return Tiqr_OcraService_Interface
      * @throws Exception An exception if an unknown orca service type is requested.
      */
-    public static function getOcraService(string $type="tiqr", array $options=array(), LoggerInterface $logger=null)
+    public static function getOcraService(string $type="tiqr", array $options=[], ?LoggerInterface $logger=null)
     {
         if (!$logger)
             $logger=new \Psr\Log\NullLogger();
-
-        switch ($type) {
-            case "tiqr":
-                return new Tiqr_OcraService_Tiqr($options, $logger);
-            case "oathserviceclient":
-                return new Tiqr_OcraService_OathServiceClient($options, $logger);
-        }
-        throw new RuntimeException(sprintf('Unable to create a OcraService instance of type: %s', $type));
+        return match ($type) {
+            "tiqr" => new Tiqr_OcraService_Tiqr($options, $logger),
+            "oathserviceclient" => new Tiqr_OcraService_OathServiceClient($options, $logger),
+            default => throw new RuntimeException(sprintf('Unable to create a OcraService instance of type: %s', $type)),
+        };
     }
 }

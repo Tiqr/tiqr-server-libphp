@@ -7,10 +7,10 @@ use Psr\Log\LoggerInterface;
 
 class Tiqr_OcraService_TiqrTest extends TestCase
 {
-    static function getService(string $ocraSuite): Tiqr_OcraService_Tiqr
+    public static function getService(string $ocraSuite): Tiqr_OcraService_Tiqr
     {
         return new Tiqr_OcraService_Tiqr(
-            array('ocra.suite' => $ocraSuite),
+            ['ocra.suite' => $ocraSuite],
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing()
         );
     }
@@ -32,7 +32,7 @@ class Tiqr_OcraService_TiqrTest extends TestCase
         $suite = \Tiqr_Service::DEFAULT_OCRA_SUITE;
         $ocra = $this->getService($suite);
         $key32 = '3132333435363738393031323334353637383930313233343536373839303132';
-        $testvectors = array(
+        $testvectors = [
             [$key32, '0000000000', '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f', '525367'],
             [$key32, '1111111111', '202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f', '401066'],
             [$key32, '2222222222', '404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f', '453922'],
@@ -49,7 +49,7 @@ class Tiqr_OcraService_TiqrTest extends TestCase
             [$key32, 'dddddddddd', 'a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf', '982346'],
             [$key32, 'eeeeeeeeee', 'c0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedf', '627589'],
             [$key32, 'ffffffffff', 'e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff', '570983'],
-        );
+        ];
         $i = 0;
         foreach ($testvectors as $v) {
             $this->assertTrue($ocra->verifyResponse($v[3], "vector-$i", $v[0], $v[1], $v[2]));

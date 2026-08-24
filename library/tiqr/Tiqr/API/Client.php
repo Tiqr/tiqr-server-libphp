@@ -47,7 +47,7 @@ class Tiqr_API_Client
      *
      * @throws Exception
      */
-    public function call($resource, $method = "GET", $data = array())
+    public function call($resource, $method = "GET", $data = [])
     {
         $headers['X-OATHService-ConsumerKey'] = $this->_consumerKey;
 
@@ -73,7 +73,7 @@ class Tiqr_API_Client
      *
      * @return Tiqr_API_Entity_APIResult
      */
-    protected function callAPI($resource, $method = "GET", $data = array(), $headers = array())
+    protected function callAPI($resource, $method = "GET", $data = [], $headers = [])
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->_apiBaseURL . ltrim($resource, '/'));
@@ -103,7 +103,7 @@ class Tiqr_API_Client
                 break;
         }
 
-        $headerArray = array();
+        $headerArray = [];
         foreach ($headers as $key => $value) {
             $headerArray[] = $key . ': ' . $value;
         }
@@ -112,7 +112,6 @@ class Tiqr_API_Client
 
         $apiResult = curl_exec($ch);
         $resultCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         $result = new Tiqr_API_Entity_APIResult();
         $result->code = $resultCode;

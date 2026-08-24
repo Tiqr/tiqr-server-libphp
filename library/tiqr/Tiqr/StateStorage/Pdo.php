@@ -76,11 +76,6 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
     protected $handle;
 
     /**
-     * @var string
-     */
-    private $tablename;
-
-    /**
      * @var int
      */
     private $cleanupProbability;
@@ -93,13 +88,12 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
      *
      * @throws RuntimeException when an invalid cleanupProbability is configured
      */
-    public function __construct(PDO $pdoInstance, LoggerInterface $logger, string $tablename, float $cleanupProbability)
+    public function __construct(PDO $pdoInstance, LoggerInterface $logger, private readonly string $tablename, float $cleanupProbability)
     {
         if ($cleanupProbability < 0 || $cleanupProbability > 1) {
             throw new RuntimeException('The probability for removing the expired state should be expressed in a floating point value between 0 and 1.');
         }
         $this->cleanupProbability = $cleanupProbability;
-        $this->tablename = $tablename;
         $this->handle = $pdoInstance;
         $this->logger = $logger;
     }
@@ -112,7 +106,7 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
     private function cleanExpired(): void {
         try {
             $sth = $this->handle->prepare("DELETE FROM " . $this->tablename . " WHERE `expire` < ? AND NOT `expire` = 0");
-            $sth->execute(array(time()));
+            $sth->execute([time()]);
             $deletedRows=$sth->rowCount();
             $this->logger->notice(
                 sprintf("Deleted %d expired keys", $deletedRows)
@@ -121,7 +115,7 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         catch (Exception $e) {
             $this->logger->error(
                 sprintf("Deleting expired keys failed: %s", $e->getMessage()),
-                array('exception', $e)
+                ['exception', $e]
             );
         }
     }
@@ -134,7 +128,7 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         if (empty($key)) {
             throw new InvalidArgumentException('Empty key not allowed');
         }
-        if (((float) rand() /(float) getrandmax()) < $this->cleanupProbability) {
+        if (((float) random_int(0, mt_getrandmax()) /(float) mt_getrandmax()) < $this->cleanupProbability) {
             $this->cleanExpired();
         }
         // REPLACE INTO is mysql dialect. Supported by sqlite as well.
@@ -150,12 +144,12 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
             $expire+=time();    // Store unix timestamp after which the key expires
         }
         try {
-            $sth->execute(array(serialize($value), $expire, $key));
+            $sth->execute([serialize($value), $expire, $key]);
         }
         catch (Exception $e) {
             $this->logger->error(
                 sprintf('Unable to store key "%s" in PDO StateStorage', $key),
-                array('exception' => $e)
+                ['exception' => $e]
             );
             throw ReadWriteException::fromOriginalException($e);
         }
@@ -171,12 +165,12 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
         }
         try {
             $sth = $this->handle->prepare("DELETE FROM " . $this->tablename . " WHERE `key` = ?");
-            $sth->execute(array($key));
+            $sth->execute([$key]);
         }
         catch (Exception $e) {
             $this->logger->error(
                 sprintf('Error deleting key "%s" from PDO StateStorage', $key),
-                array('exception' => $e)
+                ['exception' => $e]
             );
             throw ReadWriteException::fromOriginalException($e);
         }
@@ -201,12 +195,12 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
 
         try {
             $sth = $this->handle->prepare('SELECT `value` FROM ' . $this->tablename . ' WHERE `key` = ? AND (`expire` >= ? OR `expire` = 0)');
-            $sth->execute(array($key, time()));
+            $sth->execute([$key, time()]);
         }
         catch (Exception $e) {
             $this->logger->error(
                 sprintf('Error getting value for key "%s" from PDO StateStorage', $key),
-                array('exception' => $e)
+                ['exception' => $e]
             );
             throw ReadWriteException::fromOriginalException($e);
         }
@@ -216,7 +210,7 @@ class Tiqr_StateStorage_Pdo extends Tiqr_StateStorage_Abstract
             $this->logger->info(sprintf('getValue: Key "%s" not found in PDO StateStorage', $key));
             return NULL;    // Key not found
         }
-        $result=unserialize($result, array('allowed_classes' => false));
+        $result=unserialize($result, ['allowed_classes' => false]);
         if (false === $result) {
             throw new RuntimeException(sprintf('getValue: unserialize error for key "%s" in PDO StateStorage', $key));
         }

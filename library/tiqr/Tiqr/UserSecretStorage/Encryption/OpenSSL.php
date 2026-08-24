@@ -91,7 +91,7 @@ class Tiqr_UserSecretStorage_Encryption_OpenSSL implements Tiqr_UserSecretStorag
 
         // Check if the cipher is supported by openssl, match case-insensitive because openssl_get_cipher_methods returns
         // the cipher names in different casings, depending on the openssl version
-        $opensslSupportedCiphers = array_map('strtolower', openssl_get_cipher_methods());
+        $opensslSupportedCiphers = array_map(strtolower(...), openssl_get_cipher_methods());
         if (!in_array($this->_cipher, $opensslSupportedCiphers)) {
             throw new RuntimeException("Cipher '{$this->_cipher}' is not supported by your version of openssl");
         }
@@ -100,7 +100,7 @@ class Tiqr_UserSecretStorage_Encryption_OpenSSL implements Tiqr_UserSecretStorag
         }
 
         $this->_key_id = strtolower($config['key_id'] ?? 'default');
-        if (strpos($this->_key_id, ':') !== false) {
+        if (str_contains($this->_key_id, ':')) {
             throw new RuntimeException("Key id '{$this->_key_id}' contains invalid character ':'");
         }
 
@@ -176,7 +176,7 @@ class Tiqr_UserSecretStorage_Encryption_OpenSSL implements Tiqr_UserSecretStorag
 
         // Cipher
         $cipher = strtolower($split_data[0]);
-        $supportedCiphers = array_map('strtolower', openssl_get_cipher_methods());
+        $supportedCiphers = array_map(strtolower(...), openssl_get_cipher_methods());
         if (!in_array($cipher, $supportedCiphers)) {
             throw new RuntimeException("Cipher '$cipher' is not supported by your version of openssl");
         }

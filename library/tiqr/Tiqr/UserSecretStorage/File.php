@@ -38,18 +38,13 @@ class Tiqr_UserSecretStorage_File  extends Tiqr_UserSecretStorage_Abstract
 {
     use FileTrait;
 
-    private $path;
-
     public function __construct(
         Tiqr_UserSecretStorage_Encryption_Interface $encryption,
-        string $path,
+        private string $path,
         LoggerInterface $logger,
-        array $decryption = array()
+        array $decryption = []
     ) {
         parent::__construct($logger, $encryption, $decryption);
-
-        // See FileTrait
-        $this->path = $path;
     }
 
     /**
@@ -80,7 +75,7 @@ class Tiqr_UserSecretStorage_File  extends Tiqr_UserSecretStorage_Abstract
      */
     protected function setUserSecret(string $userId, string $secret): void
     {
-        $data=array();
+        $data=[];
         if ($this->_userExists($userId)) {
             $data = $this->_loadUser($userId);
         }

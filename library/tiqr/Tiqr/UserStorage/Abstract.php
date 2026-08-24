@@ -28,11 +28,8 @@ use Psr\Log\LoggerInterface;
  */
 abstract class Tiqr_UserStorage_Abstract implements Tiqr_UserStorage_Interface, Tiqr_HealthCheck_Interface
 {
-    protected LoggerInterface $logger;
-
-    public function __construct(array $config, LoggerInterface $logger)
+    public function __construct(array $config, protected LoggerInterface $logger)
     {
-        $this->logger = $logger;
     }
 
     /**
@@ -43,7 +40,7 @@ abstract class Tiqr_UserStorage_Abstract implements Tiqr_UserStorage_Interface, 
      */
     public function getAdditionalAttributes(string $userId): array
     {
-        return array();
+        return [];
     }
 
     /**
