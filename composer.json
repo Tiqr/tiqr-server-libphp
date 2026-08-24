@@ -4,7 +4,7 @@
     "type": "library",
     "license": "BSD-3-Clause",
     "require": {
-        "php": "^8.2",
+        "php": "^8.5",
         "ext-gd": "*",
         "ext-curl": "*",
         "ext-json": "*",
@@ -26,7 +26,7 @@
     "config": {
         "sort-packages": true,
         "platform": {
-            "php": "8.2"
+            "php": "8.5"
         }
     },
     "scripts": {
