@@ -6,4 +6,7 @@ use Rector\Config\RectorConfig;
 
 return RectorConfig::configure()
     ->withPaths([__DIR__.'/../../library'])
-    ->withPhpSets();
+    ->withPhpSets()
+    ->withSkip([
+        \Rector\Php84\Rector\MethodCall\NewMethodCallWithoutParenthesesRector::class,
+    ]);
