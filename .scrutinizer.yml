@@ -14,7 +14,10 @@ coding_style:
 build:
     image: default-jammy
     environment:
-        php: 8.5.8
+        php:
+            version: 8.5.8
+            pecl_extensions:
+                - xdebug
 
     nodes:
         analysis:
