@@ -14,10 +14,7 @@ coding_style:
 build:
     image: default-jammy
     environment:
-        php:
-            version: 8.5.8
-            pecl_extensions:
-                - xdebug
+        php: 8.5.8
 
     nodes:
         analysis:
@@ -27,7 +24,7 @@ build:
         coverage:
             tests:
                 override:
-                    - command: XDEBUG_MODE=coverage ./vendor/bin/phpunit --configuration=./ci/qa/qa-config/phpunit.xml
+                    - command: if command -v phpdbg >/dev/null 2>&1; then phpdbg -qrr ./vendor/bin/phpunit --configuration=./ci/qa/qa-config/phpunit.xml; else XDEBUG_MODE=coverage ./vendor/bin/phpunit --configuration=./ci/qa/qa-config/phpunit.xml; fi
                       coverage:
                           file: ./ci/qa/qa-config/coverage.xml
                           format: clover
