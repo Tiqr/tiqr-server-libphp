@@ -15,7 +15,7 @@ class Tiqr_ServiceTest extends TestCase
     }
 
     private function getOptions() {
-        return array(
+        return [
             'auth.protocol' => 'testauth',
             'enroll.protocol' => 'testenroll',
             'ocra.suite' => 'OCRA-1:HOTP-SHA1-6:QH10-S',
@@ -32,7 +32,7 @@ class Tiqr_ServiceTest extends TestCase
             'devicestorage' => [
                 'type' => 'dummy',
             ]
-        );
+        ];
     }
 
     // Test creating a new tiqr service
@@ -140,7 +140,7 @@ class Tiqr_ServiceTest extends TestCase
         try {
             $service->getEnrollmentMetadata($enrollment_key, $authentication_url, $enrollment_url);
             $this->fail('Expected exception');
-        } catch (Exception $e) {}
+        } catch (Exception) {}
 
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,7 +171,7 @@ class Tiqr_ServiceTest extends TestCase
         try {
             $service->validateEnrollmentSecret($enrollment_secret);
             $this->fail('Expected exception');
-        } catch (Exception $e) {}
+        } catch (Exception) {}
     }
 
     public function testUniversalLinkAuthURLWithUser() {
@@ -214,7 +214,7 @@ class Tiqr_ServiceTest extends TestCase
         $this->assertEquals(2, $result['v']);
     }
 
-    function testAuthentication() {
+    public function testAuthentication() {
         // Create unique session ID
         $session_id = 'test_session_id_'.time();
 

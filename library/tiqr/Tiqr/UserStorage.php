@@ -43,13 +43,10 @@ class Tiqr_UserStorage
      */
     public static function getStorage(string $type, array $options, LoggerInterface $logger): Tiqr_UserStorage_Interface
     {
-        switch ($type) {
-            case "file":
-                return new Tiqr_UserStorage_File($options, $logger);
-            case "pdo":
-                return new Tiqr_UserStorage_Pdo($options, $logger);
-        }
-
-        throw new RuntimeException(sprintf('Unable to create a UserStorage instance of type: %s', $type));
+        return match ($type) {
+            "file" => new Tiqr_UserStorage_File($options, $logger),
+            "pdo" => new Tiqr_UserStorage_Pdo($options, $logger),
+            default => throw new RuntimeException(sprintf('Unable to create a UserStorage instance of type: %s', $type)),
+        };
     }
 }

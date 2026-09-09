@@ -90,10 +90,10 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
                 $config['dsn'],
                 $config['username'],
                 $config['password'],
-                array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
+                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
             );
         } catch (PDOException $e) {
-            $this->logger->error('Unable to establish a PDO connection.', array('exception'=>$e));
+            $this->logger->error('Unable to establish a PDO connection.', ['exception'=>$e]);
             throw ReadWriteException::fromOriginalException($e);
         }
     }
@@ -113,7 +113,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
 
         try {
             $sth = $this->handle->prepare('SELECT ' . $columnName . ' FROM ' . $this->tablename . ' WHERE userid = ?');
-            $sth->execute(array($userId));
+            $sth->execute([$userId]);
             $res=$sth->fetchColumn();
             if ($res === false) {
                 // No result
@@ -130,7 +130,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
             return $res;
         }
         catch (Exception $e) {
-            $this->logger->error('PDO error getting user', array('exception' => $e, 'userId' => $userId, 'columnName'=>$columnName));
+            $this->logger->error('PDO error getting user', ['exception' => $e, 'userId' => $userId, 'columnName'=>$columnName]);
             throw ReadWriteException::fromOriginalException($e);
         }
     }
@@ -151,7 +151,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
 
         try {
             $sth = $this->handle->prepare('SELECT ' . $columnName . ' FROM ' . $this->tablename . ' WHERE userid = ?');
-            $sth->execute(array($userId));
+            $sth->execute([$userId]);
             $res=$sth->fetchColumn();
             if ($res === false) {
                 // No result
@@ -169,7 +169,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
             return (int)$res;
         }
         catch (Exception $e) {
-            $this->logger->error('PDO error getting user', array('exception' => $e, 'userId' => $userId, 'columnName'=>$columnName));
+            $this->logger->error('PDO error getting user', ['exception' => $e, 'userId' => $userId, 'columnName'=>$columnName]);
             throw ReadWriteException::fromOriginalException($e);
         }
     }
@@ -188,7 +188,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
         }
         try {
             $sth = $this->handle->prepare('UPDATE ' . $this->tablename . ' SET ' . $columnName . ' = ? WHERE userid = ?');
-            $sth->execute(array($value, $userId));
+            $sth->execute([$value, $userId]);
             if ($sth->rowCount() == 0) {
                 // Required for mysql which only returns the number of rows that were actually updated
                 if (!$this->userExists($userId)) {
@@ -197,7 +197,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
             }
         }
         catch (Exception $e) {
-            $this->logger->error('PDO error updating user', array('exception' => $e, 'userId' => $userId, 'columnName'=>$columnName));
+            $this->logger->error('PDO error updating user', ['exception' => $e, 'userId' => $userId, 'columnName'=>$columnName]);
             throw ReadWriteException::fromOriginalException($e);
         }
     }
@@ -216,7 +216,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
         }
         try {
             $sth = $this->handle->prepare('UPDATE ' . $this->tablename . ' SET ' . $columnName . ' = ? WHERE userid = ?');
-            $sth->execute(array($value, $userId));
+            $sth->execute([$value, $userId]);
             if ($sth->rowCount() == 0) {
                 // Required for mysql which only returns the number of rows that were actually updated
                 if (!$this->userExists($userId)) {
@@ -225,7 +225,7 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
             }
         }
         catch (Exception $e) {
-            $this->logger->error('PDO error updating user', array('exception' => $e, 'userId' => $userId, 'columnName'=>$columnName));
+            $this->logger->error('PDO error updating user', ['exception' => $e, 'userId' => $userId, 'columnName'=>$columnName]);
             throw ReadWriteException::fromOriginalException($e);
         }
     }
@@ -240,10 +240,10 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
         }
         try {
             $sth = $this->handle->prepare("INSERT INTO ".$this->tablename." (displayname,userid) VALUES (?,?)");
-            $sth->execute(array($displayName, $userId));
+            $sth->execute([$displayName, $userId]);
         }
         catch (Exception $e) {
-            $this->logger->error(sprintf('Error creating user "%s"', $userId), array('exception'=>$e));
+            $this->logger->error(sprintf('Error creating user "%s"', $userId), ['exception'=>$e]);
             throw new ReadWriteException('The user could not be saved in the user storage (PDO)');
         }
     }
@@ -255,11 +255,11 @@ class Tiqr_UserStorage_Pdo extends Tiqr_UserStorage_Abstract
     {
         try {
             $sth = $this->handle->prepare("SELECT userid FROM ".$this->tablename." WHERE userid = ?");
-            $sth->execute(array($userId));
+            $sth->execute([$userId]);
             return (false !== $sth->fetchColumn());
         }
         catch (Exception $e) {
-            $this->logger->error('PDO error checking user exists', array('exception'=>$e, 'userId'=>$userId));
+            $this->logger->error('PDO error checking user exists', ['exception'=>$e, 'userId'=>$userId]);
             throw ReadWriteException::fromOriginalException($e);
         }
     }

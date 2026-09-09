@@ -74,7 +74,7 @@ trait FileTrait
      */
     public function getPath(): string
     {
-        if (substr($this->path, -1)!="/") return $this->path."/";
+        if (!str_ends_with($this->path, "/")) return $this->path."/";
         return $this->path;
     }
 

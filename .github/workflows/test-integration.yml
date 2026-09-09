@@ -10,7 +10,7 @@ jobs:
       run:
         working-directory: /var/www/html/
     container:
-      image:  ghcr.io/openconext/openconext-basecontainers/php82-apache2-node20-composer2:latest
+      image:  ghcr.io/openconext/openconext-basecontainers/php85-apache2-node24:latest
       volumes:
         - .:/var/www/html
     timeout-minutes: 5

@@ -54,7 +54,7 @@ class Tiqr_StateStoragePdoTest extends TestCase
 
     }
 
-    function test_called_clean_expired() {
+    public function test_called_clean_expired() {
         // Here be dragons: first call to the PDO's prepare statement must be a DELETE query
         // (clearing the expired entries)
         $this->pdoInstance

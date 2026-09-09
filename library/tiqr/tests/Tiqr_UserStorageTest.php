@@ -54,7 +54,7 @@ class Tiqr_UserStorageTest extends TestCase
     }
 
     // Used by Pdo and File
-    function userStorageTests(Tiqr_UserStorage_Abstract $userStorage) {
+    public function userStorageTests(Tiqr_UserStorage_Abstract $userStorage) {
         $this->assertTrue( $userStorage->healthCheck() );
         $this->assertFalse( $userStorage->userExists( 'user1' ) );
 
@@ -78,7 +78,7 @@ class Tiqr_UserStorageTest extends TestCase
             $userStorage->createUser('user1', 'User1 display name');
             $this->fail('Expected exception');
         }
-        catch (Exception $e) {}
+        catch (Exception) {}
 
         // notification type
         $userStorage->setNotificationType('user1', 'APNS_DIRECT');    // Max 15 characters
@@ -120,15 +120,15 @@ class Tiqr_UserStorageTest extends TestCase
         $this->assertTrue( $userStorage->isBlocked('user1', 4 ) );  // 5 min ago, so temp block expired
     }
 
-    function testUserStorage_File() {
+    public function testUserStorage_File() {
         $tmpDir = $this->makeTempDir();
-        $options=array(
+        $options=[
             'path' => $tmpDir
-        );
-        $secretoptions=array(
+        ];
+        $secretoptions=[
             'type' => 'file',
             'path' => $tmpDir
-        );
+        ];
         $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
 
         $userStorage = Tiqr_UserStorage::getStorage(
@@ -165,7 +165,7 @@ class Tiqr_UserStorageTest extends TestCase
     }
 
     // Test PDO user and secret storage in one table
-    function testUserStorage_Pdo_combined() {
+    public function testUserStorage_Pdo_combined() {
         $tmpDir = $this->makeTempDir();
         $dsn = 'sqlite:' . $tmpDir . '/user.sq3';
         // Create test database
@@ -173,23 +173,23 @@ class Tiqr_UserStorageTest extends TestCase
             $dsn,
             null,
             null,
-            array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,)
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,]
         );
         $this->assertTrue(0 === $pdo->exec( $this->user_storage_combined) );
 
-        $options=array(
+        $options=[
             'table' => 'user',  // Optional
             'dsn' => $dsn,
             'username' => null,
             'password' => null,
-        );
-        $secretoptions=array(
+        ];
+        $secretoptions=[
             'type' => 'pdo',
             'table' => 'user',  // Optional
             'dsn' => $dsn,
             'username' => null,
             'password' => null,
-        );
+        ];
         $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
         $userStorage = Tiqr_UserStorage::getStorage(
             'pdo',
@@ -203,7 +203,7 @@ class Tiqr_UserStorageTest extends TestCase
     }
 
     // Test PDO user and secret storage in one table
-    function testUserStorage_Pdo_split() {
+    public function testUserStorage_Pdo_split() {
         $tmpDir = $this->makeTempDir();
         $dsn = 'sqlite:' . $tmpDir . '/user.sq3';
         // Create test database
@@ -211,25 +211,25 @@ class Tiqr_UserStorageTest extends TestCase
             $dsn,
             null,
             null,
-            array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,)
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,]
         );
         $this->assertTrue(
             0 === $pdo->exec( $this->user_storage ) );
         $this->assertTrue(
             0 === $pdo->exec( $this->user_secret_storage ) );
-        $options=array(
+        $options=[
             'table' => 'user',  // Optional
             'dsn' => $dsn,
             'username' => null,
             'password' => null,
-        );
-        $secretoptions=array(
+        ];
+        $secretoptions=[
             'type' => 'pdo',
             'table' => 'secret',  // Optional
             'dsn' => $dsn,
             'username' => null,
             'password' => null,
-        );
+        ];
         $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
         $userStorage = Tiqr_UserStorage::getStorage(
             'pdo',
@@ -242,7 +242,7 @@ class Tiqr_UserStorageTest extends TestCase
         $this->userStorageTests($userStorage);
     }
 
-    function test_pdo_healthcheck_fails_when_table_does_not_exist()
+    public function test_pdo_healthcheck_fails_when_table_does_not_exist()
     {
         $tmpDir = $this->makeTempDir();
         $dsn = 'sqlite:' . $tmpDir . '/user.sq3';
@@ -251,15 +251,15 @@ class Tiqr_UserStorageTest extends TestCase
             $dsn,
             null,
             null,
-            array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,)
+            [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,]
         );
 
-        $options=array(
+        $options=[
             'table' => 'does_not_exists',  // Optional
             'dsn' => $dsn,
             'username' => null,
             'password' => null,
-        );
+        ];
         $logger = Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing();
         $userStorage = Tiqr_UserStorage::getStorage(
             'pdo',

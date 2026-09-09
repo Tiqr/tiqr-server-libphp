@@ -62,14 +62,14 @@ class Tiqr_OcraServiceTest extends TestCase
     {
         yield [ Tiqr_OcraService::getOcraService(
             'tiqr',
-            array(),
+            [],
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing()
         ) ];
         yield [ Tiqr_OcraService::getOcraService(
             'oathserviceclient',
-            array(
+            [
                 'apiURL' => '',
-                'consumerKey' => ''),
+                'consumerKey' => ''],
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing() )
         ];
     }

@@ -24,16 +24,8 @@ use Psr\Log\LoggerInterface;
  */
 class Tiqr_UserSecretStorage_OathServiceClient implements Tiqr_UserSecretStorage_Interface
 {
-    private $client;
-    /**
-     * @var LoggerInterface
-     */
-    private LoggerInterface $logger;
-
-    public function __construct(Tiqr_API_Client $client, LoggerInterface $logger)
+    public function __construct(private readonly Tiqr_API_Client $client, private readonly LoggerInterface $logger)
     {
-        $this->logger = $logger;
-        $this->client = $client;
     }
 
     /**
@@ -65,6 +57,6 @@ class Tiqr_UserSecretStorage_OathServiceClient implements Tiqr_UserSecretStorage
     public function setSecret(string $userId, string $secret): void
     {
         $this->logger->info('Storing the user secret on the OathServiceClient (api call)');
-        $this->client->call('/secrets/'.urlencode($userId), 'POST', array('secret' => $secret));
+        $this->client->call('/secrets/'.urlencode($userId), 'POST', ['secret' => $secret]);
     }
 }

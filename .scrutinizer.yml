@@ -12,10 +12,9 @@ coding_style:
     php: {  }
     
 build:
-    # Use bionic image instead of the default trusty image so we can meet the pushok dependency on curl >=7.46.0
-    image: default-bionic
+    image: default-jammy
     environment:
-        php: 8.2
+        php: 8.5.8
 
     nodes:
         analysis:
@@ -25,7 +24,7 @@ build:
         coverage:
             tests:
                 override:
-                    - command: XDEBUG_MODE=coverage ./vendor/bin/phpunit --configuration=./ci/qa/qa-config/phpunit.xml
+                    - command: if command -v phpdbg >/dev/null 2>&1; then phpdbg -qrr ./vendor/bin/phpunit --configuration=./ci/qa/qa-config/phpunit.xml; else XDEBUG_MODE=coverage ./vendor/bin/phpunit --configuration=./ci/qa/qa-config/phpunit.xml; fi
                       coverage:
                           file: ./ci/qa/qa-config/coverage.xml
                           format: clover

@@ -51,7 +51,6 @@ class Tiqr_DeviceStorage_TokenExchange extends Tiqr_DeviceStorage_Abstract
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
 
         $output = curl_exec($ch);
-        curl_close($ch);
 
         if (stripos($output, "not found")!==false) {
             $this->logger->error('Token Exchange failed and responded with: not found', ['full output' => $output]);
