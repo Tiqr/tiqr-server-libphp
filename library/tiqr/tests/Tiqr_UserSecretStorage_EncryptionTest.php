@@ -47,7 +47,7 @@ class Tiqr_UserSecretStorage_EncryptionTest extends TestCase
         $userSecretStorage_Encryption=Tiqr_UserSecretStorage_Encryption::getEncryption(
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing(),
             CustomEncryptionClass::class,
-            array('my_custom_option' => 'my_custom_value')
+            ['my_custom_option' => 'my_custom_value']
         );
 
         $this->assertInstanceOf(CustomEncryptionClass::class, $userSecretStorage_Encryption);
@@ -59,7 +59,7 @@ class Tiqr_UserSecretStorage_EncryptionTest extends TestCase
         $userSecretStorage_Encryption=Tiqr_UserSecretStorage_Encryption::getEncryption(
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing(),
             'openssl',
-            array('cipher' => 'aes-128-cbc', 'key_id' => 'test_key', 'keys' => array('test_key' => '0102030405060708090a0b0c0d0e0f10'))
+            ['cipher' => 'aes-128-cbc', 'key_id' => 'test_key', 'keys' => ['test_key' => '0102030405060708090a0b0c0d0e0f10']]
         );
 
         $this->assertInstanceOf(Tiqr_UserSecretStorage_Encryption_OpenSSL::class, $userSecretStorage_Encryption);

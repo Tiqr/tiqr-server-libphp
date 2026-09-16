@@ -79,7 +79,7 @@ class Tiqr_OcraService_OathServiceClient extends Tiqr_OcraService_Abstract
                     'verifyResponse for user "%s" failed',
                     $userId
                 ),
-                array( 'exception' => $e)
+                [ 'exception' => $e]
             );
             return false;
         }

@@ -16,7 +16,7 @@ class Tiqr_Message_APNS2 extends Tiqr_Message_Abstract
      */
     public function send()
     {
-        $curl_options = array();
+        $curl_options = [];
         $options = $this->getOptions();
         if (isset($options['apns.proxy_host_url'])) {
             // Override CURL options to connect to a HTTP/1.1 to HTTP/2 proxy

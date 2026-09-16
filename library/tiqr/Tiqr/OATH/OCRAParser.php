@@ -25,9 +25,9 @@ class OATH_OCRAParser {
 
 	private $T = FALSE;
 	private $TLength = 60; // 1M
-	private $TPeriods = array('H' => 3600, 'M' => 60, 'S' => 1);
+	private $TPeriods = ['H' => 3600, 'M' => 60, 'S' => 1];
 
-	private $supportedHashFunctions = array('SHA1' => 20, 'SHA256' => 32, 'SHA512' => 64);
+	private $supportedHashFunctions = ['SHA1' => 20, 'SHA256' => 32, 'SHA512' => 64];
 
 
     /**
@@ -96,7 +96,7 @@ class OATH_OCRAParser {
 			throw new Exception('Invalid OCRA suite data input: ' . var_export($s[2], TRUE));
 		}
 
-		$data_input = array();
+		$data_input = [];
 		foreach($di as $elem) {
 			$letter = $elem[0];
 			if (array_key_exists($letter, $data_input)) {
@@ -233,7 +233,7 @@ class OATH_OCRAParser {
 			$result &= ($s1[$i] == $s2[$i]);
 		}
 
-		return (boolean)$result;
+		return (bool) $result;
 	}
 
 }

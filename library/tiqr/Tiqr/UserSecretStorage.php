@@ -150,7 +150,7 @@ class Tiqr_UserSecretStorage
                 $password = $options['password'];
 
                 try {
-                    $handle = new PDO($dsn, $userName, $password, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION) );
+                    $handle = new PDO($dsn, $userName, $password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION] );
                 } catch (PDOException $e) {
                     $logger->error(
                         sprintf('Unable to establish a PDO connection. Error message from PDO: %s', $e->getMessage())

@@ -104,7 +104,7 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         $fields = [
             'message' => [
                 'token' => $deviceToken,
-                'data' => array(),
+                'data' => [],
                 "android" => [
                     "ttl" => "300s",
                 ],
@@ -119,10 +119,10 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         $fields['message']['data']['text'] = $alert;
 
         try {
-            $headers = array(
+            $headers = [
                 'Authorization: Bearer ' . $this->getGoogleAccessToken($credentialsFile, $cacheTokens, $tokenCacheDir),
                 'Content-Type: application/json',
-            );
+            ];
         } catch (\Google\Exception $e) {
             throw new Tiqr_Message_Exception_SendFailure(sprintf("Error getting Google access token : %s", $e->getMessage()), true);
         }
@@ -140,7 +140,6 @@ class Tiqr_Message_FCM extends Tiqr_Message_Abstract
         $errors = curl_error($ch);
         $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $remoteip = curl_getinfo($ch, CURLINFO_PRIMARY_IP);
-        curl_close($ch);
 
         if ($result === false) {
             throw new Tiqr_Message_Exception_SendFailure("Server unavailable", true);

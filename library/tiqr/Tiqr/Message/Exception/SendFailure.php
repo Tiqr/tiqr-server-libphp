@@ -23,19 +23,16 @@
  */
 class Tiqr_Message_Exception_SendFailure extends Tiqr_Message_Exception
 {
-    private $_temporary;
-    
     /**
      * Constructor
      *
      * @param string    $message    exception message
-     * @param boolean   $temporary  temporary failure?
+     * @param boolean $_temporary temporary failure?
      * @param Exception $parent     parent exception
      */
-    public function __construct($message, $temporary=false, Exception $parent=null)
+    public function __construct($message, private $_temporary=false, ?Exception $parent=null)
     {
         parent::__construct($message, $parent);
-        $this->_temporary = $temporary;
     }
     
     /**

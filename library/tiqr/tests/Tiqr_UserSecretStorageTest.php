@@ -53,7 +53,7 @@ class Tiqr_UserSecretStorageTest extends TestCase
      *
      * @return Tiqr_UserSecretStorage_Interface
      */
-    private function setup_userSecretStorage(string $type, array $encryption_options = array(), array $raw_user_secret = array()) : Tiqr_UserSecretStorage_Interface
+    private function setup_userSecretStorage(string $type, array $encryption_options = [], array $raw_user_secret = []) : Tiqr_UserSecretStorage_Interface
     {
         switch ($type) {
             case 'pdo':
@@ -163,7 +163,7 @@ class Tiqr_UserSecretStorageTest extends TestCase
 
 
         // Check that we cannot decrypt when we don't specify openssl encryption/decryption options
-        $userSecretStorage_none = $this->setup_userSecretStorage($type, array());
+        $userSecretStorage_none = $this->setup_userSecretStorage($type, []);
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Secret for user '$user' is encrypted with an unsupported encryption type");
         $userSecretStorage_none->getSecret($user);
@@ -176,7 +176,7 @@ class Tiqr_UserSecretStorageTest extends TestCase
     {
         $user='test-user-002';
         $secret1='404142434445464748494A4B4C4D4E4F503132333435363738393a3b3c3d3e3f';
-        $userSecretStorage = $this->setup_userSecretStorage($type, array(), array($user => $secret1));
+        $userSecretStorage = $this->setup_userSecretStorage($type, [], [$user => $secret1]);
 
         // Read the secret back, because the secret is not prefixed with the encryption type, it is assumed to be unencrypted
         // and is returned as-is
@@ -218,16 +218,16 @@ class Tiqr_UserSecretStorageTest extends TestCase
 
     public function test_it_can_create_custom_encryption_class()
     {
-            $options = array(
+            $options = [
                 // Encryption configuration
-                'encryption' => array(
+                'encryption' => [
                     'type' => CustomEncryptionClass::class,
                     'my_custom_option' => 'my_custom_value'
-                ),
+                ],
 
                 // UserSecretStorage configuration
                 'path' => $this->temp_dir,
-            );
+            ];
         $userSecretStorage=Tiqr_UserSecretStorage::getSecretStorage(
             'file',
             Mockery::mock(LoggerInterface::class)->shouldIgnoreMissing(),

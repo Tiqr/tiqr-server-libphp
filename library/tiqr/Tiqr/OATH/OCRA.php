@@ -98,7 +98,7 @@ class OCRA {
      * In addition to the RFC reference implementation this implementation supports using "-S" in OCRASuite as an
      * alternative to "-S064"
      */
-    static function generateOCRA(string $ocraSuite,
+    public static function generateOCRA(string $ocraSuite,
                                  string $key,
                                  string $counter,
                                  string $question,
@@ -140,7 +140,7 @@ class OCRA {
         if (! ctype_digit($codeDigits_str)) {
             throw new InvalidArgumentException('Unsupported OCRA CryptoFunction');
         }
-        $codeDigits = (integer)$codeDigits_str;
+        $codeDigits = (int) $codeDigits_str;
         if (($codeDigits != 0) && (($codeDigits < 4) || ($codeDigits > 10))) {
             throw new InvalidArgumentException('Unsupported OCRA CryptoFunction');
         }
@@ -305,7 +305,7 @@ class OCRA {
      * @param int $length number of decimal digits to truncate to
      * @return string of $length digits
      */    
-    static function _oath_truncate(string $hash, int $length = 6) : string
+    public static function _oath_truncate(string $hash, int $length = 6) : string
     {
         // Convert to dec
         foreach(str_split($hash,2) as $hex)

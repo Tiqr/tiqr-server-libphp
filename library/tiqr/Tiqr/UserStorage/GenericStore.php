@@ -57,8 +57,8 @@ abstract class Tiqr_UserStorage_GenericStore extends Tiqr_UserStorage_Abstract
      */
     public function createUser(string $userId, string $displayName) : void
     {
-        $user = array("userId"=>$userId,
-                      "displayName"=>$displayName);
+        $user = ["userId"=>$userId,
+                      "displayName"=>$displayName];
         $this->_saveUser($userId, $user);
     }
 
