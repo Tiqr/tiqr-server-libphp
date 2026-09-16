@@ -53,10 +53,6 @@ use Psr\Log\LoggerInterface;
 
 class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserSecretStorage_Abstract
 {
-    private $tableName;
-
-    private $handle;
-
     /**
      * @param Tiqr_UserSecretStorage_Encryption_Interface $encryption
      * @param LoggerInterface $logger
@@ -65,15 +61,11 @@ class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserSecretStorage_Abstract
     public function __construct(
         Tiqr_UserSecretStorage_Encryption_Interface $encryption,
         LoggerInterface $logger,
-        PDO $handle,
-        string $tableName,
-        array $decryption = array()
+        private readonly PDO $handle,
+        private readonly string $tableName,
+        array $decryption = []
     ) {
         parent::__construct($logger, $encryption, $decryption);
-
-        // Set our own properties
-        $this->handle = $handle;
-        $this->tableName = $tableName;
     }
 
     /**
@@ -85,11 +77,11 @@ class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserSecretStorage_Abstract
     {
         try {
             $sth = $this->handle->prepare('SELECT userid FROM ' . $this->tableName . ' WHERE userid = ?');
-            $sth->execute(array($userId));
+            $sth->execute([$userId]);
             return (false !== $sth->fetchColumn());
         }
         catch (Exception $e) {
-            $this->logger->error('PDO error checking user exists', array('exception'=>$e, 'userId'=>$userId));
+            $this->logger->error('PDO error checking user exists', ['exception'=>$e, 'userId'=>$userId]);
             throw ReadWriteException::fromOriginalException($e);
         }
     }
@@ -105,7 +97,7 @@ class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserSecretStorage_Abstract
     {
         try {
             $sth = $this->handle->prepare('SELECT secret FROM ' . $this->tableName . ' WHERE userid = ?');
-            $sth->execute(array($userId));
+            $sth->execute([$userId]);
             $res=$sth->fetchColumn();
             if ($res === false) {
                 // No result
@@ -114,7 +106,7 @@ class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserSecretStorage_Abstract
             }
         }
         catch (Exception $e) {
-            $this->logger->error('PDO error getting user', array('exception' => $e, 'userId' => $userId));
+            $this->logger->error('PDO error getting user', ['exception' => $e, 'userId' => $userId]);
             throw ReadWriteException::fromOriginalException($e);
         }
 
@@ -146,12 +138,12 @@ class Tiqr_UserSecretStorage_Pdo extends Tiqr_UserSecretStorage_Abstract
             } else {
                 $sth = $this->handle->prepare('INSERT INTO ' . $this->tableName . ' (secret,userid) VALUES (?,?)');
             }
-            $sth->execute(array($secret, $userId));
+            $sth->execute([$secret, $userId]);
         }
         catch (Exception $e) {
             $this->logger->error(
                 sprintf('Unable to persist user secret for user "%s" in user secret storage (PDO)', $userId),
-                array('exception'=>$e)
+                ['exception'=>$e]
             );
             throw ReadWriteException::fromOriginalException($e);
         }

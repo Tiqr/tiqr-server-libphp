@@ -6,11 +6,20 @@ on:
 jobs:
   run-qa-tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          # Lowest and highest PHP versions supported by composer.json (^8.2).
+          # OpenConext-basecontainers only publishes 8.2 and 8.5 images, so
+          # 8.3/8.4 aren't covered here.
+          - php82-apache2-node20-composer2
+          - php85-apache2-node24
     defaults:
       run:
         working-directory: /var/www/html/
     container:
-      image:  ghcr.io/openconext/openconext-basecontainers/php82-apache2-node20-composer2:latest
+      image:  ghcr.io/openconext/openconext-basecontainers/${{ matrix.image }}:latest
       volumes:
         - .:/var/www/html
     timeout-minutes: 5

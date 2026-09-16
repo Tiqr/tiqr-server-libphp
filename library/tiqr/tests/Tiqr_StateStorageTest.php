@@ -40,14 +40,14 @@ class Tiqr_StateStorageTest extends TestCase
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Unable to create a StateStorage instance of type: ldap");
-        Tiqr_StateStorage::getStorage("ldap", array(), $this->logger);
+        Tiqr_StateStorage::getStorage("ldap", [], $this->logger);
     }
 
     public function test_it_can_not_create_storage_by_fqn_storage()
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Unable to create a StateStorage instance of type: Fictional_Service_That_Was_Implements_StateStorage.php");
-        Tiqr_StateStorage::getStorage("Fictional_Service_That_Was_Implements_StateStorage.php", array(), $this->logger);
+        Tiqr_StateStorage::getStorage("Fictional_Service_That_Was_Implements_StateStorage.php", [], $this->logger);
     }
 
     public function testStateStorage_Pdo()
@@ -66,7 +66,7 @@ class Tiqr_StateStorageTest extends TestCase
             $stateStorage->unsetValue('i-do-not-exist');
             $this->fail('Expected Exception');
         }
-        catch (Exception $e) {}
+        catch (Exception) {}
     }
 
     /**

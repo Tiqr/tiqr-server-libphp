@@ -38,7 +38,7 @@ class Tiqr_UserSecretStorage_Encryption
      *
      * @return Tiqr_UserSecretStorage_Encryption_Interface
      */
-    public static function getEncryption(LoggerInterface $logger, string $type="dummy", array $options=array()): Tiqr_UserSecretStorage_Encryption_Interface
+    public static function getEncryption(LoggerInterface $logger, string $type="dummy", array $options=[]): Tiqr_UserSecretStorage_Encryption_Interface
     {
         $instance = null;
         $logger->info(sprintf('Using "%s" as UserSecretStorage encryption type', $type));

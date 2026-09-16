@@ -34,14 +34,8 @@ use Psr\Log\LoggerInterface;
  */
 class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface, Tiqr_HealthCheck_Interface
 {
-    private $logger;
-
-    private $path;
-
-    public function __construct(string $path, LoggerInterface $logger)
+    public function __construct(private readonly string $path, private readonly LoggerInterface $logger)
     {
-        $this->logger = $logger;
-        $this->path = $path;
     }
 
     /**
@@ -53,9 +47,9 @@ class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface,
             throw new InvalidArgumentException('Empty key not allowed');
         }
 
-        $envelope = array("expire"=>$expire,
+        $envelope = ["expire"=>$expire,
                           "createdAt"=>time(),
-                          "value"=>$value);
+                          "value"=>$value];
         $filename = $this->getFilenameByKey($key);
         
         if (!file_put_contents($filename, serialize($envelope))) {
@@ -109,7 +103,7 @@ class Tiqr_StateStorage_File implements Tiqr_StateStorage_StateStorageInterface,
 
     private function getPath(): string
     {
-        if (substr($this->path, -1)!=="/") {
+        if (!str_ends_with($this->path, "/")) {
             return $this->path . "/";
         }
         return $this->path;

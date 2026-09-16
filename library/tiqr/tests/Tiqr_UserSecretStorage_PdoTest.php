@@ -79,12 +79,12 @@ class Tiqr_UserSecretStorage_PdoTest extends TestCase
         $store = Tiqr_UserSecretStorage::getSecretStorage(
             'pdo',
             $this->logger,
-            array(
+            [
                 'dsn' => $this->dsn,
                 'username' => 'root',
                 'password' => 'secret',
                 'table' => 'tiqrusersecret_xxx'
-            )
+            ]
         );
         $this->expectException(ReadWriteException::class);
         $store->setSecret('user-id-1', 'my-secret');

@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.5.0
+* Support PHP 8.5, keep minimum requirement at PHP 8.2 ([#65](https://github.com/Tiqr/tiqr-server-libphp/pull/65))
+  - Apply Rector PHP 8.5 cleanup across the library and test suite (all changes remain compatible with PHP 8.2+).
+  - Declare the `ext-intl` requirement in `composer.json` explicitly; it was already a hidden transitive requirement via `edamov/pushok`.
+  - Run the test-integration workflow across a PHP version matrix (8.2 and 8.5, the min and max supported by `composer.json`) to verify the library on both ends of the supported range. Update the test server Docker image to `php85-apache2-node24`.
+
 ## 4.4.0
 * Replace cache/filesystem-adapter for symfony/cache to support PHP 8.2+ this affects sending FCM (Android) push notification ([#57](https://github.com/Tiqr/tiqr-server-libphp/pull/57))
 * Move SQL create statements from code/documentation to separate files in the /sql directory and use them in the test suite

@@ -31,7 +31,7 @@ abstract class Tiqr_DeviceStorage_Abstract
      * The options available to the devicestorage implementation
      * @var array
      */
-    protected $_options = array();
+    protected $_options = [];
 
     /** @var LoggerInterface */
     protected $logger;

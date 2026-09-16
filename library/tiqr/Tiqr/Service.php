@@ -58,10 +58,7 @@ class Tiqr_Service
     /** @var Tiqr_OcraService_Interface */
     protected $_ocraService;
     /** @var string */
-    protected $_stateStorageSalt; // The salt used for creating stable hashes for use with the StateStorage
-
-    /** @var LoggerInterface */
-    private $logger;
+    protected $_stateStorageSalt;
 
     /**
      * Enrollment status codes
@@ -220,10 +217,9 @@ class Tiqr_Service
      * @param int $version The tiqr protocol version to use (defaults to the latest)
      * @throws Exception
      */
-    public function __construct(LoggerInterface $logger, array $options=array(), int $version = 2)
+    public function __construct(private readonly LoggerInterface $logger, array $options=[], int $version = 2)
     {
-        $this->_options = $options; // Used to later get settings for Tiqr_Message_*
-        $this->logger = $logger;
+        $this->_options = $options;
         $this->_protocolAuth = $options["auth.protocol"] ?? 'tiqr';
         $this->_protocolEnroll = $options["enroll.protocol"] ?? 'tiqrenroll';
         $this->_ocraSuite = $options["ocra.suite"] ?? self::DEFAULT_OCRA_SUITE;
@@ -239,16 +235,16 @@ class Tiqr_Service
         if (!isset($options["statestorage"])) {
             throw new RuntimeException('No state storage configuration is configured, please provide one');
         }
-        $this->_stateStorage = Tiqr_StateStorage::getStorage($options["statestorage"]["type"], $options["statestorage"], $logger);
+        $this->_stateStorage = Tiqr_StateStorage::getStorage($options["statestorage"]["type"], $options["statestorage"], $this->logger);
         // Set a default salt, with the SESSION_KEY_LENGTH_BYTES (16) length keys we're using a publicly
         // known salt already gives excellent protection.
         $this->_stateStorageSalt = $options["statestorage"]['salt'] ?? '8xwk2pFd';
 
         // Create DeviceStorage - required when using Push Notification with a token exchange
         if (isset($options["devicestorage"])) {
-            $this->_deviceStorage = Tiqr_DeviceStorage::getStorage($options["devicestorage"]["type"], $options["devicestorage"], $logger);
+            $this->_deviceStorage = Tiqr_DeviceStorage::getStorage($options["devicestorage"]["type"], $options["devicestorage"], $this->logger);
         } else {
-            $this->_deviceStorage = Tiqr_DeviceStorage::getStorage('dummy', array(), $logger);
+            $this->_deviceStorage = Tiqr_DeviceStorage::getStorage('dummy', [], $this->logger);
         }
 
         // Set Tiqr protocol version, only version 2 is currently supported
@@ -262,10 +258,10 @@ class Tiqr_Service
         // and used 'tiqr' as type when no type explicitly set to oathserviceclient was configured
         if (isset($options['ocraservice']) && $options['ocraservice']['type'] != 'tiqr') {
             $options['ocraservice']['ocra.suite'] = $this->_ocraSuite;
-            $this->_ocraService = Tiqr_OcraService::getOcraService($options['ocraservice']['type'], $options['ocraservice'], $logger);
+            $this->_ocraService = Tiqr_OcraService::getOcraService($options['ocraservice']['type'], $options['ocraservice'], $this->logger);
         }
         else { // Create default ocraservice
-            $this->_ocraService = Tiqr_OcraService::getOcraService('tiqr', array('ocra.suite' => $this->_ocraSuite), $logger);
+            $this->_ocraService = Tiqr_OcraService::getOcraService('tiqr', ['ocra.suite' => $this->_ocraSuite], $this->logger);
         }
     }
     
@@ -320,7 +316,7 @@ class Tiqr_Service
         } catch (Exception $e) {
             $this->logger->error(
                 "Error generating QR code",
-                array('exception' =>$e)
+                ['exception' =>$e]
             );
             throw $e;
         }
@@ -373,7 +369,7 @@ class Tiqr_Service
         } catch (Exception $e) {
             $this->logger->error(
                 sprintf('Sending "%s" push notification to address "%s" failed', $notificationType, $notificationAddress),
-                array('exception' =>$e)
+                ['exception' =>$e]
             );
             throw $e;
         }
@@ -435,7 +431,7 @@ class Tiqr_Service
         $sessionKey = $this->_uniqueSessionKey();
         $challenge = $this->_ocraService->generateChallenge();
         
-        $data = array("sessionId"=>$sessionId, "challenge"=>$challenge, "spIdentifier" => $spIdentifier);
+        $data = ["sessionId"=>$sessionId, "challenge"=>$challenge, "spIdentifier" => $spIdentifier];
         
         if ($userId!="") {
             $data["userId"] = $userId;
@@ -606,18 +602,18 @@ class Tiqr_Service
             throw new Exception('Unable to find enrollment metadata in state storage');
         }
 
-        $metadata = array("service"=>
-                               array("displayName"       => $this->_name,
+        $metadata = ["service"=>
+                               ["displayName"       => $this->_name,
                                      "identifier"        => $this->_identifier,
                                      "logoUrl"           => $this->_logoUrl,
                                      "infoUrl"           => $this->_infoUrl,
                                      "authenticationUrl" => $authenticationUrl,
                                      "ocraSuite"         => $this->_ocraSuite,
                                      "enrollmentUrl"     => $enrollmentUrl
-                               ),
+                               ],
                           "identity"=>
-                               array("identifier" =>$data["userId"],
-                                     "displayName"=>$data["displayName"]));
+                               ["identifier" =>$data["userId"],
+                                     "displayName"=>$data["displayName"]]];
 
         $this->_unsetStateValue(self::PREFIX_ENROLLMENT, $enrollmentKey);
 
@@ -704,7 +700,7 @@ class Tiqr_Service
             $this->_setEnrollmentStatus($data["sessionId"], self::ENROLLMENT_STATUS_PROCESSED);
             return $data["userId"];
         } catch (Exception $e) {
-            $this->logger->error('Validation of enrollment secret failed', array('exception' => $e));
+            $this->logger->error('Validation of enrollment secret failed', ['exception' => $e]);
             throw $e;
         }
     }
@@ -743,7 +739,7 @@ class Tiqr_Service
             return true;
         } catch (Exception $e) {
             // Cleanup failed
-            $this->logger->warning('finalizeEnrollment failed', array('exception' => $e));
+            $this->logger->warning('finalizeEnrollment failed', ['exception' => $e]);
         }
         return false;
     }
@@ -801,7 +797,7 @@ class Tiqr_Service
                 return self::AUTH_RESULT_INVALID_CHALLENGE;
             }
         } catch (Exception $e) {
-            $this->logger->error('Error looking up challenge in state storage', array('exception' => $e));
+            $this->logger->error('Error looking up challenge in state storage', ['exception' => $e]);
             throw $e;
         }
 
@@ -827,7 +823,7 @@ class Tiqr_Service
         try {
             $equal = $this->_ocraService->verifyResponse($response, $userId, $userSecret, $challenge, $sessionKey);
         } catch (Exception $e) {
-            $this->logger->error(sprintf('Error verifying OCRA response for user "%s"', $userId), array('exception' => $e));
+            $this->logger->error(sprintf('Error verifying OCRA response for user "%s"', $userId), ['exception' => $e]);
             throw $e;
         }
 
@@ -845,7 +841,7 @@ class Tiqr_Service
                 $this->_unsetStateValue(self::PREFIX_CHALLENGE, $sessionKey); // May throw
             } catch (Exception $e) {
                 // Only log error
-                $this->logger->warning('Could not delete authentication session key', array('error' => $e));
+                $this->logger->warning('Could not delete authentication session key', ['error' => $e]);
             }
 
             return self::AUTH_RESULT_AUTHENTICATED;
@@ -917,7 +913,7 @@ class Tiqr_Service
             return $this->_getStateValue("authenticated_", $sessionId);
         }
         catch (Exception $e) {
-            $this->logger->error('getAuthenticatedUser failed', array('exception'=>$e));
+            $this->logger->error('getAuthenticatedUser failed', ['exception'=>$e]);
             return NULL;
         }
     }
@@ -952,9 +948,9 @@ class Tiqr_Service
         $challenge = $state["challenge"] ?? '';
         $spIdentifier = $state["spIdentifier"] ?? '';
 
-        if ( (strpos($this->_protocolAuth, 'https://') === 0) || (strpos($this->_protocolAuth, 'http://') === 0) ) {
+        if ( (str_starts_with($this->_protocolAuth, 'https://')) || (str_starts_with($this->_protocolAuth, 'http://')) ) {
             // Create universal Link
-            $parameters=array();
+            $parameters=[];
             if (!is_null($userId)) {
                 $parameters[]='u='.urlencode($userId);
             }
@@ -978,7 +974,7 @@ class Tiqr_Service
     {
         // The are two formats see: https://tiqr.org/technical/protocol/
 
-        if ( (strpos($this->_protocolEnroll, 'https://') === 0) || (strpos($this->_protocolEnroll, 'http://') === 0) ) {
+        if ( (str_starts_with($this->_protocolEnroll, 'https://')) || (str_starts_with($this->_protocolEnroll, 'http://')) ) {
             // Create universal Link
             return $this->_protocolEnroll.'?metadata='.urlencode($metadataUrl);
         }

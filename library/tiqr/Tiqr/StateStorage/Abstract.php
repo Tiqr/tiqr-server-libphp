@@ -30,18 +30,6 @@ use Psr\Log\LoggerInterface;
 abstract class Tiqr_StateStorage_Abstract implements Tiqr_StateStorage_StateStorageInterface, Tiqr_HealthCheck_Interface
 {
     /**
-     * The options for the storage. Derived classes can access this
-     * to retrieve options configured for the state storage.
-     * @var array
-     */
-    protected array $_options = array();
-
-    /**
-     * @var LoggerInterface
-     */
-    protected LoggerInterface $logger;
-
-    /**
      * An initializer that will be called directly after instantiating
      * the storage. Derived classes can override this to perform 
      * initialization of the storage.
@@ -58,12 +46,17 @@ abstract class Tiqr_StateStorage_Abstract implements Tiqr_StateStorage_StateStor
      * The constructor to construct a state storage instance. Should not be
      * called directly, use the Tiqr_StateStorage factory to construct
      * a state storage instance of a certain type.
-     * @param array $options An array of options for the state storage
+     * @param array $_options An array of options for the state storage
      */
-    public function __construct(array $options, LoggerInterface $logger)
+    public function __construct(
+        /**
+         * The options for the storage. Derived classes can access this
+         * to retrieve options configured for the state storage.
+         */
+        protected array $_options,
+        protected LoggerInterface $logger
+    )
     {
-        $this->logger = $logger;
-        $this->_options = $options;
     }
 
     /**

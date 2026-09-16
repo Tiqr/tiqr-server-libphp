@@ -24,22 +24,20 @@ use Psr\Log\LoggerInterface;
  */
 abstract class Tiqr_Message_Abstract
 {
-    private $_options;
     private $_id;
     private $_address;
     private $_text;
-    private $_properties = array();
+    private $_properties = [];
     /** @var LoggerInterface */
     protected $logger;
     
     /**
      * Construct a new message.
      *
-     * @param array $options configuration options
+     * @param array $_options configuration options
      */
-    public function __construct(array $options, LoggerInterface $logger)
+    public function __construct(private readonly array $_options, LoggerInterface $logger)
     {
-        $this->_options = $options;
         $this->logger = $logger;
     }
     

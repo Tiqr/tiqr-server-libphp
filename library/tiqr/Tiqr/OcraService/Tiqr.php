@@ -38,7 +38,7 @@ class Tiqr_OcraService_Tiqr extends Tiqr_OcraService_Abstract
             $expected = OCRA::generateOCRA($this->_ocraSuite, $userSecret, "", $challenge, "", $sessionInformation, "");
         }
         catch (Exception $e) {
-            $this->logger->warning(sprintf('Error calculating OCRA response for user "%s"', $userId), array('exception'=>$e));
+            $this->logger->warning(sprintf('Error calculating OCRA response for user "%s"', $userId), ['exception'=>$e]);
             return false;
         }
 
